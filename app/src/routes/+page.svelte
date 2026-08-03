@@ -16,9 +16,6 @@
   /** @type {HTMLVideoElement | null} */
   let videoEl = $state(null);
   /** @type {HTMLElement | null} */
-  let stageEl = $state(null);
-  let muted = $state(true);
-  let fullscreen = $state(false);
 
   let hideTimer = null;
 
@@ -30,23 +27,6 @@
     chromeVisible = true;
     clearTimeout(hideTimer);
     if (!pinned) hideTimer = setTimeout(() => (chromeVisible = false), CHROME_HIDE_MS);
-  }
-
-  function toggleMute() {
-    if (!videoEl) return;
-    videoEl.muted = !videoEl.muted;
-    muted = videoEl.muted;
-    showChrome();
-  }
-
-  async function toggleFullscreen() {
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await stageEl?.requestFullscreen();
-    } catch {
-      /* 端末が対応していないだけ。黙って諦める */
-    }
-    showChrome();
   }
 
   function select(id, updateUrl = true) {
@@ -66,8 +46,6 @@
 
   onMount(() => {
     const detach = player.attach(videoEl);
-    const onFs = () => (fullscreen = !!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onFs);
 
     (async () => {
       let cfg = { channels: [], officialSite: {} };
@@ -94,7 +72,6 @@
 
     return () => {
       clearTimeout(hideTimer);
-      document.removeEventListener('fullscreenchange', onFs);
       detach();
     };
   });
@@ -122,10 +99,11 @@
        映像がビューポートの縦を使い切れる（下に空白が残らない）。 -->
   <section bind:this={stageEl} class="stage">
     <!-- svelte-ignore a11y_media_has_caption -->
-    <!-- controls は付けない。ライブ配信なのでシークバーに意味がなく、
-         むしろ末端がライブ点に追従しないぶん誤解を招く。
-         必要な操作（音量・全画面）だけ自前で置く。 -->
-    <video bind:this={videoEl} playsinline muted autoplay preload="none"></video>
+    <!-- コントロールはブラウザ内蔵のものを使う。自前で作ると各ブラウザ・
+         各言語での作法から外れるうえ、アクセシビリティも自前で担保する
+         ことになる。ライブとしての見え方は hls.js の liveDurationInfinity
+         （duration を Infinity にする）側で担保する。 -->
+    <video bind:this={videoEl} playsinline muted autoplay controls preload="none"></video>
 
     <div class="scrim chrome" class:visible={chromeVisible || pinned}>
       <div class="chrome-top">
@@ -143,18 +121,6 @@
           {/each}
         </nav>
 
-        <div class="controls">
-          <button type="button" onclick={toggleMute} aria-label={muted ? '音を出す' : '消音する'}>
-            {muted ? '🔇' : '🔊'}
-          </button>
-          <button
-            type="button"
-            onclick={toggleFullscreen}
-            aria-label={fullscreen ? '全画面をやめる' : '全画面にする'}
-          >
-            {fullscreen ? '⤡' : '⤢'}
-          </button>
-        </div>
       </div>
     </div>
 
@@ -164,6 +130,11 @@
       <div class="cover" role="status" aria-live="polite">
         <p>このチャンネルはまだ配信されていません</p>
         <small>始まると自動で再生されます</small>
+        <!-- 自動リトライは続いているが、待てない人のために手動の出口を出す。
+             見えない当たり判定にはせず、ボタンとして明示する。 -->
+        <button class="retry" type="button" onclick={() => player.load(current)}>
+          今すぐ再読み込み
+        </button>
       </div>
     {:else if player.state === 'blocked'}
       <div class="cover">
@@ -268,29 +239,29 @@
     color: #fff;
     border-bottom-color: var(--accent);
   }
-  nav button:focus-visible,
-  .controls button:focus-visible {
+  nav button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 3px;
   }
 
-  /* ライブなので操作は音量と全画面だけ。再生位置の操作は置かない。 */
-  .controls {
-    margin-left: auto;
-    display: flex;
-    gap: var(--sp-2);
-  }
-  .controls button {
+
+  .retry {
+    pointer-events: auto;
     appearance: none;
+    border: 1px solid rgb(255 255 255 / 0.35);
+    border-radius: var(--radius);
+    padding: var(--sp-2) var(--sp-4);
     background: none;
-    border: 0;
-    padding: var(--sp-1) var(--sp-2);
-    font-size: var(--fs-md);
-    line-height: 1;
     color: #fff;
+    font: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
     cursor: pointer;
   }
-
+  .retry:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
   .resume {
     pointer-events: auto;
     appearance: none;
