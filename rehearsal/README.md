@@ -43,26 +43,43 @@ docker compose logs -f mediamtx    # 受信状況・publish 拒否の理由
 ./scripts/down.sh --clean          # 証明書と負荷テストの結果も消す
 ```
 
-### ブラウザで開くには 2 つ準備が要る
+### ブラウザで開く
 
-1. **`/etc/hosts` に 1 行足す。** 本番の `Caddyfile` はホスト名で site を
-   マッチするので、名前が引けないと 404 になる。
-
-   ```bash
-   echo '127.0.0.1 live.kosensai.ichinoseki.ac.jp' | sudo tee -a /etc/hosts
-   ```
-
-2. **証明書の警告を通す。** `up.sh` が自己署名証明書を作るので、ブラウザは
-   警告を出す。「詳細」→「アクセスする」で開く。
-   （本番は certbot の DNS-01 で正規の証明書を取る）
+**`/etc/hosts` の変更も証明書の警告も要らない。**
 
 | | URL |
 | --- | --- |
-| 視聴ページ | `https://live.kosensai.ichinoseki.ac.jp:8443/` |
-| サイネージ | `https://live.kosensai.ichinoseki.ac.jp:8443/signage/` |
-| Ch 直接開き | `https://live.kosensai.ichinoseki.ac.jp:8443/?ch=ch3` |
+| 視聴ページ | `http://localhost:8080/` |
+| サイネージ | `http://localhost:8080/signage/` |
+| Ch 直接開き | `http://localhost:8080/?ch=ch3` |
 
-`check.sh` は `curl --resolve` を使うので、`/etc/hosts` をいじらなくても動く。
+本番の `Caddyfile` はホスト名 `live.kosensai.ichinoseki.ac.jp` で site を
+マッチするので、素直にやると `/etc/hosts` への追記が要る。だが**消し忘れると
+本番の DNS が引けなくなって事故る**ので、Host ヘッダを付け替えるだけの入口
+（`preview.Caddyfile`）を別に立ててある。
+
+```
+http://localhost:8080/  →  Host を付け替え  →  https://127.0.0.1:443（本番の Caddy）
+```
+
+`http://localhost` はブラウザから secure context として扱われるため、
+MediaMTX が張る `Secure` 属性付きの Cookie もそのまま通る。
+
+<details>
+<summary>本番と同じホスト名・TLS で開きたい場合</summary>
+
+ホスト名マッチと TLS 自体を目で見たいときだけ。`check.sh` が `--resolve` で
+毎回検証しているので、通常は不要。
+
+```bash
+echo '127.0.0.1 live.kosensai.ichinoseki.ac.jp' | sudo tee -a /etc/hosts
+# → https://live.kosensai.ichinoseki.ac.jp:8443/ （証明書警告は「詳細」→「アクセスする」）
+
+# 終わったら必ず消す
+sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
+```
+
+</details>
 
 ## テストパターンの見分け方
 
@@ -106,7 +123,8 @@ docker compose logs -f mediamtx    # 受信状況・publish 拒否の理由
 
 | ファイル | 内容 |
 | --- | --- |
-| `docker-compose.yml` | MediaMTX + Caddy + テストパターン送出 4 本 |
+| `docker-compose.yml` | MediaMTX + Caddy + プレビュー入口 + テストパターン送出 4 本 |
+| `preview.Caddyfile` | `localhost:8080` 用の入口。Host を付け替えて本番 Caddy に渡す |
 | `scripts/up.sh` | 自己署名証明書の生成 → 起動 |
 | `scripts/down.sh` | 停止（`--clean` で生成物も削除） |
 | `scripts/check.sh` | 静的配信・HLS・本番設定の効き具合を確認 |
@@ -120,7 +138,8 @@ docker compose logs -f mediamtx    # 受信状況・publish 拒否の理由
 | | リハーサル | 本番 |
 | --- | --- | --- |
 | 証明書 | 自己署名（`up.sh` が生成） | certbot の DNS-01 |
-| ポート | 8443 | 443 |
+| ポート | 8443（+ プレビュー 8080） | 443 |
+| プレビュー入口 | あり（`/etc/hosts` 回避用） | 無し |
 | ネットワーク | caddy と publisher が mediamtx の netns に相乗り | 全部 `network_mode: host` |
 | 映像ソース | ffmpeg の testsrc × 4 | 現場 ATEM / iPhone → 本部 OBS |
 | パスフレーズ | compose に直書きの使い捨て値 | `hosts/server/.env` |

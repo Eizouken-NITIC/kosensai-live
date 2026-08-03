@@ -42,15 +42,8 @@ cd rehearsal
 
 ### 1-2. 視聴ページの挙動（ブラウザ・手動）
 
-準備が 2 つ要る。
-
-```bash
-echo '127.0.0.1 live.kosensai.ichinoseki.ac.jp' | sudo tee -a /etc/hosts
-```
-
-自己署名なのでブラウザは証明書警告を出す。「詳細」→「アクセスする」で開く。
-
-`https://live.kosensai.ichinoseki.ac.jp:8443/` を開いて確認する。
+**`http://localhost:8080/` を開く。** `/etc/hosts` の変更も証明書の警告も要らない
+（Host ヘッダを付け替えるだけの入口を別に立ててある。`rehearsal/preview.Caddyfile`）。
 
 | 確認項目 | 合格条件 |
 | --- | --- |

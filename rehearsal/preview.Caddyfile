@@ -1,0 +1,36 @@
+# プレビュー用の入口（リハーサル専用・本番には存在しない）
+#
+# 本番の Caddyfile はホスト名 live.kosensai.ichinoseki.ac.jp で site を
+# マッチするので、素直にやると /etc/hosts への追記が要る。消し忘れると
+# 本番 DNS が引けなくなって事故るので、代わりにこの入口を用意した。
+#
+#   http://localhost:8080/  →  Host ヘッダを付け替えて  https://127.0.0.1:443
+#
+# これで /etc/hosts をいじらずに済み、証明書の警告も出ない
+# （ブラウザは http://localhost を secure context として扱うため、
+#   MediaMTX が張る Secure 属性付きの Cookie もそのまま通る）。
+#
+# ⚠️ ここを通すとホスト名マッチと TLS 自体は検証できない。
+#    そちらは scripts/check.sh が --resolve で実際の名前を使って見ている。
+
+{
+	auto_https off
+	admin off
+}
+
+:8080 {
+	reverse_proxy https://127.0.0.1:443 {
+		header_up Host live.kosensai.ichinoseki.ac.jp
+
+		transport http {
+			tls
+			tls_insecure_skip_verify
+			tls_server_name live.kosensai.ichinoseki.ac.jp
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
