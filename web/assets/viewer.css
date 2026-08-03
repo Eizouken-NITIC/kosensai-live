@@ -1,12 +1,18 @@
 /* viewer.css — 視聴ページのレイアウト。
-   色・角丸・フォントは theme.css の変数のみを参照し、ここでは直書きしない。 */
+   色・角丸・フォントは theme.css の変数のみを参照し、ここでは直書きしない。
 
-/* ---- ヘッダー ---- */
+   ライブ配信の視聴 UI に合わせて、chrome は最小限にしてある。
+   - 面と境界線を増やさない（ヘッダーとチャンネル切替は 1 本のバー）
+   - 装飾的な動きを置かない（LIVE の点滅、hover のトランジション等はやらない）
+   - 選択状態は塗りつぶさず、文字色と下線で示す */
+
+/* ---- ヘッダー（見出し・チャンネル切替・LIVE を 1 本に） ---- */
 .site-header {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
-  padding: calc(var(--sp-2) + var(--safe-t)) var(--sp-3) var(--sp-2);
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  padding: calc(var(--sp-2) + var(--safe-t)) var(--sp-3) 0;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
   position: sticky;
@@ -18,41 +24,30 @@
   font-size: var(--fs-lg);
   font-weight: 700;
   letter-spacing: 0.02em;
+  padding-bottom: var(--sp-2);
 }
 
-/* ---- LIVE バッジ（配信中のみ表示される） ---- */
+/* ---- LIVE（配信中のみ表示。点滅させない） ---- */
 .live-badge {
   margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
+  align-self: center;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--live);
-  border: 1px solid var(--live);
-  background: color-mix(in srgb, var(--live) 8%, transparent);
-  border-radius: var(--radius-pill);
-  padding: 3px 9px;
-  white-space: nowrap;
-}
-.live-badge .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+  letter-spacing: 0.08em;
+  color: var(--accent-fg);
   background: var(--live);
-  animation: pulse 1.6s infinite;
+  border-radius: 3px;
+  padding: 2px 6px;
+  margin-bottom: var(--sp-2);
 }
 
-/* ---- チャンネルタブ ---- */
+/* ---- チャンネル切替（塗りつぶさず、下線で示す） ---- */
 .channel-tabs {
   display: flex;
-  gap: var(--sp-1);
-  padding: 8px var(--sp-2);
+  gap: var(--sp-4);
   overflow-x: auto;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
   scrollbar-width: none;
+  margin-bottom: -1px; /* 下線をヘッダーの境界線に重ねる */
 }
 .channel-tabs::-webkit-scrollbar {
   display: none;
@@ -61,24 +56,18 @@
   flex: 0 0 auto;
   appearance: none;
   cursor: pointer;
-  background: transparent;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
   color: var(--fg-muted);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  padding: 7px 15px;
-  font-size: 13px;
+  padding: 0 0 calc(var(--sp-2) - 2px);
+  font-size: var(--fs-base);
   font-weight: 600;
   font-family: inherit;
-  transition: 0.15s;
-}
-.channel-tabs button:hover {
-  color: var(--fg);
-  border-color: var(--accent);
 }
 .channel-tabs button[aria-selected="true"] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-fg);
+  color: var(--fg);
+  border-bottom-color: var(--accent);
 }
 .channel-tabs button:focus-visible {
   outline: 2px solid var(--accent);
@@ -147,19 +136,19 @@
   min-height: 0;
 }
 @media (min-width: 1000px) {
+  /* ヘッダーは折り返しで高さが変わるので、固定 px でオフセットしない。
+     グリッドの先頭に貼り付けて、はみ出す分だけスクロールさせる。 */
   .hp-panel {
     border-top: 0;
     border-left: 1px solid var(--line);
-    height: calc(100dvh - 96px);
-    position: sticky;
-    top: 96px;
+    align-self: stretch;
+    min-height: 60dvh;
   }
 }
 .hp-panel-head {
   display: flex;
   justify-content: flex-end;
   padding: var(--sp-2) var(--sp-3);
-  border-bottom: 1px solid var(--line);
 }
 .hp-panel-head a {
   color: var(--accent);
@@ -197,8 +186,3 @@
   display: none !important;
 }
 
-@keyframes pulse {
-  50% {
-    opacity: 0.25;
-  }
-}

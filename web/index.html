@@ -12,13 +12,14 @@
 </head>
 <body>
 
+<!-- ヘッダーとチャンネル切替を 1 本のバーにまとめてある。
+     配信 UI の chrome は少ないほどよいので、面と境界線を増やさない。 -->
 <header class="site-header">
   <h1>高専祭ライブ配信</h1>
+  <nav class="channel-tabs" id="tabs" role="tablist" aria-label="チャンネル"></nav>
   <!-- 配信中だけ出す。待機中や接続中はオーバーレイが言うので、ここでは黙る。 -->
-  <span class="live-badge is-hidden" id="badge"><span class="dot"></span>LIVE</span>
+  <span class="live-badge is-hidden" id="badge">LIVE</span>
 </header>
-
-<nav class="channel-tabs" id="tabs" role="tablist" aria-label="チャンネル"></nav>
 
 <main class="layout">
   <div class="stage">
