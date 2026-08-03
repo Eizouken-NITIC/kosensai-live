@@ -158,6 +158,9 @@
     display: grid;
     grid-template-rows: auto 1fr;
     height: 100dvh;
+    /* グリッドの子（映像・iframe）がわずかにはみ出して
+       ページ全体がスクロールできてしまうのを止める */
+    overflow: hidden;
   }
   @media (min-width: 1000px) {
     .page {
@@ -192,9 +195,17 @@
   .chrome {
     position: absolute;
     inset: 0 0 auto 0;
-    padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) var(--sp-5);
-    /* 上端だけ暗くして文字を読ませる。面（背景色の板）は作らない。 */
-    background: linear-gradient(to bottom, rgb(0 0 0 / 0.75), transparent);
+    padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) var(--sp-6);
+    /* 上端だけ暗くして文字を読ませる。面（背景色の板）は作らない。
+       モバイルでロゴとタブが 2 行に折り返しても文字が読めるよう、
+       暗い部分を下まで保ってから透明にする。 */
+    background: linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.85) 0%,
+      rgb(0 0 0 / 0.7) 45%,
+      rgb(0 0 0 / 0.35) 75%,
+      transparent 100%
+    );
     opacity: 0;
     transition: opacity 200ms ease;
     pointer-events: none;
@@ -205,8 +216,10 @@
   }
   .chrome-top {
     display: flex;
-    align-items: center;
-    gap: var(--sp-5);
+    /* 文字どうしのベースラインで揃える。center にすると
+       タブの下線を含んだ箱の中央がロゴに揃ってしまい、文字がずれる。 */
+    align-items: baseline;
+    gap: var(--sp-3) var(--sp-5);
     flex-wrap: wrap;
   }
 
@@ -224,8 +237,9 @@
     appearance: none;
     background: none;
     border: 0;
+    /* 下線は文字の下にぶら下げる。box の高さでロゴと揃えない。 */
     border-bottom: 2px solid transparent;
-    padding: 0 0 var(--sp-1);
+    padding: 0 0 var(--sp-2);
     color: rgb(255 255 255 / 0.65);
     font: inherit;
     font-size: var(--fs-sm);

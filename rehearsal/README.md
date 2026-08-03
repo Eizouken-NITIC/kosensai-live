@@ -34,6 +34,7 @@ cd rehearsal
 ./scripts/up.sh                    # サーバ + テストパターン4本
 ./scripts/up.sh --idle             # サーバのみ（配信前の「待機中」表示を見たいとき）
 
+./scripts/reload.sh                # app/ をビルドして反映（開発中はこれ）
 ./scripts/check.sh                 # 疎通をひととおり確認
 ./scripts/load-test.sh 20 ch1 30   # 20人 / ch1 / 30秒
 ./scripts/load-test.sh 10 all 60   # 10人ずつ全Ch同時
@@ -127,6 +128,7 @@ sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
 | `preview.Caddyfile` | `localhost:8080` 用の入口。Host を付け替えて本番 Caddy に渡す |
 | `scripts/up.sh` | 自己署名証明書の生成 → 起動 |
 | `scripts/down.sh` | 停止（`--clean` で生成物も削除） |
+| `scripts/reload.sh` | `app/` をビルドして反映。ビルドのたびに `web/` が作り直されて bind mount が切れるので、caddy を張り直す |
 | `scripts/check.sh` | 静的配信・HLS・本番設定の効き具合を確認 |
 | `scripts/load-test.sh` | 視聴クライアントを N 本立てて負荷をかける |
 | `client/pull.sh` | 視聴クライアントの実体。hls.js と同じ手順を curl で再現 |

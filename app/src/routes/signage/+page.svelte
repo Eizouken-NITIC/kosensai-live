@@ -10,12 +10,25 @@
 
   let official = $state({ embedUrl: '' });
   let clock = $state('--:--');
+  let clockVisible = $state(false);
   let videoEl = $state(null);
   let frameEl = $state(null);
 
+  const CLOCK_SHOW_MS = 12000; // 出しておく時間
+  let clockTimer = null;
+
+  /* 時計は出しっぱなしにしない。分が変わったタイミングで一定時間だけ出す。
+     常時表示だと映像の一部を恒久的に潰すことになるが、通行人は数十秒あれば
+     目に入るので、間欠で十分。 */
   function tick() {
     const d = new Date();
-    clock = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const next = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    if (next !== clock) {
+      clock = next;
+      clockVisible = true;
+      clearTimeout(clockTimer);
+      clockTimer = setTimeout(() => (clockVisible = false), CLOCK_SHOW_MS);
+    }
   }
 
   onMount(() => {
@@ -34,7 +47,7 @@
 
     tick();
     const timers = [
-      setInterval(tick, 15000),
+      setInterval(tick, 5000),
       setInterval(() => {
         if (frameEl) frameEl.src = frameEl.src;
       }, IFRAME_RELOAD_MS),
@@ -46,6 +59,7 @@
 
     return () => {
       timers.forEach(clearInterval);
+      clearTimeout(clockTimer);
       detach();
     };
   });
@@ -68,8 +82,8 @@
          そのまま時刻のズレになるので、端末のローカル時刻で出す。
          逆に「現在の企画名」など映像と同期すべきものは OBS 側で焼き込む。 -->
     <div class="overlay">
-      <Wordmark live={player.isLive} size="lg" />
-      <time class="clock">{clock}</time>
+      <Wordmark live={player.isLive} />
+      <time class="clock" class:visible={clockVisible || !player.isLive}>{clock}</time>
     </div>
 
     {#if !player.isLive}
@@ -135,19 +149,24 @@
     position: absolute;
     inset: 0 0 auto 0;
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 2vw;
-    padding: 2vh 2vw 4vh;
+    padding: 2.4vh 2vw 5vh;
     background: linear-gradient(to bottom, rgb(0 0 0 / 0.72), transparent);
     pointer-events: none;
   }
   .clock {
-    font-size: 3vw;
+    font-size: 1.8vw;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
     line-height: 1;
+    opacity: 0;
+    transition: opacity 400ms ease;
+  }
+  .clock.visible {
+    opacity: 1;
   }
 
   .idle {
