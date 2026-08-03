@@ -81,7 +81,7 @@
     <!-- 時計は映像に重ねる。OBS で焼き込むと HLS の遅延（20秒前後）が
          そのまま時刻のズレになるので、端末のローカル時刻で出す。
          逆に「現在の企画名」など映像と同期すべきものは OBS 側で焼き込む。 -->
-    <div class="overlay">
+    <div class="scrim overlay">
       <Wordmark live={player.isLive} />
       <time class="clock" class:visible={clockVisible || !player.isLive}>{clock}</time>
     </div>
@@ -90,7 +90,7 @@
       <!-- スピナーは置かない。実際には数秒〜10 秒間隔で再試行しているだけで、
            回り続ける表示は「今まさに読み込んでいる」という誤った印象を与える。
            開始時刻も分からないので「まもなく」とは言わない。 -->
-      <div class="idle">
+      <div class="cover idle">
         <p>現在配信していません</p>
       </div>
     {/if}
@@ -130,31 +130,14 @@
     user-select: none;
   }
 
-  .stage {
-    position: relative;
-    background: #000;
-    display: grid;
-    place-items: center;
-    min-width: 0;
-  }
-  .stage video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: #000;
-  }
 
-  /* 映像の上端に重ねる。面は作らず、グラデーションだけで文字を読ませる。 */
+  /* 位置と暗がりは .scrim。ここは中身の並べ方だけ。 */
   .overlay {
-    position: absolute;
-    inset: 0 0 auto 0;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 2vw;
     padding: 2.4vh 2vw 5vh;
-    background: linear-gradient(to bottom, rgb(0 0 0 / 0.72), transparent);
-    pointer-events: none;
   }
   .clock {
     font-size: 1.8vw;
@@ -169,11 +152,8 @@
     opacity: 1;
   }
 
+  /* 配信していない間は映像が無いので、透過ではなく完全に黒で塗る。 */
   .idle {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-content: center;
     background: #000;
   }
   .idle p {

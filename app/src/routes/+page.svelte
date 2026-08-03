@@ -97,7 +97,7 @@
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={videoEl} playsinline muted autoplay controls preload="none"></video>
 
-    <div class="chrome" class:visible={chromeVisible || pinned}>
+    <div class="scrim chrome" class:visible={chromeVisible || pinned}>
       <div class="chrome-top">
         <Wordmark live={player.isLive} />
 
@@ -118,16 +118,16 @@
     <!-- 伝えることがあるときだけ出す。接続中は出さない
          （読み込み表示はブラウザ内蔵プレイヤーに任せる）。 -->
     {#if player.state === 'waiting'}
-      <div class="notice" role="status" aria-live="polite">
+      <div class="cover" role="status" aria-live="polite">
         <p>このチャンネルはまだ配信されていません</p>
         <small>始まると自動で再生されます</small>
       </div>
     {:else if player.state === 'blocked'}
-      <div class="notice">
+      <div class="cover">
         <button class="resume" type="button" onclick={() => player.resume()}>▶ 再生する</button>
       </div>
     {:else if player.state === 'unsupported'}
-      <div class="notice" role="status">
+      <div class="cover" role="status">
         <p>このブラウザでは再生できません</p>
         <small>Safari / Chrome の最新版でお試しください</small>
       </div>
@@ -169,21 +169,7 @@
     }
   }
 
-  /* ---- 映像 ---- */
-  .stage {
-    position: relative;
-    background: #000;
-    min-height: 0;
-    display: grid;
-    place-items: center;
-  }
-  .stage video {
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    background: #000;
-  }
+  /* ---- 映像（枠は app.css の .stage） ---- */
   @media (max-width: 999px) {
     /* 縦画面では映像を 16:9 に留め、残りをパネルに渡す */
     .stage {
@@ -192,20 +178,9 @@
   }
 
   /* ---- 映像に重なる chrome ---- */
+  /* 位置と暗がりは .scrim。ここは出入りの制御と余白だけ。 */
   .chrome {
-    position: absolute;
-    inset: 0 0 auto 0;
     padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) var(--sp-6);
-    /* 上端だけ暗くして文字を読ませる。面（背景色の板）は作らない。
-       モバイルでロゴとタブが 2 行に折り返しても文字が読めるよう、
-       暗い部分を下まで保ってから透明にする。 */
-    background: linear-gradient(
-      to bottom,
-      rgb(0 0 0 / 0.85) 0%,
-      rgb(0 0 0 / 0.7) 45%,
-      rgb(0 0 0 / 0.35) 75%,
-      transparent 100%
-    );
     opacity: 0;
     transition: opacity 200ms ease;
     pointer-events: none;
@@ -255,27 +230,6 @@
     outline-offset: 3px;
   }
 
-  /* ---- 通知（配信前など） ---- */
-  .notice {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: var(--sp-3);
-    text-align: center;
-    padding: var(--sp-5);
-    background: rgb(0 0 0 / 0.7);
-    pointer-events: none;
-  }
-  .notice p {
-    margin: 0;
-    font-size: var(--fs-md);
-  }
-  .notice small {
-    color: var(--fg-muted);
-    font-size: var(--fs-sm);
-  }
   .resume {
     pointer-events: auto;
     appearance: none;
