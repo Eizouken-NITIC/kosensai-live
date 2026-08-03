@@ -72,7 +72,8 @@ kosensai-broadcast/
 │  ├─ scripts/                up / down / check / load-test
 │  └─ client/pull.sh          視聴クライアントのシミュレータ
 └─ docs/
-   └─ checklist.md            本番前チェックリスト
+   ├─ test-procedure.md       ★ テスト手順（段階順）
+   └─ checklist.md            本番前チェックリスト（網羅性）
 ```
 
 各ディレクトリの README がそのマシンの手順書。まずそこを読む。
@@ -85,7 +86,8 @@ kosensai-broadcast/
 | 現場の機材を組む | [hosts/field/README.md](hosts/field/README.md) |
 | 配信サイトを触る | [web/README.md](web/README.md) |
 | 手元で動かして確認する | [rehearsal/README.md](rehearsal/README.md) |
-| 本番前の確認 | [docs/checklist.md](docs/checklist.md) |
+| **テストを進める** | [docs/test-procedure.md](docs/test-procedure.md) — 段階順の手順 |
+| 本番前の確認 | [docs/checklist.md](docs/checklist.md) — 網羅性チェック |
 
 ### なぜモノレポか（submodule を使わない理由）
 
