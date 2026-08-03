@@ -38,6 +38,19 @@ Notion「ソフトウェア構成・設定例 §5」「インフラ・ネット�
 - [ ] `hosts/server/scripts/preflight.sh` が全部 OK
 - [ ] `docker compose up -d` → `docker compose ps` で両コンテナ Up
 
+## B-2. 手元で先に潰せること（サーバー調達を待たずにできる）
+
+`rehearsal/` を使えば NW 班の情報を待たずにここまで確認できる。
+
+- [x] 視聴ページの Ch タブ切替・`?ch=` 直接開き
+- [x] 配信開始前は「まだ配信が始まっていないようです」→ 配信開始で**自動再生**（リロード不要）
+- [x] publisher の切断 → 再開で自動復帰
+- [x] Caddy の `/hls` Location 書き戻しが効いている（無いと映像が永久に始まらない）
+- [x] MediaMTX の `Cache-Control` が Caddy に潰されていない
+- [x] 40 セッション同時（10人 × 4Ch）でエラー 0
+- [ ] 公式サイトの iframe が狭い枠でどう見えるかを目視
+- [ ] サイネージページを実際の解像度で表示して文字サイズを確認
+
 ## C. ソフト面の疎通
 
 - [ ] `hosts/server/scripts/smoke-test.sh ch1` が MediaMTX 直 / Caddy 経由の両方 OK

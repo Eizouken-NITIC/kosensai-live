@@ -67,6 +67,10 @@ kosensai-broadcast/
 │  ├─ config.json           ★ Ch 定義と公式サイト URL の単一の情報源
 │  ├─ assets/                 theme.css(暫定) / viewer.css / signage.css / player.js
 │  └─ vendor/hls.min.js
+├─ rehearsal/                 ★ ローカルリハーサル環境（PC 1台で全部立ち上がる）
+│  ├─ docker-compose.yml      本番の設定をマウントして使う + テストパターン4本
+│  ├─ scripts/                up / down / check / load-test
+│  └─ client/pull.sh          視聴クライアントのシミュレータ
 └─ docs/
    └─ checklist.md            本番前チェックリスト
 ```
@@ -80,6 +84,7 @@ kosensai-broadcast/
 | サイネージ端末を置く | [hosts/signage/README.md](hosts/signage/README.md) |
 | 現場の機材を組む | [hosts/field/README.md](hosts/field/README.md) |
 | 配信サイトを触る | [web/README.md](web/README.md) |
+| 手元で動かして確認する | [rehearsal/README.md](rehearsal/README.md) |
 | 本番前の確認 | [docs/checklist.md](docs/checklist.md) |
 
 ### なぜモノレポか（submodule を使わない理由）
@@ -121,7 +126,16 @@ docker compose up -d
 ./scripts/smoke-test.sh ch1             # 疎通確認
 ```
 
-配信サイトの見た目だけ確認したい場合はサーバー不要:
+**サーバーを用意せず手元で全部動かす場合**（配信サイトの確認はこちらが早い）:
+
+```bash
+cd rehearsal
+./scripts/up.sh          # テストパターン4本 → MediaMTX → Caddy → 視聴ページ
+./scripts/check.sh       # 疎通確認
+./scripts/down.sh
+```
+
+見た目だけなら静的配信でも足りる:
 
 ```bash
 python3 -m http.server 8080 --directory web

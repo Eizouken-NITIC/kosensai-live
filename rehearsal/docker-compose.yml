@@ -1,0 +1,218 @@
+# ローカルリハーサル環境
+#
+# 本番と同じ mediamtx.yml / Caddyfile / web/ を **コピーせずマウントして** 使う。
+# コピーを置くと必ず本番とズレるので、ここでは参照だけにしてある。
+# 起動は scripts/up.sh から（自己署名証明書の生成が要るため）。
+#
+# ネットワークの都合:
+#   本番は mediamtx も caddy も network_mode: host。macOS の Docker Desktop では
+#   host ネットワークが素直に使えないので、ここでは caddy と publisher を
+#   mediamtx のネットワーク名前空間に相乗りさせている。
+#   こうすると caddy から 127.0.0.1:8888 で MediaMTX に届くため、
+#   本番の Caddyfile（hlsAddress が 127.0.0.1 前提）をそのまま使える。
+
+x-passphrases: &passphrases
+  # ⚠️ リハーサル専用の使い捨て値。本番は hosts/server/.env に別の値を入れる。
+  MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE: rehearsal-ch1-passphrase
+  MTX_PATHS_CH2_SRTPUBLISHPASSPHRASE: rehearsal-ch2-passphrase
+  MTX_PATHS_CH3_SRTPUBLISHPASSPHRASE: rehearsal-ch3-passphrase
+  MTX_PATHS_CH4_SRTPUBLISHPASSPHRASE: rehearsal-ch4-passphrase
+
+x-publisher: &publisher
+  # ffmpeg 同梱タグ。arm64/amd64 どちらもネイティブで動く
+  image: bluenviron/mediamtx:1.19.3-ffmpeg
+  network_mode: "service:mediamtx"
+  depends_on: [mediamtx]
+  restart: unless-stopped
+  entrypoint: ["ffmpeg"]
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1.19.3
+    container_name: rehearsal-mediamtx
+    restart: unless-stopped
+    environment: *passphrases
+    volumes:
+      - ../hosts/server/mediamtx.yml:/mediamtx.yml:ro
+    ports:
+      # 視聴は https://live.kosensai.ichinoseki.ac.jp:8443/（/etc/hosts に要追記）
+      - "8443:443"
+      # SRT。外から手で送り込みたいとき用（publisher は内部で完結する）
+      - "8890:8890/udp"
+    # HLS(127.0.0.1:8888) は本番同様わざと公開しない。Caddy 経由でのみ触れる。
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    container_name: rehearsal-caddy
+    restart: unless-stopped
+    network_mode: "service:mediamtx"
+    depends_on: [mediamtx]
+    volumes:
+      - ../hosts/server/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - ../web:/srv/live:ro
+
+  # --- テストパターン送出 --------------------------------------------------
+  # イメージにフォントが無いので drawtext は使えない。Ch の見分けは
+  # 色相と音程でつける。testsrc はカウンタを描くので遅延の目視にも使える。
+  #
+  #   Ch1 そのまま(A 440Hz) / Ch2 緑寄り(C 523Hz)
+  #   Ch3 青寄り(E 659Hz)   / Ch4 紫寄り(G 784Hz)
+  #
+  # profile を付けてあるので、映像を流すときだけ up.sh が起動する。
+
+  pub-ch1:
+    <<: *publisher
+    container_name: rehearsal-pub-ch1
+    profiles: ["publish"]
+    command:
+      - "-hide_banner"
+      - "-loglevel"
+      - "warning"
+      - "-re"
+      - "-f"
+      - "lavfi"
+      - "-i"
+      - "testsrc=size=1280x720:rate=30"
+      - "-f"
+      - "lavfi"
+      - "-i"
+      - "sine=frequency=440:sample_rate=48000"
+      - "-c:v"
+      - "libx264"
+      - "-preset"
+      - "veryfast"
+      - "-tune"
+      - "zerolatency"
+      - "-b:v"
+      - "2500k"
+      - "-g"
+      - "60"
+      - "-pix_fmt"
+      - "yuv420p"
+      - "-c:a"
+      - "aac"
+      - "-b:a"
+      - "128k"
+      - "-ar"
+      - "48000"
+      - "-f"
+      - "mpegts"
+      - "srt://127.0.0.1:8890?streamid=publish:ch1&passphrase=rehearsal-ch1-passphrase&latency=120000"
+
+  pub-ch2:
+    <<: *publisher
+    container_name: rehearsal-pub-ch2
+    profiles: ["publish"]
+    command:
+      - "-hide_banner"
+      - "-loglevel"
+      - "warning"
+      - "-re"
+      - "-f"
+      - "lavfi"
+      - "-i"
+      - "testsrc=size=1280x720:rate=30,hue=h=120"
+      - "-f"
+      - "lavfi"
+      - "-i"
+      - "sine=frequency=523:sample_rate=48000"
+      - "-c:v"
+      - "libx264"
+      - "-preset"
+      - "veryfast"
+      - "-tune"
+      - "zerolatency"
+      - "-b:v"
+      - "2500k"
+      - "-g"
+      - "60"
+      - "-pix_fmt"
+      - "yuv420p"
+      - "-c:a"
+      - "aac"
+      - "-b:a"
+      - "128k"
+      - "-ar"
+      - "48000"
+      - "-f"
+      - "mpegts"
+      - "srt://127.0.0.1:8890?streamid=publish:ch2&passphrase=rehearsal-ch2-passphrase&latency=120000"
+
+  pub-ch3:
+    <<: *publisher
+    container_name: rehearsal-pub-ch3
+    profiles: ["publish"]
+    command:
+      - "-hide_banner"
+      - "-loglevel"
+      - "warning"
+      - "-re"
+      - "-f"
+      - "lavfi"
+      - "-i"
+      - "testsrc=size=1280x720:rate=30,hue=h=210"
+      - "-f"
+      - "lavfi"
+      - "-i"
+      - "sine=frequency=659:sample_rate=48000"
+      - "-c:v"
+      - "libx264"
+      - "-preset"
+      - "veryfast"
+      - "-tune"
+      - "zerolatency"
+      - "-b:v"
+      - "2500k"
+      - "-g"
+      - "60"
+      - "-pix_fmt"
+      - "yuv420p"
+      - "-c:a"
+      - "aac"
+      - "-b:a"
+      - "128k"
+      - "-ar"
+      - "48000"
+      - "-f"
+      - "mpegts"
+      - "srt://127.0.0.1:8890?streamid=publish:ch3&passphrase=rehearsal-ch3-passphrase&latency=120000"
+
+  pub-ch4:
+    <<: *publisher
+    container_name: rehearsal-pub-ch4
+    profiles: ["publish"]
+    command:
+      - "-hide_banner"
+      - "-loglevel"
+      - "warning"
+      - "-re"
+      - "-f"
+      - "lavfi"
+      - "-i"
+      - "testsrc=size=1280x720:rate=30,hue=h=280"
+      - "-f"
+      - "lavfi"
+      - "-i"
+      - "sine=frequency=784:sample_rate=48000"
+      - "-c:v"
+      - "libx264"
+      - "-preset"
+      - "veryfast"
+      - "-tune"
+      - "zerolatency"
+      - "-b:v"
+      - "2500k"
+      - "-g"
+      - "60"
+      - "-pix_fmt"
+      - "yuv420p"
+      - "-c:a"
+      - "aac"
+      - "-b:a"
+      - "128k"
+      - "-ar"
+      - "48000"
+      - "-f"
+      - "mpegts"
+      - "srt://127.0.0.1:8890?streamid=publish:ch4&passphrase=rehearsal-ch4-passphrase&latency=120000"

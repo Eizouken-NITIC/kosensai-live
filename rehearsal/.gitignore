@@ -1,0 +1,4 @@
+# up.sh が生成する自己署名証明書
+certs/
+# load-test.sh の結果
+out/

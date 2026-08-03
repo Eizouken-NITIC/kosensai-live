@@ -148,8 +148,12 @@ python3 -m http.server 8080 --directory web
 `/hls/` が無いので「まだ配信が始まっていないようです」表示になる。
 レイアウト・タブ・iframe の確認はこれで足りる。
 
-映像込みで見たい場合は、配信サーバーを立てて `smoke-test.sh` でテストパターンを
-流しながらブラウザで開く。
+映像込みで見たい場合は `rehearsal/` を使う。PC 1 台でテストパターン 4 本から
+視聴ページまで丸ごと立ち上がる（`rehearsal/README.md`）。
+
+```bash
+cd rehearsal && ./scripts/up.sh
+```
 
 ## 設計上の判断
 
