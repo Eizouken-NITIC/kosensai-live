@@ -28,10 +28,11 @@
     <div class="stage">
       <video id="video" playsinline muted autoplay controls preload="none"></video>
 
-      <div class="stage-overlay is-shown" id="overlay" role="status" aria-live="polite">
-        <div class="spinner" id="spinner"></div>
-        <p id="overlayMsg">映像に接続しています…</p>
-        <small id="overlayHint">学内Wi-Fiに接続されているかご確認ください</small>
+      <!-- 接続中はブラウザ内蔵プレイヤーのインジケータに任せ、ここは出さない。
+           出すのは「伝えることがあるとき」だけ。 -->
+      <div class="stage-overlay" id="overlay" role="status" aria-live="polite">
+        <p id="overlayMsg"></p>
+        <small id="overlayHint"></small>
         <button class="btn is-hidden" id="overlayBtn" type="button">▶ 再生する</button>
       </div>
     </div>
@@ -80,7 +81,6 @@
   var video    = document.getElementById('video');
   var tabsEl   = document.getElementById('tabs');
   var overlay  = document.getElementById('overlay');
-  var spinner  = document.getElementById('spinner');
   var msgEl    = document.getElementById('overlayMsg');
   var hintEl   = document.getElementById('overlayHint');
   var btnEl    = document.getElementById('overlayBtn');
@@ -93,15 +93,17 @@
   var player = null;
 
   // ---- 表示の切り替え ------------------------------------------------------
-  function showOverlay(message, hint, opts) {
-    opts = opts || {};
+  function showOverlay(message, hint, onClick) {
     msgEl.textContent = message;
     hintEl.textContent = hint || '';
     hintEl.classList.toggle('is-hidden', !hint);
-    spinner.classList.toggle('is-hidden', !!opts.noSpinner);
-    btnEl.classList.toggle('is-hidden', !opts.onClick);
-    btnEl.onclick = opts.onClick || null;
+    btnEl.classList.toggle('is-hidden', !onClick);
+    btnEl.onclick = onClick || null;
     overlay.classList.add('is-shown');
+  }
+
+  function hideOverlay() {
+    overlay.classList.remove('is-shown');
   }
 
   function setBadge(live, text) {
@@ -111,24 +113,23 @@
 
   function onState(state, detail) {
     if (state === 'playing') {
-      overlay.classList.remove('is-shown');
+      hideOverlay();
       setBadge(true, 'LIVE');
+    } else if (state === 'connecting') {
+      // まだ失敗していないので何も断定しない。読み込み表示はブラウザに任せる。
+      hideOverlay();
+      setBadge(false, '接続中…');
     } else if (state === 'waiting') {
-      setBadge(false, detail.retried ? '再接続中…' : '待機中');
-      showOverlay(
-        detail.retried ? 'まだ配信が始まっていないようです' : '映像に接続しています…',
-        detail.retried ? '10秒ごとに自動で再接続します' : '学内Wi-Fiに接続されているかご確認ください'
-      );
+      setBadge(false, '待機中');
+      showOverlay('このチャンネルはまだ配信されていません',
+                  '配信が始まると自動で再生されます');
     } else if (state === 'blocked') {
       setBadge(false, '待機中');
-      showOverlay('タップで再生を開始します', '', {
-        noSpinner: true,
-        onClick: detail.resume
-      });
+      showOverlay('タップで再生を開始します', '', detail.resume);
     } else if (state === 'unsupported') {
       setBadge(false, '非対応');
       showOverlay('このブラウザは再生に対応していません',
-                  'Safari / Chrome の最新版でお試しください', { noSpinner: true });
+                  'Safari / Chrome の最新版でお試しください');
     }
   }
 

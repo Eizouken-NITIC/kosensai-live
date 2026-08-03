@@ -228,23 +228,10 @@
   font-size: var(--fs-base);
   font-weight: 600;
 }
-.spinner {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 3px solid var(--stage-line);
-  border-top-color: var(--accent);
-  animation: spin 0.9s linear infinite;
-}
 .is-hidden {
   display: none !important;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @keyframes pulse {
   50% {
     opacity: 0.25;

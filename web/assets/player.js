@@ -4,15 +4,21 @@
  * 見せ方（文言・レイアウト）は各ページ側の責務にしてある。
  *
  * 状態:
- *   'waiting'     配信前 or 切断中。10 秒ごとに自動リトライ中
+ *   'connecting'  接続を試している最中。まだ失敗していない
  *   'playing'     再生中
+ *   'waiting'     実際に取得に失敗した（＝その Ch はまだ配信されていない）
  *   'blocked'     ブラウザの自動再生ポリシーで止められた（ユーザー操作が必要）
  *   'unsupported' HLS を再生できないブラウザ
+ *
+ * connecting と waiting を分けているのは、Ch を切り替えた直後に
+ * 「まだ配信が始まっていない」と断定してしまわないため。
  */
 (function (global) {
   'use strict';
 
-  var RETRY_MS = 10000; // 配信開始前でも端末を放置しておけるよう自動リトライ
+  // 失敗のたびに間隔を延ばす。切り替え直後の一時的な失敗からは素早く復帰し、
+  // 配信開始前に放置される場合は 10 秒間隔に落ち着かせる。
+  var RETRY_MS = [1000, 2000, 4000, 8000, 10000];
 
   // config.json が読めなかったときの保険。中身は config.json と揃えること。
   var FALLBACK_CONFIG = {
@@ -55,7 +61,7 @@
     var hls = null;
     var retryTimer = null;
     var currentCh = null;
-    var everPlayed = false;
+    var failures = 0;
 
     function emit(state, detail) {
       if (onState) { onState(state, detail || {}); }
@@ -65,9 +71,13 @@
       if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
     }
 
-    function scheduleRetry() {
+    /** 取得に失敗したときの共通処理。待ち時間を延ばしつつ再試行する。 */
+    function fail() {
       clearRetry();
-      retryTimer = setTimeout(function () { load(currentCh); }, RETRY_MS);
+      var wait = RETRY_MS[Math.min(failures, RETRY_MS.length - 1)];
+      failures += 1;
+      emit('waiting', { channel: currentCh, attempt: failures, nextRetryMs: wait });
+      retryTimer = setTimeout(function () { load(currentCh, true); }, wait);
     }
 
     function teardown() {
@@ -87,11 +97,19 @@
       }
     }
 
-    function load(ch) {
+    /**
+     * @param {string} ch
+     * @param {boolean} [isRetry] 内部からの再試行かどうか。
+     *   外から呼ぶとき（初回・Ch 切替）は省略する。バックオフが初期化される。
+     */
+    function load(ch, isRetry) {
       if (!ch) { return; }
       teardown();
       currentCh = ch;
-      emit('waiting', { channel: ch, retried: everPlayed });
+      if (!isRetry) {
+        failures = 0;
+        emit('connecting', { channel: ch });
+      }
 
       var url = '/hls/' + ch + '/index.m3u8';
       var canNative = !!video.canPlayType('application/vnd.apple.mpegurl');
@@ -100,7 +118,7 @@
       // Safari(iOS/macOS) はネイティブ HLS の方が安定かつ省電力なので優先する
       if (!canHlsJs && canNative) {
         video.src = url;
-        video.addEventListener('error', scheduleRetry, { once: true });
+        video.addEventListener('error', fail, { once: true });
         attemptPlay();
         return;
       }
@@ -130,8 +148,7 @@
           return;
         }
         // NETWORK_ERROR の 404 = MediaMTX にまだ publish されていない = 配信開始前
-        emit('waiting', { channel: currentCh, retried: true });
-        scheduleRetry();
+        fail();
       });
 
       hls.loadSource(url);
@@ -140,16 +157,14 @@
 
     video.addEventListener('playing', function () {
       clearRetry();
-      everPlayed = true;
+      failures = 0;
       emit('playing', { channel: currentCh });
     });
-    video.addEventListener('error', scheduleRetry);
-    video.addEventListener('ended', function () {
-      emit('waiting', { channel: currentCh, retried: true });
-      scheduleRetry();
-    });
+    video.addEventListener('error', fail);
+    video.addEventListener('ended', fail);
 
-    // タブが背面に回ったらリトライを止め、戻ったらライブ先頭に復帰させる
+    // タブが背面に回ったらリトライを止め、戻ったらライブ先頭に復帰させる。
+    // 復帰は「新しい接続」扱いにして、待たされずにすぐ試す。
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) {
         clearRetry();
@@ -165,5 +180,5 @@
     };
   }
 
-  global.KosensaiPlayer = { create: create, loadConfig: loadConfig, RETRY_MS: RETRY_MS };
+  global.KosensaiPlayer = { create: create, loadConfig: loadConfig };
 })(window);
