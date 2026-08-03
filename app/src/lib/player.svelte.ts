@@ -1,3 +1,5 @@
+import type { PlayerState } from './types';
+
 /* HLS 再生の状態機械。
  *
  * 状態:
@@ -16,27 +18,50 @@
 // 起きないため、上限がそのまま「配信開始に気づくまでの待ち時間」になる。
 const RETRY_MS = [1000, 2000, 3000, 5000];
 
+/* hls.js は <script> で後から読むため、型は使うぶんだけ最小限に持つ。
+   同梱している 1.6.15 の型定義パッケージは入れていない。 */
+type HlsInstance = {
+  on(event: string, cb: (evt: string, data: HlsErrorData) => void): void;
+  loadSource(url: string): void;
+  attachMedia(el: HTMLVideoElement): void;
+  recoverMediaError(): void;
+  destroy(): void;
+};
+type HlsErrorData = { fatal: boolean; type: string };
+type HlsConstructor = {
+  new (config: Record<string, unknown>): HlsInstance;
+  isSupported(): boolean;
+  Events: { MANIFEST_PARSED: string; ERROR: string };
+  ErrorTypes: { MEDIA_ERROR: string };
+};
+
+declare global {
+  interface Window {
+    Hls?: HlsConstructor;
+  }
+}
+
 /** hls.js は static/vendor から読む（学内完結のため CDN を使わない） */
-function loadHlsJs() {
+function loadHlsJs(): Promise<HlsConstructor> {
   if (window.Hls) return Promise.resolve(window.Hls);
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = '/vendor/hls.min.js';
-    s.onload = () => resolve(window.Hls);
+    s.onload = () => (window.Hls ? resolve(window.Hls) : reject(new Error('hls.js が読めなかった')));
     s.onerror = () => reject(new Error('hls.js を読み込めなかった'));
     document.head.appendChild(s);
   });
 }
 
 export function createPlayer() {
-  let state = $state('connecting');
-  let channel = $state(null);
+  let state = $state<PlayerState>('connecting');
+  let channel = $state<string | null>(null);
 
-  let video = null;
-  let hls = null;
-  let retryTimer = null;
+  let video: HTMLVideoElement | null = null;
+  let hls: HlsInstance | null = null;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let failures = 0;
-  let resumeFn = null;
+  let resumeFn: (() => void) | null = null;
 
   function clearRetry() {
     if (retryTimer) {
@@ -80,13 +105,9 @@ export function createPlayer() {
     }
   }
 
-  /**
-   * @param {string} ch
-   * @param {boolean} [isRetry] 内部からの再試行か。
-   *   外から呼ぶとき（初回・Ch 切替）は省略する。バックオフが初期化される。
-   */
-  async function load(ch, isRetry = false) {
+  async function load(ch: string | null, isRetry = false) {
     if (!ch || !video) return;
+    const el = video;
     teardown();
     channel = ch;
     if (!isRetry) {
@@ -95,9 +116,9 @@ export function createPlayer() {
     }
 
     const url = `/hls/${ch}/index.m3u8`;
-    const canNative = !!video.canPlayType('application/vnd.apple.mpegurl');
+    const canNative = !!el.canPlayType('application/vnd.apple.mpegurl');
 
-    let Hls = null;
+    let Hls: HlsConstructor | null = null;
     try {
       Hls = await loadHlsJs();
     } catch {
@@ -107,17 +128,18 @@ export function createPlayer() {
 
     // Safari(iOS/macOS) はネイティブ HLS の方が安定かつ省電力なので優先する
     if (!canHlsJs && canNative) {
-      video.src = url;
-      video.addEventListener('error', fail, { once: true });
+      el.src = url;
+      el.addEventListener('error', fail, { once: true });
       attemptPlay();
       return;
     }
-    if (!canHlsJs) {
+    if (!canHlsJs || !Hls) {
       state = 'unsupported';
       return;
     }
 
-    hls = new Hls({
+    const H = Hls;
+    const instance = new H({
       // ライブ先頭に追従しつつ、Wi-Fi の揺れに耐えるバッファ設定
       lowLatencyMode: false,
       liveSyncDurationCount: 3,
@@ -132,24 +154,26 @@ export function createPlayer() {
       fragLoadingMaxRetry: 4
     });
 
-    hls.on(Hls.Events.MANIFEST_PARSED, attemptPlay);
-    hls.on(Hls.Events.ERROR, (_evt, data) => {
+    hls = instance;
+    instance.on(H.Events.MANIFEST_PARSED, attemptPlay);
+    instance.on(H.Events.ERROR, (_evt: string, data: HlsErrorData) => {
       if (!data.fatal) return;
-      if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-        hls.recoverMediaError();
+      if (data.type === H.ErrorTypes.MEDIA_ERROR) {
+        instance.recoverMediaError();
         return;
       }
       // NETWORK_ERROR の 404 = MediaMTX にまだ publish されていない = 配信開始前
       fail();
     });
 
-    hls.loadSource(url);
-    hls.attachMedia(video);
+    instance.loadSource(url);
+    instance.attachMedia(el);
   }
 
-  /** <video> を渡して初期化する。 */
-  function attach(el) {
+  /** <video> を渡して初期化する。戻り値は後片付け用。 */
+  function attach(el: HTMLVideoElement) {
     video = el;
+    const v = el;
 
     const onPlaying = () => {
       clearRetry();
@@ -159,21 +183,21 @@ export function createPlayer() {
     const onVisibility = () => {
       if (document.hidden) {
         clearRetry();
-      } else if (channel && (video.paused || video.readyState < 3)) {
+      } else if (channel && (v.paused || v.readyState < 3)) {
         // 復帰は「新しい接続」扱いにして、待たされずにすぐ試す
         load(channel);
       }
     };
 
-    video.addEventListener('playing', onPlaying);
-    video.addEventListener('error', fail);
-    video.addEventListener('ended', fail);
+    v.addEventListener('playing', onPlaying);
+    v.addEventListener('error', fail);
+    v.addEventListener('ended', fail);
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      video.removeEventListener('playing', onPlaying);
-      video.removeEventListener('error', fail);
-      video.removeEventListener('ended', fail);
+      v.removeEventListener('playing', onPlaying);
+      v.removeEventListener('error', fail);
+      v.removeEventListener('ended', fail);
       document.removeEventListener('visibilitychange', onVisibility);
       teardown();
       video = null;

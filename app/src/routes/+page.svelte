@@ -1,35 +1,36 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
   import Wordmark from '$lib/components/Wordmark.svelte';
+  import type { Channel, OfficialSite, SiteConfig } from '$lib/types';
 
   const DEFAULT_CH = 'ch1';
   const STORE_KEY = 'kosensai.ch';
-  const CHROME_HIDE_MS = 3000;
+  const OVERLAY_HIDE_MS = 3000;
 
   const player = createPlayer();
 
-  let channels = $state([]);
-  let official = $state({ homeUrl: '', embedUrl: '' });
+  let channels = $state<Channel[]>([]);
+  let official = $state<OfficialSite>({ homeUrl: '', embedUrl: '' });
   let current = $state(DEFAULT_CH);
-  let chromeVisible = $state(true);
+  let overlayVisible = $state(true);
   /** @type {HTMLVideoElement | null} */
-  let videoEl = $state(null);
+  let videoEl = $state<HTMLVideoElement | null>(null);
   /** @type {HTMLElement | null} */
 
-  let hideTimer = null;
+  let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
-  // 再生していない間は chrome を出しっぱなしにする。
+  // 再生していない間はバーを出しっぱなしにする。
   // 何も映っていない画面で UI まで消えると、ただの黒い板になるため。
   const pinned = $derived(!player.isLive);
 
-  function showChrome() {
-    chromeVisible = true;
+  function showOverlay() {
+    overlayVisible = true;
     clearTimeout(hideTimer);
-    if (!pinned) hideTimer = setTimeout(() => (chromeVisible = false), CHROME_HIDE_MS);
+    if (!pinned) hideTimer = setTimeout(() => (overlayVisible = false), OVERLAY_HIDE_MS);
   }
 
-  function select(id, updateUrl = true) {
+  function select(id: string | null, updateUrl = true) {
     const ch = channels.find((c) => c.id === id) ?? channels[0];
     if (!ch) return;
     current = ch.id;
@@ -41,7 +42,7 @@
       /* プライベートブラウズ */
     }
     player.load(ch.id);
-    showChrome();
+    showOverlay();
   }
 
   onMount(() => {
@@ -59,10 +60,11 @@
       /* 読めなくても再生自体は続く。コントロールが出ないだけ。 */
     });
 
+    if (!videoEl) return;
     const detach = player.attach(videoEl);
 
     (async () => {
-      let cfg = { channels: [], officialSite: {} };
+      let cfg: Partial<SiteConfig> = {};
       try {
         const r = await fetch('/config.json', { cache: 'no-cache' });
         if (r.ok) cfg = await r.json();
@@ -70,7 +72,7 @@
         /* 設定が読めなくても再生自体は試みる */
       }
       channels = cfg.channels ?? [];
-      official = cfg.officialSite ?? {};
+      official = cfg.officialSite ?? { homeUrl: '', embedUrl: '' };
 
       const params = new URLSearchParams(location.search);
       let initial = params.get('ch');
@@ -90,11 +92,11 @@
     };
   });
 
-  // 再生が止まったら chrome を出し直す
+  // 再生が止まったらバーを出し直す
   $effect(() => {
     if (pinned) {
       clearTimeout(hideTimer);
-      chromeVisible = true;
+      overlayVisible = true;
     }
   });
 </script>
@@ -102,13 +104,13 @@
 <svelte:head><title>KOSENSAI-LIVE</title></svelte:head>
 
 <!-- 映像の <section> にハンドラを付けると a11y_no_static_element_interactions
-     が出るため、chrome の復帰は body 側で受ける。 -->
-<svelte:body onmousemove={showChrome} onpointerdown={showChrome} onfocusin={showChrome} />
+     が出るため、バーの復帰は body 側で受ける。 -->
+<svelte:body onmousemove={showOverlay} onpointerdown={showOverlay} onfocusin={showOverlay} />
 
 <div class="page">
-  <!-- 映像とその上に重なる chrome。ヘッダー用の帯を別に持たないので、
+  <!-- 映像とその上に重なる上端のバー。ヘッダー用の帯を別に持たないので、
        映像がビューポートの縦を使い切れる（下に空白が残らない）。 -->
-  <section bind:this={stageEl} class="stage">
+  <section class="stage">
     <!-- ネイティブコントロールにはライブ点へ戻る導線が無く、シークバーの
          末端まで手で戻すしかない。mediastreamtype="live" を明示すると
          LIVE ボタンが出て、押すとライブ点へシークする。MediaMTX の HLS は
@@ -127,8 +129,8 @@
       </media-control-bar>
     </media-controller>
 
-    <div class="scrim chrome" class:visible={chromeVisible || pinned}>
-      <div class="chrome-top">
+    <div class="scrim topbar" class:visible={overlayVisible || pinned}>
+      <div class="topbar-inner">
         <Wordmark live={player.isLive} />
 
         <nav aria-label="チャンネル">
@@ -230,19 +232,19 @@
     }
   }
 
-  /* ---- 映像に重なる chrome ---- */
+  /* ---- 映像に重なる上端のバー ---- */
   /* 位置と暗がりは .scrim。ここは出入りの制御と余白だけ。 */
-  .chrome {
+  .topbar {
     padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) var(--sp-6);
     opacity: 0;
     transition: opacity 200ms ease;
     pointer-events: none;
   }
-  .chrome.visible {
+  .topbar.visible {
     opacity: 1;
     pointer-events: auto;
   }
-  .chrome-top {
+  .topbar-inner {
     display: flex;
     /* 文字どうしのベースラインで揃える。center にすると
        タブの下線を含んだ箱の中央がロゴに揃ってしまい、文字がずれる。 */

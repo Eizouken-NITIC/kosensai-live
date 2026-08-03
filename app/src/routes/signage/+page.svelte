@@ -1,19 +1,20 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
   import Wordmark from '$lib/components/Wordmark.svelte';
+  import type { OfficialSite } from '$lib/types';
 
   const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 公式サイト側の更新を拾う
   const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転のリーク対策（無人運用の保険）
 
   const player = createPlayer();
 
-  let official = $state({ embedUrl: '' });
+  let official = $state<Partial<OfficialSite>>({ embedUrl: '' });
   let clock = $state('--:--');
   /** @type {HTMLVideoElement | null} */
-  let videoEl = $state(null);
+  let videoEl = $state<HTMLVideoElement | null>(null);
   /** @type {HTMLIFrameElement | null} */
-  let frameEl = $state(null);
+  let frameEl = $state<HTMLIFrameElement | null>(null);
 
   function tick() {
     const d = new Date();
@@ -21,6 +22,7 @@
   }
 
   onMount(() => {
+    if (!videoEl) return;
     const detach = player.attach(videoEl);
     const ch = new URLSearchParams(location.search).get('ch') ?? 'ch4';
     player.load(ch);

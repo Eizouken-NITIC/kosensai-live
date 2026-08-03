@@ -1,7 +1,7 @@
-<script>
+<script lang="ts">
   /* LIVE 部分の色そのものが配信状態のインジケータ（別バッジは置かない）。
      配信 UI の慣習に合わせて点滅はさせない。 */
-  let { live = false, size = 'md' } = $props();
+  let { live = false, size = 'md' }: { live?: boolean; size?: 'md' | 'lg' } = $props();
 </script>
 
 <span class="mark" class:live data-size={size}>
