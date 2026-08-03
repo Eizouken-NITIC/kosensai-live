@@ -31,15 +31,21 @@
 | ディスク | 20GB（ログ・セグメント一時ファイル） |
 | ネットワーク | ブリッジ接続・配信用 VLAN・**固定 IP** |
 
-### なぜ MediaMTX と Caddy を分けないか
+### MediaMTX と Caddy の同居について
 
-**分けられない。** MediaMTX は `hlsAddress: 127.0.0.1:8888` でループバックにしか
-バインドせず、TLS 終端を Caddy に集約する設計になっている
-（`hlsTrustedProxies: [127.0.0.1]`）。別マシンに分けると HLS をネットワークに
-晒すことになり、「外部に直接晒さない」という前提が崩れる。
-同一ホストに置き、両方 `network_mode: host` で動かす。
+Notion「インフラ・ネットワーク連携要件 §3-1」で決定済み。同一ホストの :443 で
+Caddy を TLS 終端とし、MediaMTX は `hlsAddress: 127.0.0.1:8888`・
+`hlsTrustedProxies: [127.0.0.1]` で待ち受ける（値も同 §3-1 の表で指定されている）。
+このリポジトリはその決定をそのまま実装しているだけで、ここで再検討はしていない。
 
-### なぜ LXC ではなく VM か
+なお `hlsAddress` は MediaMTX の設定値であって仕様上の制約ではない
+（既定は `:8888` で全インターフェース）。将来分離したくなった場合は、
+この値と MediaMTX 側のアクセス制御を見直せば技術的には分離できる。
+
+### VM か LXC か（Notion では未確定。ここで決めた）
+
+Notion「ソフトウェア構成・設定例 §8」は **LXC（または VM）** とだけ書かれていて
+どちらでもよい形になっている。ここでは **VM を選ぶ**。
 
 SRT の再送バッファのために `net.core.rmem_max` を上げる必要があるが、
 **この sysctl がネットワーク名前空間ごとに持てるかどうかはカーネル次第**。
@@ -113,16 +119,32 @@ docker compose restart mediamtx             # mediamtx.yml の変更を反映
 
 ## 5. 設計上の判断
 
-- **`network_mode: host`** … bridge だと SRT の UDP ポートフォワードで問題が出やすい。
-- **`all_others` パスを定義しない** … 定義するとワイルドカードとして任意のパスへの
-  publish を許してしまう。ch1〜ch4 以外は `path 'chX' is not configured` で拒否される
-  ことを実機確認済み。
-- **`hlsVariant: mpegts` を明示** … MediaMTX v1.19 の既定は `lowLatency`。
-  LL-HLS はリクエスト頻度が大きく増えるため、ブラウザ互換性優先で通常 HLS にしている。
-- **`moq: no`** … v1.19 から MoQ サーバーが既定 on で :8892 を開き、証明書を自動生成する。
-  使わないので明示的に落としている。
-- **Caddy の自動 ACME は無効** … 学内サーバーには外部からの HTTP-01 審査通信が届かない。
-  DNS-01 で手動取得した証明書を `tls` で直指定する。
+### Notion で既に決まっていること（ここでは実装するだけ）
+
+- **Caddy を唯一の TLS 終端とし、MediaMTX と同一ホストに置く**（インフラ §3-1）
+- **`hlsAddress: 127.0.0.1:8888` / `hlsEncryption: no` / `hlsTrustedProxies: [127.0.0.1]`**（同 §3-1 の表）
+- **Caddy の自動 ACME は無効、DNS-01 で手動取得した証明書を直指定**（同 §3-1）。
+  学内サーバーには外部からの HTTP-01 審査通信が届かないため。
+- **`network_mode: host`**（ソフトウェア構成 §8）。bridge だと SRT の UDP
+  ポートフォワードで問題が出やすい。
+- **通常 HLS（セグメント 6 秒）をデフォルトとし、LL-HLS は必要と判明した場合のみ**（同 §1）
+
+### このリポジトリで判断したこと
+
+- **VM を選択**（§1）。Notion は LXC / VM どちらでもよい書き方だった。
+- **`hlsVariant: mpegts` を明示的に書く。** Notion には「デフォルト通常 HLS」と
+  あるが、MediaMTX v1.19 の既定は `lowLatency` に変わっている。明示しないと
+  意図せず LL-HLS になる。
+- **`moq: no`。** v1.19 から MoQ サーバーが既定 on で :8892 を開き、証明書を
+  自動生成する。使わないので落とした。
+- **`all_others` パスを定義しない。** 定義するとワイルドカードとして任意のパスへの
+  publish を許してしまう。ch1〜ch4 以外が `path 'chX' is not configured` で
+  拒否されることは実機確認済み。
+- **パスフレーズを `.env` から `MTX_PATHS_*` で注入。** Notion の例では
+  `mediamtx.yml` に直書きされているが、それだと git に載るため分離した。
+- **Caddy の `/hls` ブロックで CORS / Cache-Control を足さない。** 同一オリジンで
+  CORS チェックが走らないうえ、Caddy の `header` は上書きなので MediaMTX の
+  `private, no-cache` を潰してしまうため。
 
 ## 6. 未確定事項
 
