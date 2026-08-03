@@ -1,10 +1,19 @@
 {
   "_comment": [
-    "チャンネル定義の単一の情報源。ここを直せば視聴ページ・サイネージ・",
-    "hosts/obs/srt-urls.sh の3箇所すべてに反映される。",
-    "id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致させること。",
-    "Ch2（第二体育館）は開催有無が未確定。無くなったらこの配列から1要素消すだけでよい。"
+    "配信サイトの設定。ここが単一の情報源。",
+    "channels: 視聴ページのタブ・サイネージの対象 Ch・hosts/obs/srt-urls.sh が",
+    "  生成する OBS 用 URL・preflight.sh の突き合わせに反映される。",
+    "  id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致させること。",
+    "  Ch2（第二体育館）は開催有無が未確定。無くなったら1要素消すだけでよい。",
+    "officialSite: 視聴ページ・サイネージに iframe で埋め込む公式サイトの URL。",
+    "  2026 の /events（タイムテーブル）と /news（お知らせ）は 2026-08-04 時点で",
+    "  まだ 404。公開されたら embedUrl をそこへ向ける（web/README.md 参照）。"
   ],
+  "officialSite": {
+    "homeUrl": "https://kosensai.ichinoseki.ac.jp/",
+    "embedUrl": "https://kosensai.ichinoseki.ac.jp/",
+    "label": "タイムテーブル・お知らせ"
+  },
   "channels": [
     {
       "id": "ch1",

@@ -22,7 +22,7 @@ Notion「ソフトウェア構成・設定例 §5」「インフラ・ネット�
 | `hosts/obs/srt-urls.sh` の環境変数 | `MTX_HOST` / `OBS_HOST` を実 IP にして実行 |
 | `hosts/server/scripts/smoke-test.sh` | 別ホスト構成なら `SRT_HOST=` を指定 |
 | `hosts/server/Caddyfile` | ドメイン名（既に確定値）。TLS 終端が変わる場合のみ要修正 |
-| `web/channels.json` | Ch2 が無くなる場合は 1 要素削除（`mediamtx.yml` も同時に） |
+| `web/config.json` | Ch2 が無くなる場合は 1 要素削除（`mediamtx.yml` も同時に） |
 
 ---
 
@@ -75,10 +75,14 @@ Notion「ソフトウェア構成・設定例 §5」「インフラ・ネット�
 
 - [ ] hls.js の再生確認 3 環境: **Chrome(Android) / Safari(iOS) / Chromium(RPi)**
 - [ ] Chrome 142+ 実機（Android）で public→private のトップレベル遷移が無警告で通る
-- [ ] `kosensai.ichinoseki.ac.jp` のレスポンスヘッダに `X-Frame-Options` /
-      `CSP frame-ancestors` が**無い**ことを確認（iframe 合成の成立条件）
+- [x] `kosensai.ichinoseki.ac.jp` のレスポンスヘッダに `X-Frame-Options` /
+      `CSP frame-ancestors` が**無い**ことを確認（2026-08-04 確認済み・iframe 成立）
       → `curl -sI https://kosensai.ichinoseki.ac.jp/ | grep -iE 'x-frame|frame-ancestors'`
-      → もし付いていたら iframe を諦め、タイムテーブルへのリンクに切り替える
+      → 公開直前にもう一度確認する。もし付いていたら iframe を諦めてリンクに切り替える
+- [ ] 2026 の `/events`（タイムテーブル）・`/news`（お知らせ）が公開されたら
+      `web/config.json` の `officialSite.embedUrl` をそこへ向ける
+      （2026-08-04 時点では両方 404。トップページは全画面演出＋約 2.3MB で埋め込みに不向き）
+- [ ] 埋め込み先ページを実機の細い枠（幅 360px 相当）で見て、崩れないことを確認
 - [ ] 高専祭 Wi-Fi から `live`（学内 10.x）と `kosensai`（インターネット）へ同時到達できる
 - [ ] 学内 Wi-Fi から `live.kosensai.ichinoseki.ac.jp` → `10.x.x.x` が引ける
 - [ ] iPhone + iCloud プライベートリレー ON で、ドメインブロック後に視聴ページが正常表示される

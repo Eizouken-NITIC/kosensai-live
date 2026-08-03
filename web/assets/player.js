@@ -14,26 +14,36 @@
 
   var RETRY_MS = 10000; // 配信開始前でも端末を放置しておけるよう自動リトライ
 
-  // channels.json が読めなかったときの保険。中身は channels.json と揃えること。
-  var FALLBACK_CHANNELS = [
-    { id: 'ch1', label: 'Ch1 第一体育館', title: '第一体育館 メインステージ', desc: 'ステージ企画の中継' },
-    { id: 'ch2', label: 'Ch2 第二体育館', title: '第二体育館 サブステージ', desc: '屋内展示・吹奏楽など' },
-    { id: 'ch3', label: 'Ch3 屋外遊撃', title: '屋外遊撃カメラ', desc: '屋台エリア・校内の様子' },
-    { id: 'ch4', label: 'Ch4 総合', title: '総合チャンネル', desc: 'ダイジェスト・CM・タイムテーブル' }
-  ];
+  // config.json が読めなかったときの保険。中身は config.json と揃えること。
+  var FALLBACK_CONFIG = {
+    officialSite: {
+      homeUrl: 'https://kosensai.ichinoseki.ac.jp/',
+      embedUrl: 'https://kosensai.ichinoseki.ac.jp/',
+      label: 'タイムテーブル・お知らせ'
+    },
+    channels: [
+      { id: 'ch1', label: 'Ch1 第一体育館', title: '第一体育館 メインステージ', desc: 'ステージ企画の中継' },
+      { id: 'ch2', label: 'Ch2 第二体育館', title: '第二体育館 サブステージ', desc: '屋内展示・吹奏楽など' },
+      { id: 'ch3', label: 'Ch3 屋外遊撃', title: '屋外遊撃カメラ', desc: '屋台エリア・校内の様子' },
+      { id: 'ch4', label: 'Ch4 総合', title: '総合チャンネル', desc: 'ダイジェスト・CM・タイムテーブル' }
+    ]
+  };
 
-  /** channels.json を取得する。失敗しても再生自体は続行できるようにする。 */
-  function loadChannels() {
-    return fetch('/channels.json', { cache: 'no-cache' })
+  /** config.json を取得する。失敗しても再生自体は続行できるようにする。 */
+  function loadConfig() {
+    return fetch('/config.json', { cache: 'no-cache' })
       .then(function (r) {
         if (!r.ok) { throw new Error('HTTP ' + r.status); }
         return r.json();
       })
       .then(function (j) {
-        return (j && j.channels && j.channels.length) ? j.channels : FALLBACK_CHANNELS;
+        return {
+          officialSite: (j && j.officialSite) || FALLBACK_CONFIG.officialSite,
+          channels: (j && j.channels && j.channels.length) ? j.channels : FALLBACK_CONFIG.channels
+        };
       })
       .catch(function () {
-        return FALLBACK_CHANNELS;
+        return FALLBACK_CONFIG;
       });
   }
 
@@ -155,5 +165,5 @@
     };
   }
 
-  global.KosensaiPlayer = { create: create, loadChannels: loadChannels, RETRY_MS: RETRY_MS };
+  global.KosensaiPlayer = { create: create, loadConfig: loadConfig, RETRY_MS: RETRY_MS };
 })(window);

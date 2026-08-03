@@ -32,13 +32,15 @@
 
   <aside class="signage-side">
     <div class="signage-side-head">
-      <span class="label">本日の予定・お知らせ</span>
+      <span class="label" id="hpLabel">本日の予定・お知らせ</span>
       <span class="clock" id="clock">--:--</span>
     </div>
+    <!-- URL は config.json の officialSite.embedUrl。
+         allow-scripts を外すと公式サイトの中身が透明のまま出ないので必ず残す。 -->
     <iframe id="hpFrame"
-            src="https://kosensai.ichinoseki.ac.jp/"
             title="高専祭公式サイト"
-            referrerpolicy="no-referrer"></iframe>
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin"></iframe>
     <div class="signage-side-foot">
       live.kosensai.ichinoseki.ac.jp<br>スマホでも視聴できます（学内Wi-Fi限定）
     </div>
@@ -83,6 +85,14 @@
   });
 
   player.load(CH);
+
+  // 公式サイトの埋め込み先は config.json から取る
+  window.KosensaiPlayer.loadConfig().then(function (cfg) {
+    var site = cfg.officialSite || {};
+    if (site.label) { document.getElementById('hpLabel').textContent = site.label; }
+    document.getElementById('hpFrame').src =
+      site.embedUrl || 'https://kosensai.ichinoseki.ac.jp/';
+  });
 
   // 時計（端末の NTP が合っていることを確認しておくこと）
   function tick() {

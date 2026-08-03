@@ -44,18 +44,22 @@
 
   <aside class="hp-panel">
     <div class="hp-panel-head">
-      <span>タイムテーブル・お知らせ</span>
-      <a href="https://kosensai.ichinoseki.ac.jp/" target="_blank" rel="noopener">公式サイト ↗</a>
+      <span id="hpLabel">タイムテーブル・お知らせ</span>
+      <a id="hpLink" href="https://kosensai.ichinoseki.ac.jp/" target="_blank" rel="noopener">公式サイト ↗</a>
     </div>
     <!-- 公式サイトをそのまま表示（コンテンツ複製なし）。
          private→public のサブリソース取得は Chrome LNA の対象外。
          成立条件は公式サイト側に X-Frame-Options / CSP frame-ancestors が無いこと
-         （docs/checklist.md §G で確認する）。 -->
+         （2026-08-04 時点で無いことを確認済み。docs/checklist.md §G で再確認する）。
+         URL は config.json の officialSite.embedUrl から差し込む。
+         sandbox は必須ではなく（無指定なら制限なし）ハードニング目的。
+         公式サイトは Framer Motion で opacity:0 から表示するため
+         allow-scripts は必ず残すこと。外すと中身が透明のまま何も出ない。 -->
     <iframe id="hpFrame"
-            src="https://kosensai.ichinoseki.ac.jp/"
             title="高専祭公式サイト"
             loading="lazy"
-            referrerpolicy="no-referrer"></iframe>
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
   </aside>
 </main>
 
@@ -169,8 +173,13 @@
   // ---- 起動 ---------------------------------------------------------------
   player = window.KosensaiPlayer.create(video, onState);
 
-  window.KosensaiPlayer.loadChannels().then(function (list) {
-    channels = list;
+  window.KosensaiPlayer.loadConfig().then(function (cfg) {
+    var site = cfg.officialSite || {};
+    if (site.label) { document.getElementById('hpLabel').textContent = site.label; }
+    if (site.homeUrl) { document.getElementById('hpLink').href = site.homeUrl; }
+    if (site.embedUrl) { document.getElementById('hpFrame').src = site.embedUrl; }
+
+    channels = cfg.channels;
     buildTabs();
 
     // 初期チャンネル: ?ch= > 前回選択 > 既定

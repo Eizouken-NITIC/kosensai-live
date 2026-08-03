@@ -64,7 +64,7 @@ kosensai-broadcast/
 │     └─ moblin.md            Ch3 遊撃 iPhone
 ├─ web/                       配信サイト（HP 部門と共同。server が配信する）
 │  ├─ index.html / signage/index.html
-│  ├─ channels.json           ★ チャンネル定義の単一の情報源
+│  ├─ config.json           ★ チャンネル定義の単一の情報源
 │  ├─ assets/                 theme.css(暫定) / viewer.css / signage.css / player.js
 │  └─ vendor/hls.min.js
 └─ docs/
@@ -89,10 +89,10 @@ kosensai-broadcast/
 - **設定が複数マシンに跨って整合している必要がある。** SRT のパスフレーズ、
   チャンネル名、ポート番号は「配信サーバー・本部 OBS・現場」の 3 箇所で
   一致していないと映像が出ない。リポジトリを分けると、この整合を人間が
-  目視で保つことになる。同一リポジトリなら `channels.json` を単一の情報源にして、
+  目視で保つことになる。同一リポジトリなら `config.json` を単一の情報源にして、
   OBS 用 URL の生成（`srt-urls.sh`）と起動前チェック（`preflight.sh`）で
   機械的に突き合わせられる。実際 preflight は `mediamtx.yml` と
-  `channels.json` のずれを検出する。
+  `config.json` のずれを検出する。
 - **submodule はポインタ更新の一手間が増える。** 実運用が 3 日、作業者 4 人、
   現地でその場で直す場面がある構成で、`git submodule update` の
   し忘れによる「古い設定で動いていた」は最も避けたい事故。
@@ -140,7 +140,7 @@ NW 班から構成が共有され次第、置換する。一覧と手順は
 | OBS マシンの IP | 未定（`srt-urls.sh` の `OBS_HOST` で指定する） |
 | ビットレート | 4.5Mbps 前提。LAG が使えない場合は 3Mbps に落とす |
 | TLS 終端 | Caddy 終端で確定見込み（2026/07/20 時点）。変わる場合は `Caddyfile` を見直す |
-| Ch2 の有無 | 第二体育館の開催が未確定。無くなれば `channels.json` と `mediamtx.yml` から削除 |
+| Ch2 の有無 | 第二体育館の開催が未確定。無くなれば `config.json` と `mediamtx.yml` から削除 |
 | 配信サイトの見た目 | `web/assets/theme.css` は**暫定値**。HP 部門とすり合わせて確定させる |
 
 ---
@@ -158,7 +158,7 @@ ffmpeg のテストパターンを SRT で流して確認した内容。
   `all_others` を定義していないため。
 - **publish が無い間 `/hls/chN/index.m3u8` は 404。**
   → 視聴ページはこれを「配信開始前」と解釈して 10 秒ごとにリトライする。
-- **静的配信・ヘッダーは想定通り。** `/`・`/signage/`・`/channels.json`・
+- **静的配信・ヘッダーは想定通り。** `/`・`/signage/`・`/config.json`・
   `/assets/*`・`/vendor/hls.min.js`・`/healthz` がすべて 200。
   vendor は `max-age=604800, immutable`、HTML は `no-cache`。
 

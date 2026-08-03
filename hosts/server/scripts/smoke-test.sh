@@ -91,7 +91,7 @@ check "/healthz"              "https://${DOMAIN}/healthz"
 check "/hls/${CH}/index.m3u8" "https://${DOMAIN}/hls/${CH}/index.m3u8"
 check "/ (視聴ページ)"         "https://${DOMAIN}/"
 check "/signage/ (サイネージ)" "https://${DOMAIN}/signage/"
-check "/channels.json"        "https://${DOMAIN}/channels.json"
+check "/config.json"        "https://${DOMAIN}/config.json"
 check "/vendor/hls.min.js"    "https://${DOMAIN}/vendor/hls.min.js"
 
 if (( FAIL )); then

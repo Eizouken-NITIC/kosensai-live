@@ -15,7 +15,7 @@ MTX_HOST=10.1.2.3 OBS_HOST=10.1.2.4 ./hosts/obs/srt-urls.sh
 ```
 
 チャンネル定義（ポート・latency・ビットレート）の出どころは
-`web/channels.json` の 1 箇所だけ。Ch2 が無くなったらそこを削れば、
+`web/config.json` の 1 箇所だけ。Ch2 が無くなったらそこを削れば、
 このスクリプトの出力も視聴ページも一緒に追従する。
 
 ---

@@ -21,7 +21,7 @@ done
 
 echo
 echo "== 配信サイト (web/) =="
-for f in index.html signage/index.html channels.json \
+for f in index.html signage/index.html config.json \
          assets/theme.css assets/viewer.css assets/signage.css assets/player.js \
          vendor/hls.min.js; do
   [[ -f "${REPO_DIR}/web/${f}" ]] && ok "web/${f}" || ng "web/${f} が無い"
@@ -50,7 +50,7 @@ else
 fi
 
 echo
-echo "== mediamtx.yml と web/channels.json のチャンネル定義が一致しているか =="
+echo "== mediamtx.yml と web/config.json のチャンネル定義が一致しているか =="
 if command -v python3 >/dev/null; then
   if python3 - "${REPO_DIR}" <<'PY'
 import json, re, sys, pathlib
@@ -58,11 +58,11 @@ repo = pathlib.Path(sys.argv[1])
 yml  = (repo / "hosts/server/mediamtx.yml").read_text(encoding="utf-8")
 body = yml.split("\npaths:", 1)[1] if "\npaths:" in yml else ""
 mtx  = set(re.findall(r"^  ([A-Za-z0-9_-]+):\s*$", body, re.M))
-web  = {c["id"] for c in json.loads((repo / "web/channels.json").read_text(encoding="utf-8"))["channels"]}
+web  = {c["id"] for c in json.loads((repo / "web/config.json").read_text(encoding="utf-8"))["channels"]}
 if mtx == web:
     print("  \033[32mOK\033[0m   %s" % sorted(mtx))
 else:
-    print("  \033[31mNG\033[0m   mediamtx.yml=%s / channels.json=%s" % (sorted(mtx), sorted(web)))
+    print("  \033[31mNG\033[0m   mediamtx.yml=%s / config.json=%s" % (sorted(mtx), sorted(web)))
     sys.exit(1)
 PY
   then :; else FAIL=1; fi
