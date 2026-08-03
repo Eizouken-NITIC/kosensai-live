@@ -16,5 +16,8 @@
     "svelte-check": "^4.7.4",
     "typescript": "^6.0.3",
     "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/noto-sans-jp": "^5.3.0"
   }
 }

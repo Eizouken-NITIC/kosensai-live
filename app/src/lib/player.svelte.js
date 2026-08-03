@@ -127,8 +127,6 @@ export function createPlayer() {
       // ウィンドウの長さになり、ブラウザ内蔵プレイヤーが「18秒の動画」として
       // 扱ってしまう（シークバーが出て 0:00 / 0:18 と表示される）。
       liveDurationInfinity: true,
-      // 巻き戻せる量を絞る。長時間の無人運用でメモリを食わせない。
-      backBufferLength: 30,
       manifestLoadingMaxRetry: 2,
       levelLoadingMaxRetry: 4,
       fragLoadingMaxRetry: 4
