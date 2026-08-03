@@ -27,11 +27,25 @@ code() { # code <path>
 }
 
 echo "== 静的配信 =="
-for p in / /signage/ /config.json /assets/theme.css /assets/viewer.css \
-         /assets/signage.css /assets/player.js /vendor/hls.min.js /healthz; do
+# SvelteKit のビルド成果物はハッシュ付きのパスになるので、個別の CSS/JS は
+# 列挙せず、HTML が実際に参照しているものを引いて確認する。
+for p in / /signage/ /config.json /assets/qr-viewer.svg /vendor/hls.min.js /healthz; do
   c=$(code "$p")
   [[ "$c" == "200" ]] && ok "$p" || ng "$p (http $c)"
 done
+
+echo
+echo "== ページが参照しているアセット =="
+assets=$(C "${BASE}/" | grep -oE '/_app/[^"]+\.(js|css)' | sort -u)
+if [[ -z "${assets}" ]]; then
+  ng "視聴ページからアセット参照を取り出せない"
+else
+  miss=0
+  while read -r a; do
+    [[ "$(code "$a")" == "200" ]] || { ng "$a"; miss=1; }
+  done <<<"${assets}"
+  (( miss )) || ok "$(wc -l <<<"${assets}" | tr -d ' ') 件すべて 200"
+fi
 
 echo
 echo "== HLS（Ch ごと） =="
