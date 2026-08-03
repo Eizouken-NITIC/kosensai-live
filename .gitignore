@@ -15,3 +15,7 @@ recordings/
 # OS
 .DS_Store
 Thumbs.db
+
+# SvelteKit
+app/node_modules/
+app/.svelte-kit/

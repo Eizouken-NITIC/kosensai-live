@@ -1,0 +1,90 @@
+/* app.css — デザイントークンとリセット。
+ *
+ * 見た目の値はここにしか置かない。各コンポーネントの <style> は
+ * スコープが効くので、レイアウトだけをそこに書く。
+ *
+ * 前回の反省として、使っていないトークンは定義しない。
+ * 角丸は 2 種類だけ（面 / 完全な丸）に固定する。 */
+
+:root {
+  color-scheme: dark;
+
+  /* --- 面 ---
+     映像が主役なので、UI は映像より暗いか同等にする。 */
+  --bg: #0a0c0f;
+  --surface: #14181d;
+  --surface-raised: #1c2229;
+  --line: #262d35;
+
+  /* --- 文字 --- */
+  --fg: #f2f5f8;
+  --fg-muted: #97a2ae;
+
+  /* --- 状態 ---
+     LIVE はワードマークの一部として使う。点滅させない。 */
+  --live: #ff3b30;
+  --live-off: #4a545f;
+
+  /* --- アクセント（選択状態のみに使う） --- */
+  --accent: #4db8ff;
+
+  /* --- かたち ---
+     2 種類だけ。意味のない中間値を作らない。 */
+  --radius: 6px;
+  --radius-round: 999px;
+
+  /* --- 余白（4px 刻み） --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* --- 文字サイズ --- */
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+
+  /* --- 書体 ---
+     欧文のワードマークだけ字幅を締めたいので別に持つ。 */
+  --font: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP",
+    "Yu Gothic UI", sans-serif;
+  --font-mark: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    sans-serif;
+
+  /* --- 端末のノッチ回避（触らない） --- */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-b, 0px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+/* 動きを減らす設定を尊重する。もともと装飾的な動きは置いていないが、
+   chrome の出入りだけはフェードするので、そこを無効化する。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

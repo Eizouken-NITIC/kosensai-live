@@ -1,155 +1,52 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light">
-<meta name="robots" content="noindex, nofollow">
-<title>高専祭ライブ配信</title>
-<link rel="icon" href="data:,">
-<link rel="stylesheet" href="/assets/theme.css">
-<link rel="stylesheet" href="/assets/viewer.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="data:," />
+  <link href="./_app/immutable/entry/start.C8UhJY8f.js" rel="modulepreload">
+		<link href="./_app/immutable/chunks/DCkxA2fK.js" rel="modulepreload">
+		<link href="./_app/immutable/chunks/CSoKStYk.js" rel="modulepreload">
+		<link href="./_app/immutable/chunks/mnWNQHQY.js" rel="modulepreload">
+		<link href="./_app/immutable/entry/app.C76WpGGE.js" rel="modulepreload">
+		<link href="./_app/immutable/chunks/Crc5PHIF.js" rel="modulepreload">
+		<link href="./_app/immutable/chunks/DWwcgXGL.js" rel="modulepreload">
+		<link href="./_app/immutable/chunks/H0d9He2f.js" rel="modulepreload">
+		<link href="./_app/immutable/chunks/BWFj_twm.js" rel="modulepreload">
+		<link href="./_app/immutable/nodes/0.DHQxHWFU.js" rel="modulepreload">
+		<link href="./_app/immutable/nodes/2.-Eerq9Hx.js" rel="modulepreload">
+		<link href="./_app/immutable/chunks/UN-ImBW0.js" rel="modulepreload">
+		<!--1uha8ag--><!----><title>KOSENSAI-LIVE</title>
+		<link href="./_app/immutable/assets/0.DxLTKRxh.css" rel="stylesheet">
+		<link href="./_app/immutable/assets/Wordmark.Bwe3P_rw.css" rel="stylesheet">
+		<link href="./_app/immutable/assets/2.re-3vBe9.css" rel="stylesheet">
 </head>
-<body>
+<body data-sveltekit-preload-data="hover">
+  <div style="display: contents"><!--[--><!--[0--><!--[--><!--[--><div class="page svelte-1uha8ag"><section class="stage svelte-1uha8ag"><video playsinline="" muted="" autoplay="" controls="" preload="none" class="svelte-1uha8ag"></video> <div class="chrome svelte-1uha8ag visible"><div class="chrome-top svelte-1uha8ag"><span class="mark svelte-10y6uor" data-size="md"><span class="kosensai svelte-10y6uor">KOSENSAI</span><span class="sep svelte-10y6uor">-</span><span class="live-part svelte-10y6uor">LIVE</span></span><!----> <nav aria-label="チャンネル" class="svelte-1uha8ag"><!--[--><!--]--></nav></div></div> <!--[-1--><!--]--></section> <aside class="panel svelte-1uha8ag"><!--[-1--><!--]--> <a class="open-official svelte-1uha8ag" href="" target="_blank" rel="noopener">公式サイトを開く ↗</a></aside></div><!--]--><!----><!--]--><!--]--> <!--[-1--><!--]--><!--]-->
+			
+			<script>
+				{
+					__sveltekit_efv5js = {
+						base: new URL(".", location).pathname.slice(0, -1)
+					};
 
-<!-- ヘッダーとチャンネル切替を 1 本のバーにまとめてある。
-     配信 UI の chrome は少ないほどよいので、面と境界線を増やさない。 -->
-<header class="site-header">
-  <h1>高専祭ライブ配信</h1>
-  <nav class="channel-tabs" id="tabs" role="tablist" aria-label="チャンネル"></nav>
-  <!-- 配信中だけ出す。待機中や接続中はオーバーレイが言うので、ここでは黙る。 -->
-  <span class="live-badge is-hidden" id="badge">LIVE</span>
-</header>
+					const element = document.currentScript.parentElement;
 
-<main class="layout">
-  <div class="stage">
-    <video id="video" playsinline muted autoplay controls preload="none"></video>
-
-    <!-- 接続中は何も出さない。読み込み表示はブラウザ内蔵プレイヤーに任せる。
-         出すのは「伝えることがあるとき」だけ。 -->
-    <div class="stage-overlay" id="overlay" role="status" aria-live="polite">
-      <p id="overlayMsg"></p>
-      <small id="overlayHint"></small>
-      <button class="btn is-hidden" id="overlayBtn" type="button">▶ 再生する</button>
-    </div>
-  </div>
-
-  <aside class="hp-panel">
-    <!-- iframe の中身が自分で見出しを持っているので、こちら側では名前を付けない。
-         狭くて読みづらいとき用に、別タブで開く導線だけ置く。 -->
-    <div class="hp-panel-head">
-      <a id="hpLink" href="https://kosensai.ichinoseki.ac.jp/" target="_blank" rel="noopener">公式サイト ↗</a>
-    </div>
-    <!-- private→public のサブリソース取得は Chrome LNA の対象外。
-         成立条件は公式サイト側に X-Frame-Options / CSP frame-ancestors が無いこと
-         （2026-08-04 時点で無いことを確認済み。docs/checklist.md §G で再確認する）。
-         allow-scripts は必ず残すこと。公式サイトは opacity:0 から JS で表示するため、
-         外すと中身が透明のまま何も出ない。 -->
-    <iframe id="hpFrame"
-            title="高専祭公式サイト"
-            loading="lazy"
-            referrerpolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
-  </aside>
-</main>
-
-<script src="/vendor/hls.min.js"></script>
-<script src="/assets/player.js"></script>
-<script>
-(function () {
-  'use strict';
-
-  var DEFAULT_CH = 'ch1';
-  var STORE_KEY = 'kosensai.ch';
-
-  var video   = document.getElementById('video');
-  var tabsEl  = document.getElementById('tabs');
-  var overlay = document.getElementById('overlay');
-  var msgEl   = document.getElementById('overlayMsg');
-  var hintEl  = document.getElementById('overlayHint');
-  var btnEl   = document.getElementById('overlayBtn');
-  var badge   = document.getElementById('badge');
-
-  var channels = [];
-  var player = null;
-
-  function showOverlay(message, hint, onClick) {
-    msgEl.textContent = message;
-    hintEl.textContent = hint || '';
-    hintEl.classList.toggle('is-hidden', !hint);
-    btnEl.classList.toggle('is-hidden', !onClick);
-    btnEl.onclick = onClick || null;
-    overlay.classList.add('is-shown');
-  }
-
-  function hideOverlay() { overlay.classList.remove('is-shown'); }
-
-  function onState(state, detail) {
-    badge.classList.toggle('is-hidden', state !== 'playing');
-
-    if (state === 'playing' || state === 'connecting') {
-      hideOverlay();
-    } else if (state === 'waiting') {
-      showOverlay('このチャンネルはまだ配信されていません',
-                  '始まると自動で再生されます');
-    } else if (state === 'blocked') {
-      showOverlay('タップで再生を開始します', '', detail.resume);
-    } else if (state === 'unsupported') {
-      showOverlay('このブラウザでは再生できません',
-                  'Safari / Chrome の最新版でお試しください');
-    }
-  }
-
-  function select(id, updateUrl) {
-    var ch = null;
-    for (var i = 0; i < channels.length; i++) {
-      if (channels[i].id === id) { ch = channels[i]; }
-    }
-    ch = ch || channels[0];
-    if (!ch) { return; }
-
-    Array.prototype.forEach.call(tabsEl.children, function (b) {
-      b.setAttribute('aria-selected', String(b.dataset.ch === ch.id));
-    });
-    document.title = ch.label + ' | 高専祭ライブ配信';
-
-    if (updateUrl) { history.replaceState(null, '', '?ch=' + ch.id); }
-    try { localStorage.setItem(STORE_KEY, ch.id); } catch (e) { /* プライベートブラウズ */ }
-
-    player.load(ch.id);
-  }
-
-  function buildTabs() {
-    channels.forEach(function (c) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.setAttribute('role', 'tab');
-      b.setAttribute('aria-selected', 'false');
-      b.dataset.ch = c.id;
-      b.textContent = c.label;
-      b.addEventListener('click', function () { select(c.id, true); });
-      tabsEl.appendChild(b);
-    });
-  }
-
-  player = window.KosensaiPlayer.create(video, onState);
-
-  window.KosensaiPlayer.loadConfig().then(function (cfg) {
-    var site = cfg.officialSite || {};
-    if (site.homeUrl) { document.getElementById('hpLink').href = site.homeUrl; }
-    if (site.embedUrl) { document.getElementById('hpFrame').src = site.embedUrl; }
-
-    channels = cfg.channels;
-    buildTabs();
-
-    // 初期チャンネル: ?ch= > 前回選択 > 既定
-    var initial = new URLSearchParams(location.search).get('ch');
-    if (!initial) {
-      try { initial = localStorage.getItem(STORE_KEY); } catch (e) { /* noop */ }
-    }
-    select(initial || DEFAULT_CH, false);
-  });
-})();
-</script>
+					Promise.all([
+						import("./_app/immutable/entry/start.C8UhJY8f.js"),
+						import("./_app/immutable/entry/app.C76WpGGE.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element, {
+							node_ids: [0, 2],
+							data: [null,null],
+							form: null,
+							error: null
+						});
+					});
+				}
+			</script>
+		</div>
 </body>
 </html>

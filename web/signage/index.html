@@ -1,118 +1,52 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
-<meta name="robots" content="noindex, nofollow">
-<title>高専祭サイネージ</title>
-<link rel="icon" href="data:,">
-<link rel="stylesheet" href="/assets/theme.css">
-<link rel="stylesheet" href="/assets/signage.css">
-<!--
-  校内サイネージ端末（Raspberry Pi 等）用の全画面ページ。
-  起動方法は hosts/signage/README.md を参照。
-  右カラムの幅は signage.css の --side（既定 26vw）。
--->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="data:," />
+  <link href="../_app/immutable/entry/start.C8UhJY8f.js" rel="modulepreload">
+		<link href="../_app/immutable/chunks/DCkxA2fK.js" rel="modulepreload">
+		<link href="../_app/immutable/chunks/CSoKStYk.js" rel="modulepreload">
+		<link href="../_app/immutable/chunks/mnWNQHQY.js" rel="modulepreload">
+		<link href="../_app/immutable/entry/app.C76WpGGE.js" rel="modulepreload">
+		<link href="../_app/immutable/chunks/Crc5PHIF.js" rel="modulepreload">
+		<link href="../_app/immutable/chunks/DWwcgXGL.js" rel="modulepreload">
+		<link href="../_app/immutable/chunks/H0d9He2f.js" rel="modulepreload">
+		<link href="../_app/immutable/chunks/BWFj_twm.js" rel="modulepreload">
+		<link href="../_app/immutable/nodes/0.DHQxHWFU.js" rel="modulepreload">
+		<link href="../_app/immutable/nodes/3.Dh0e-XYG.js" rel="modulepreload">
+		<link href="../_app/immutable/chunks/UN-ImBW0.js" rel="modulepreload">
+		<!--1o5ei1j--><!----><title>KOSENSAI-LIVE サイネージ</title>
+		<link href="../_app/immutable/assets/0.DxLTKRxh.css" rel="stylesheet">
+		<link href="../_app/immutable/assets/Wordmark.Bwe3P_rw.css" rel="stylesheet">
+		<link href="../_app/immutable/assets/3.CDoSVFbM.css" rel="stylesheet">
 </head>
-<body>
+<body data-sveltekit-preload-data="hover">
+  <div style="display: contents"><!--[--><!--[0--><!--[--><!--[--><div class="signage svelte-1o5ei1j"><section class="stage svelte-1o5ei1j"><video playsinline="" muted="" autoplay="" preload="none" class="svelte-1o5ei1j"></video> <div class="overlay svelte-1o5ei1j"><span class="mark svelte-10y6uor" data-size="lg"><span class="kosensai svelte-10y6uor">KOSENSAI</span><span class="sep svelte-10y6uor">-</span><span class="live-part svelte-10y6uor">LIVE</span></span><!----> <time class="clock svelte-1o5ei1j">--:--</time></div> <!--[0--><div class="idle svelte-1o5ei1j"><p class="svelte-1o5ei1j">現在配信していません</p></div><!--]--></section> <aside class="side svelte-1o5ei1j"><!--[-1--><!--]--> <div class="invite svelte-1o5ei1j"><img src="/assets/qr-viewer.svg" alt="視聴ページの QR コード" class="svelte-1o5ei1j"/> <div class="svelte-1o5ei1j"><strong class="svelte-1o5ei1j">スマホでも視聴できます</strong> <span class="svelte-1o5ei1j">学内Wi-Fi限定</span> <code class="svelte-1o5ei1j">live.kosensai.ichinoseki.ac.jp</code></div></div></aside></div><!--]--><!----><!--]--><!--]--> <!--[-1--><!--]--><!--]-->
+			
+			<script>
+				{
+					__sveltekit_efv5js = {
+						base: new URL("..", location).pathname.slice(0, -1)
+					};
 
-<div class="signage">
-  <div class="signage-stage">
-    <video id="video" playsinline muted autoplay preload="none"></video>
+					const element = document.currentScript.parentElement;
 
-    <!-- 配信が無いときの画。スピナーは置かない。
-         実際には数秒〜10 秒間隔で再試行しているだけなので、回り続ける表示は
-         「今まさに読み込んでいる」という誤った印象を与える。
-         開始時刻も分からないので「まもなく」とは言わない。 -->
-    <div class="signage-idle is-shown" id="idle">
-      <h1>高専祭ライブ配信</h1>
-      <p id="idleMsg">現在配信していません</p>
-    </div>
-  </div>
-
-  <aside class="signage-side">
-    <!-- iframe の中身が自分で見出しを持つので、こちらでは名前を付けない。 -->
-    <div class="signage-side-head">
-      <span class="clock" id="clock">--:--</span>
-    </div>
-
-    <iframe id="hpFrame"
-            title="高専祭公式サイト"
-            referrerpolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin"></iframe>
-
-    <!-- 通りすがりの人が自分の端末で見るための導線。配信中も常に出しておく。
-         QR は静的な SVG（assets/qr-viewer.svg）。学内限定配信なので、
-         実行時に QR を生成する外部ライブラリには依存させない。 -->
-    <div class="signage-invite">
-      <img class="signage-qr" src="/assets/qr-viewer.svg" alt="視聴ページの QR コード">
-      <div class="signage-invite-text">
-        <strong>スマホでも視聴できます</strong>
-        <span>学内Wi-Fi限定</span>
-        <code>live.kosensai.ichinoseki.ac.jp</code>
-      </div>
-    </div>
-  </aside>
-</div>
-
-<script src="/vendor/hls.min.js"></script>
-<script src="/assets/player.js"></script>
-<script>
-(function () {
-  'use strict';
-
-  var CH = new URLSearchParams(location.search).get('ch') || 'ch4';
-
-  var IFRAME_RELOAD_MS = 5 * 60 * 1000;      // 公式サイト側の更新を拾う
-  var PAGE_RELOAD_MS   = 6 * 60 * 60 * 1000; // 長時間運転のリーク対策（無人運用の保険）
-
-  var video = document.getElementById('video');
-  var idle  = document.getElementById('idle');
-  var msg   = document.getElementById('idleMsg');
-
-  var player = window.KosensaiPlayer.create(video, function (state, detail) {
-    idle.classList.toggle('is-shown', state !== 'playing');
-
-    if (state === 'blocked') {
-      // 無人運用なので誰もタップしない。文言を出さず黙って再試行する。
-      // Kiosk は --autoplay-policy=no-user-gesture-required で起動すること。
-      detail.resume();
-    } else if (state === 'unsupported') {
-      msg.textContent = 'このブラウザでは再生できません';
-    } else {
-      msg.textContent = '現在配信していません';
-    }
-  });
-
-  player.load(CH);
-
-  window.KosensaiPlayer.loadConfig().then(function (cfg) {
-    var site = cfg.officialSite || {};
-    document.getElementById('hpFrame').src =
-      site.embedUrl || 'https://kosensai.ichinoseki.ac.jp/';
-  });
-
-  // 時計（端末の NTP が合っていることを確認しておくこと）
-  function tick() {
-    var d = new Date();
-    document.getElementById('clock').textContent =
-      String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  }
-  tick();
-  setInterval(tick, 15000);
-
-  // 公式サイト側の更新を定期的に取り直す
-  setInterval(function () {
-    var f = document.getElementById('hpFrame');
-    f.src = f.src;
-  }, IFRAME_RELOAD_MS);
-
-  // 無人運用の保険。再生中はリロードしない。
-  setInterval(function () {
-    if (video.paused || video.readyState < 3) { location.reload(); }
-  }, PAGE_RELOAD_MS);
-})();
-</script>
+					Promise.all([
+						import("../_app/immutable/entry/start.C8UhJY8f.js"),
+						import("../_app/immutable/entry/app.C76WpGGE.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element, {
+							node_ids: [0, 3],
+							data: [null,null],
+							form: null,
+							error: null
+						});
+					});
+				}
+			</script>
+		</div>
 </body>
 </html>
