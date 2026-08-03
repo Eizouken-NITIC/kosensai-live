@@ -7,14 +7,12 @@
 <meta name="robots" content="noindex, nofollow">
 <title>高専祭サイネージ</title>
 <link rel="icon" href="data:,">
-<!-- 見た目は assets/theme.css（暫定・HP 部門とすり合わせる）と
-     assets/signage.css（レイアウト）に分離してある。ここには style を書かない。
-     右カラムの幅は signage.css の --side（既定 26vw）。 -->
 <link rel="stylesheet" href="/assets/theme.css">
 <link rel="stylesheet" href="/assets/signage.css">
 <!--
-  校内サイネージ端末（Raspberry Pi 等）用の全画面ページ。起動方法は
-  hosts/signage/README.md を参照。
+  校内サイネージ端末（Raspberry Pi 等）用の全画面ページ。
+  起動方法は hosts/signage/README.md を参照。
+  右カラムの幅は signage.css の --side（既定 26vw）。
 -->
 </head>
 <body>
@@ -22,10 +20,14 @@
 <div class="signage">
   <div class="signage-stage">
     <video id="video" playsinline muted autoplay preload="none"></video>
+
+    <!-- 配信が無いときの画。スピナーは置かない。
+         実際には数秒〜10 秒間隔で再試行しているだけなので、回り続ける表示は
+         「今まさに読み込んでいる」という誤った印象を与える。
+         開始時刻も分からないので「まもなく」とは言わない。 -->
     <div class="signage-idle is-shown" id="idle">
-      <div class="signage-spinner"></div>
       <h1>高専祭ライブ配信</h1>
-      <p id="idleMsg">まもなく放送を開始します</p>
+      <p id="idleMsg">現在配信していません</p>
     </div>
   </div>
 
@@ -34,14 +36,22 @@
     <div class="signage-side-head">
       <span class="clock" id="clock">--:--</span>
     </div>
-    <!-- URL は config.json の officialSite.embedUrl。
-         allow-scripts を外すと公式サイトの中身が透明のまま出ないので必ず残す。 -->
+
     <iframe id="hpFrame"
             title="高専祭公式サイト"
             referrerpolicy="no-referrer"
             sandbox="allow-scripts allow-same-origin"></iframe>
-    <div class="signage-side-foot">
-      live.kosensai.ichinoseki.ac.jp<br>スマホでも視聴できます（学内Wi-Fi限定）
+
+    <!-- 通りすがりの人が自分の端末で見るための導線。配信中も常に出しておく。
+         QR は静的な SVG（assets/qr-viewer.svg）。学内限定配信なので、
+         実行時に QR を生成する外部ライブラリには依存させない。 -->
+    <div class="signage-invite">
+      <img class="signage-qr" src="/assets/qr-viewer.svg" alt="視聴ページの QR コード">
+      <div class="signage-invite-text">
+        <strong>スマホでも視聴できます</strong>
+        <span>学内Wi-Fi限定</span>
+        <code>live.kosensai.ichinoseki.ac.jp</code>
+      </div>
     </div>
   </aside>
 </div>
@@ -62,27 +72,21 @@
   var msg   = document.getElementById('idleMsg');
 
   var player = window.KosensaiPlayer.create(video, function (state, detail) {
-    if (state === 'playing' || state === 'connecting') {
-      idle.classList.toggle('is-shown', state !== 'playing');
-      return;
-    }
-    idle.classList.add('is-shown');
+    idle.classList.toggle('is-shown', state !== 'playing');
 
     if (state === 'blocked') {
-      // Kiosk では誰も触らないので、自動再生を許可した状態で起動すること
-      // （--autoplay-policy=no-user-gesture-required）。
-      msg.textContent = '再生を開始できません（自動再生がブロックされています）';
+      // 無人運用なので誰もタップしない。文言を出さず黙って再試行する。
+      // Kiosk は --autoplay-policy=no-user-gesture-required で起動すること。
       detail.resume();
     } else if (state === 'unsupported') {
-      msg.textContent = 'このブラウザは再生に対応していません';
+      msg.textContent = 'このブラウザでは再生できません';
     } else {
-      msg.textContent = 'まもなく放送を開始します';
+      msg.textContent = '現在配信していません';
     }
   });
 
   player.load(CH);
 
-  // 公式サイトの埋め込み先は config.json から取る
   window.KosensaiPlayer.loadConfig().then(function (cfg) {
     var site = cfg.officialSite || {};
     document.getElementById('hpFrame').src =

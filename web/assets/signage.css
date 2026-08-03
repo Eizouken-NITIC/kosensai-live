@@ -41,7 +41,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2vh;
+  gap: 1.2vh;
   background: var(--stage-bg);
   color: var(--stage-fg);
   text-align: center;
@@ -60,14 +60,6 @@ body {
   margin: 0;
   font-size: 1.3vw;
   color: var(--stage-fg-muted);
-}
-.signage-spinner {
-  width: 2.4vw;
-  height: 2.4vw;
-  border-radius: 50%;
-  border: 0.3vw solid var(--stage-line);
-  border-top-color: var(--accent);
-  animation: spin 1s linear infinite;
 }
 
 
@@ -97,20 +89,43 @@ body {
   border: 0;
   background: var(--surface);
 }
-.signage-side-foot {
-  padding: 1.2vh 1.2vw;
+.signage-invite {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  padding: 1.4vh 1.2vw;
   border-top: 1px solid var(--line);
-  font-size: 0.85vw;
+}
+.signage-qr {
+  flex: 0 0 auto;
+  width: 6.5vw;
+  height: 6.5vw;
+  /* SVG 側を currentColor にしてあるので、ここの色がそのままモジュール色になる */
+  color: var(--fg);
+  /* 拡大時にモジュールの縁がぼけると読み取り率が落ちる */
+  image-rendering: pixelated;
+}
+.signage-invite-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4vh;
+  min-width: 0;
+}
+.signage-invite-text strong {
+  font-size: 1vw;
+  font-weight: 700;
+}
+.signage-invite-text span {
+  font-size: 0.8vw;
   color: var(--fg-muted);
-  line-height: 1.7;
-  text-align: center;
+}
+.signage-invite-text code {
+  font-size: 0.72vw;
+  color: var(--fg-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @keyframes pulse {
   50% {
     opacity: 0.2;
