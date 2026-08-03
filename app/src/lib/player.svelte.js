@@ -126,6 +126,15 @@ export function createPlayer() {
       liveSyncDurationCount: 3,
       liveMaxLatencyDurationCount: 10,
       maxBufferLength: 20,
+      // ライブとして再生させる。
+      // これが false（既定）だと duration がスライディングウィンドウの長さに
+      // なり、ブラウザ内蔵プレイヤーが「18秒の動画」として 扱ってしまう
+      // （シークバーが出て 0:00 / 0:18 と表示される）。true にすると
+      // setLiveSeekableRange が使われ duration が Infinity になるので、
+      // ライブ配信として扱われる。
+      liveDurationInfinity: true,
+      // 巻き戻せる量を絞る。長時間の無人運用でメモリを食わせない。
+      backBufferLength: 30,
       manifestLoadingMaxRetry: 2,
       levelLoadingMaxRetry: 4,
       fragLoadingMaxRetry: 4
