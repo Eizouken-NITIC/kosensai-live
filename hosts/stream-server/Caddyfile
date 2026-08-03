@@ -1,0 +1,75 @@
+# 高専祭ライブ配信 / Caddy（唯一の TLS 終端）
+#
+# 学内サーバーには外部からの HTTP-01 審査通信が届かないため、
+# Caddy の自動 ACME は使わず、certbot（DNS-01・手動）で取得した
+# 証明書を明示指定する。取得手順は scripts/get-cert.sh / README §4。
+{
+	# 自動 HTTPS のリダイレクトだけ有効、ACME 発行はしない
+	auto_https disable_redirects
+	admin off
+}
+
+live.kosensai.ichinoseki.ac.jp {
+	# --- TLS（certbot 取得済み証明書を直指定） ---
+	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
+
+	# --- HLS リバースプロキシ ---
+	# https://live.../hls/ch1/index.m3u8 → http://127.0.0.1:8888/ch1/index.m3u8
+	handle_path /hls/* {
+		reverse_proxy 127.0.0.1:8888 {
+			# ⚠️ MediaMTX は最初のプレイリスト要求を、セッション Cookie を張るために
+			#    Location: /ch1/index.m3u8?cookieCheck=1 へ 302 する。
+			#    handle_path が /hls を剥がしている都合上、この Location をそのまま
+			#    返すとクライアントは /hls 抜きの URL を叩き、静的ファイル配信側へ
+			#    落ちて 404 になる（＝映像が永久に始まらない）。
+			#    プレフィックスを付け直してから返す。
+			header_down Location "^/(.*)$" "/hls/$1"
+		}
+
+		header {
+			# 同一オリジンなので本来不要だが、hls.js が fetch mode を
+			# cors にするケースへの保険
+			Access-Control-Allow-Origin *
+			Cache-Control "no-cache"
+			-Server
+		}
+	}
+
+	# --- ヘルスチェック（本番前チェック・監視用） ---
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# --- 視聴ページ / サイネージページ（静的 HTML） ---
+	handle {
+		root * /srv/live
+		encode zstd gzip
+
+		# hls.js 等の vendor ファイルは長期キャッシュ
+		@vendor path /vendor/*
+		header @vendor Cache-Control "public, max-age=604800, immutable"
+
+		# HTML は都度取り直す（当日の差し替えを即反映させる）
+		@html path *.html /
+		header @html Cache-Control "no-cache"
+
+		file_server
+	}
+
+	# --- セキュリティヘッダー ---
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
+
+# 学内で IP 直打ち・名前違いで来た場合の受け皿（TLS なし）
+:80 {
+	redir https://live.kosensai.ichinoseki.ac.jp{uri} permanent
+}

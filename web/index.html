@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex, nofollow">
+<title>高専祭ライブ配信</title>
+<link rel="icon" href="data:,">
+<!-- 見た目は assets/theme.css（暫定・HP 部門とすり合わせる）と
+     assets/viewer.css（レイアウト）に分離してある。ここには style を書かない。 -->
+<link rel="stylesheet" href="/assets/theme.css">
+<link rel="stylesheet" href="/assets/viewer.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>高専祭ライブ配信</h1>
+  <span class="live-badge" id="badge">
+    <span class="dot"></span><span id="badgeText">接続中…</span>
+  </span>
+</header>
+
+<nav class="channel-tabs" id="tabs" role="tablist" aria-label="チャンネル選択"></nav>
+
+<main class="layout">
+  <section>
+    <div class="stage">
+      <video id="video" playsinline muted autoplay controls preload="none"></video>
+
+      <div class="stage-overlay is-shown" id="overlay" role="status" aria-live="polite">
+        <div class="spinner" id="spinner"></div>
+        <p id="overlayMsg">映像に接続しています…</p>
+        <small id="overlayHint">学内Wi-Fiに接続されているかご確認ください</small>
+        <button class="btn is-hidden" id="overlayBtn" type="button">▶ 再生する</button>
+      </div>
+    </div>
+
+    <div class="channel-meta">
+      <h2 id="chTitle">—</h2>
+      <span id="chDesc"></span>
+    </div>
+  </section>
+
+  <aside class="hp-panel">
+    <div class="hp-panel-head">
+      <span>タイムテーブル・お知らせ</span>
+      <a href="https://kosensai.ichinoseki.ac.jp/" target="_blank" rel="noopener">公式サイト ↗</a>
+    </div>
+    <!-- 公式サイトをそのまま表示（コンテンツ複製なし）。
+         private→public のサブリソース取得は Chrome LNA の対象外。
+         成立条件は公式サイト側に X-Frame-Options / CSP frame-ancestors が無いこと
+         （docs/checklist.md §G で確認する）。 -->
+    <iframe id="hpFrame"
+            src="https://kosensai.ichinoseki.ac.jp/"
+            title="高専祭公式サイト"
+            loading="lazy"
+            referrerpolicy="no-referrer"></iframe>
+  </aside>
+</main>
+
+<footer class="site-footer">
+  この配信は学内ネットワーク限定です。学内Wi-Fiに接続してご覧ください。<br>
+  映像が止まる場合はページを再読み込みしてください。／ 一関高専 電算部・映像研究会
+</footer>
+
+<script src="/vendor/hls.min.js"></script>
+<script src="/assets/player.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var DEFAULT_CH = 'ch1';
+  var STORE_KEY = 'kosensai.ch';
+
+  var video    = document.getElementById('video');
+  var tabsEl   = document.getElementById('tabs');
+  var overlay  = document.getElementById('overlay');
+  var spinner  = document.getElementById('spinner');
+  var msgEl    = document.getElementById('overlayMsg');
+  var hintEl   = document.getElementById('overlayHint');
+  var btnEl    = document.getElementById('overlayBtn');
+  var badge    = document.getElementById('badge');
+  var badgeTx  = document.getElementById('badgeText');
+  var titleEl  = document.getElementById('chTitle');
+  var descEl   = document.getElementById('chDesc');
+
+  var channels = [];
+  var player = null;
+
+  // ---- 表示の切り替え ------------------------------------------------------
+  function showOverlay(message, hint, opts) {
+    opts = opts || {};
+    msgEl.textContent = message;
+    hintEl.textContent = hint || '';
+    hintEl.classList.toggle('is-hidden', !hint);
+    spinner.classList.toggle('is-hidden', !!opts.noSpinner);
+    btnEl.classList.toggle('is-hidden', !opts.onClick);
+    btnEl.onclick = opts.onClick || null;
+    overlay.classList.add('is-shown');
+  }
+
+  function setBadge(live, text) {
+    badge.classList.toggle('is-live', !!live);
+    badgeTx.textContent = text;
+  }
+
+  function onState(state, detail) {
+    if (state === 'playing') {
+      overlay.classList.remove('is-shown');
+      setBadge(true, 'LIVE');
+    } else if (state === 'waiting') {
+      setBadge(false, detail.retried ? '再接続中…' : '待機中');
+      showOverlay(
+        detail.retried ? 'まだ配信が始まっていないようです' : '映像に接続しています…',
+        detail.retried ? '10秒ごとに自動で再接続します' : '学内Wi-Fiに接続されているかご確認ください'
+      );
+    } else if (state === 'blocked') {
+      setBadge(false, '待機中');
+      showOverlay('タップで再生を開始します', '', {
+        noSpinner: true,
+        onClick: detail.resume
+      });
+    } else if (state === 'unsupported') {
+      setBadge(false, '非対応');
+      showOverlay('このブラウザは再生に対応していません',
+                  'Safari / Chrome の最新版でお試しください', { noSpinner: true });
+    }
+  }
+
+  // ---- チャンネル選択 ------------------------------------------------------
+  function findChannel(id) {
+    for (var i = 0; i < channels.length; i++) {
+      if (channels[i].id === id) { return channels[i]; }
+    }
+    return null;
+  }
+
+  function select(id, updateUrl) {
+    var ch = findChannel(id) || channels[0];
+    if (!ch) { return; }
+
+    Array.prototype.forEach.call(tabsEl.children, function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.ch === ch.id));
+    });
+    titleEl.textContent = ch.title || ch.label;
+    descEl.textContent = ch.desc || '';
+    document.title = (ch.title || ch.label) + ' | 高専祭ライブ配信';
+
+    if (updateUrl) { history.replaceState(null, '', '?ch=' + ch.id); }
+    try { localStorage.setItem(STORE_KEY, ch.id); } catch (e) { /* プライベートブラウズ */ }
+
+    player.load(ch.id);
+  }
+
+  function buildTabs() {
+    channels.forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', 'false');
+      b.dataset.ch = c.id;
+      b.textContent = c.label;
+      b.addEventListener('click', function () { select(c.id, true); });
+      tabsEl.appendChild(b);
+    });
+  }
+
+  // ---- 起動 ---------------------------------------------------------------
+  player = window.KosensaiPlayer.create(video, onState);
+
+  window.KosensaiPlayer.loadChannels().then(function (list) {
+    channels = list;
+    buildTabs();
+
+    // 初期チャンネル: ?ch= > 前回選択 > 既定
+    var initial = new URLSearchParams(location.search).get('ch');
+    if (!initial) {
+      try { initial = localStorage.getItem(STORE_KEY); } catch (e) { /* noop */ }
+    }
+    select(initial || DEFAULT_CH, false);
+  });
+})();
+</script>
+</body>
+</html>

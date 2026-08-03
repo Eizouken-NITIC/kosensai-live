@@ -1,0 +1,17 @@
+# 実値のパスフレーズ。絶対にコミットしない。
+.env
+hosts/stream-server/.env
+
+# 証明書（certbot で取得したもの）
+*.pem
+*.key
+
+# 録画・作業ファイル
+*.mkv
+*.mp4
+*.ts
+recordings/
+
+# OS
+.DS_Store
+Thumbs.db

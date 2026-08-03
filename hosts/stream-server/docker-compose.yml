@@ -1,0 +1,49 @@
+# 高専祭ライブ配信 / 配信サーバー一式
+#
+# 想定: Proxmox 上の LXC(nesting=1) または VM に Docker を入れて実行。
+#   起動  : docker compose up -d
+#   更新  : git pull && docker compose restart caddy
+#   ログ  : docker compose logs -f mediamtx
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1.19.3
+    container_name: kosensai-mediamtx
+    restart: unless-stopped
+    # network_mode: host により SRT(:8890) と HLS(127.0.0.1:8888) をそのまま公開。
+    # bridge だと SRT の UDP ポートフォワードで問題が出やすい。
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    container_name: kosensai-caddy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro # certbot(DNS-01) で取得した証明書
+      # 配信サイトはこのホスト専用ではなく HP 部門との共同成果物なので、
+      # リポジトリ直下の web/ に置いてここからマウントする。
+      - ../../web:/srv/live:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - mediamtx
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  caddy_data:
+  caddy_config:

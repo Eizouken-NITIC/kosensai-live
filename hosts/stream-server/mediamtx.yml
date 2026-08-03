@@ -1,0 +1,79 @@
+###############################################
+# 高専祭ライブ配信 / MediaMTX 設定
+#
+# パスフレーズはこのファイルに書かない。
+# docker-compose の env_file (.env) から
+#   MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE=...
+# の形で注入する（README §3 参照）。
+###############################################
+
+###############################################
+# General
+###############################################
+logLevel: info
+logDestinations: [stdout]
+
+# SRT の再送バッファ確保のため、ホスト側で
+#   sysctl -w net.core.rmem_max=26214400
+# を入れておくこと（README §2 / LXC 設定メモ）。
+readTimeout: 10s
+writeTimeout: 10s
+
+###############################################
+# SRT server（本部OBS からの受け口）
+###############################################
+srt: yes
+srtAddress: :8890
+
+###############################################
+# HLS server（Caddy 経由のみ・外部に直接晒さない）
+###############################################
+hls: yes
+hlsAddress: 127.0.0.1:8888
+hlsEncryption: no                  # TLS 終端は Caddy に集約
+hlsAllowOrigins: ["*"]
+hlsTrustedProxies: [127.0.0.1]     # Caddy → MediaMTX のプロキシ信頼
+hlsVariant: mpegts                 # 既定は lowLatency。ブラウザ互換性優先で明示的に mpegts
+hlsSegmentCount: 3
+hlsSegmentDuration: 6s
+hlsAlwaysRemux: no                 # 視聴者ゼロのときはセグメント生成を止める
+
+###############################################
+# 使わないプロトコルは全部落とす
+###############################################
+rtsp: no
+rtmp: no
+webrtc: no
+moq: no                            # v1.19 で既定 on。:8892 を勝手に開かせない
+api: no
+metrics: no
+pprof: no
+playback: no
+
+###############################################
+# Path definitions
+#
+# 送出側の streamid は publish:<パス名>
+#   例) srt://<server>:8890?streamid=publish:ch1&passphrase=...&latency=120000
+###############################################
+paths:
+  # Ch1: 第一体育館（ATEM Mini Pro → 本部OBS → ここ）
+  ch1:
+    source: publisher
+    # srtPublishPassphrase は MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE で注入
+
+  # Ch2: 第二体育館（開催有無は未確定 / 2026-07 時点）
+  ch2:
+    source: publisher
+
+  # Ch3: 屋外遊撃 iPhone（Moblin → 本部OBS → ここ）
+  ch3:
+    source: publisher
+
+  # Ch4: サイネージ合成（本部OBS 生成）
+  ch4:
+    source: publisher
+
+  # 'all_others' はあえて定義しない。
+  # 定義するとワイルドカードとして任意のパスへの publish を許してしまうため、
+  # ch1〜ch4 以外への送出は拒否させる。

@@ -1,0 +1,249 @@
+/* viewer.css — 視聴ページのレイアウト。
+   色・角丸・フォントは theme.css の変数のみを参照し、ここでは直書きしない。 */
+
+/* ---- ヘッダー ---- */
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: calc(var(--sp-2) + var(--safe-t)) var(--sp-3) var(--sp-2);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.site-header h1 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* ---- LIVE バッジ ---- */
+.live-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: 11px;
+  color: var(--fg-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.live-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fg-muted);
+}
+.live-badge.is-live {
+  color: var(--fg);
+  border-color: var(--live);
+}
+.live-badge.is-live .dot {
+  background: var(--live);
+  animation: pulse 1.6s infinite;
+}
+
+/* ---- チャンネルタブ ---- */
+.channel-tabs {
+  display: flex;
+  gap: var(--sp-1);
+  padding: 8px var(--sp-2);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  scrollbar-width: none;
+}
+.channel-tabs::-webkit-scrollbar {
+  display: none;
+}
+.channel-tabs button {
+  flex: 0 0 auto;
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--fg-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 7px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: 0.15s;
+}
+.channel-tabs button:hover {
+  color: var(--fg);
+}
+.channel-tabs button[aria-selected="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+.channel-tabs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- 本体 ---- */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    align-items: start;
+  }
+}
+
+/* ---- プレイヤー ---- */
+.stage {
+  position: relative;
+  background: #000;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+}
+.stage video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #000;
+}
+
+.stage-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  text-align: center;
+  padding: var(--sp-4);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+}
+.stage-overlay.is-shown {
+  display: flex;
+}
+.stage-overlay p {
+  margin: 0;
+  font-size: var(--fs-base);
+  line-height: 1.7;
+}
+.stage-overlay small {
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+}
+
+.channel-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  padding: var(--sp-3);
+  border-bottom: 1px solid var(--line);
+}
+.channel-meta h2 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+.channel-meta span {
+  font-size: var(--fs-sm);
+  color: var(--fg-muted);
+}
+
+/* ---- 公式サイト埋め込み（private→public / Chrome LNA 対象外） ---- */
+.hp-panel {
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+@media (min-width: 1000px) {
+  .hp-panel {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    height: calc(100dvh - 96px);
+    position: sticky;
+    top: 96px;
+  }
+}
+.hp-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+.hp-panel-head a {
+  margin-left: auto;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.hp-panel iframe {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 70vh;
+  border: 0;
+  background: #fff;
+}
+@media (min-width: 1000px) {
+  .hp-panel iframe {
+    height: auto;
+  }
+}
+
+/* ---- フッター ---- */
+.site-footer {
+  padding: var(--sp-3) var(--sp-3) calc(var(--sp-4) + var(--safe-b));
+  font-size: 11px;
+  color: var(--fg-muted);
+  line-height: 1.8;
+  border-top: 1px solid var(--line);
+}
+
+/* ---- 共通部品 ---- */
+.btn {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: 0;
+  border-radius: var(--radius);
+  padding: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+.spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+.is-hidden {
+  display: none !important;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}

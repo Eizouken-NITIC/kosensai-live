@@ -1,0 +1,22 @@
+[Unit]
+Description=Kosensai signage kiosk (Chromium)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Environment=DISPLAY=:0
+# 自動再生の許可が無いと無人で映像が始まらない
+ExecStart=/usr/bin/chromium-browser \
+  --kiosk \
+  --noerrdialogs \
+  --disable-infobars \
+  --disable-session-crashed-bubble \
+  --disable-features=Translate \
+  --check-for-update-interval=31536000 \
+  --autoplay-policy=no-user-gesture-required \
+  https://live.kosensai.ichinoseki.ac.jp/signage/
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
