@@ -13,7 +13,9 @@
   let official = $state({ homeUrl: '', embedUrl: '' });
   let current = $state(DEFAULT_CH);
   let chromeVisible = $state(true);
+  /** @type {HTMLVideoElement | null} */
   let videoEl = $state(null);
+  /** @type {HTMLElement | null} */
   let stageEl = $state(null);
   let muted = $state(true);
   let fullscreen = $state(false);
@@ -108,16 +110,17 @@
 
 <svelte:head><title>KOSENSAI-LIVE</title></svelte:head>
 
+<!-- chrome の表示はページ全体の操作で復帰させる。
+     映像の <section> にハンドラを付けると、静的要素へのポインタ操作として
+     ARIA role を要求されてしまう（a11y_no_static_element_interactions）。
+     実際ここは「操作できる部品」ではなく単なる復帰の合図なので、
+     role を足して黙らせるのではなく body 側で受ける。 -->
+<svelte:body onmousemove={showChrome} onpointerdown={showChrome} onfocusin={showChrome} />
+
 <div class="page">
   <!-- 映像とその上に重なる chrome。ヘッダー用の帯を別に持たないので、
        映像がビューポートの縦を使い切れる（下に空白が残らない）。 -->
-  <section
-    bind:this={stageEl}
-    class="stage"
-    onmousemove={showChrome}
-    onpointerdown={showChrome}
-    onfocusin={showChrome}
-  >
+  <section bind:this={stageEl} class="stage">
     <!-- svelte-ignore a11y_media_has_caption -->
     <!-- controls は付けない。ライブ配信なのでシークバーに意味がなく、
          むしろ末端がライブ点に追従しないぶん誤解を招く。

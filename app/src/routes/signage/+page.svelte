@@ -10,7 +10,9 @@
 
   let official = $state({ embedUrl: '' });
   let clock = $state('--:--');
+  /** @type {HTMLVideoElement | null} */
   let videoEl = $state(null);
+  /** @type {HTMLIFrameElement | null} */
   let frameEl = $state(null);
 
   function tick() {
