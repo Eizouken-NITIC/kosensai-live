@@ -21,7 +21,6 @@
 
 <div class="signage">
   <div class="signage-stage">
-    <div class="signage-live" id="live"><i></i>LIVE</div>
     <video id="video" playsinline muted autoplay preload="none"></video>
     <div class="signage-idle is-shown" id="idle">
       <div class="signage-spinner"></div>
@@ -31,8 +30,8 @@
   </div>
 
   <aside class="signage-side">
+    <!-- iframe の中身が自分で見出しを持つので、こちらでは名前を付けない。 -->
     <div class="signage-side-head">
-      <span class="label" id="hpLabel">本日の予定・お知らせ</span>
       <span class="clock" id="clock">--:--</span>
     </div>
     <!-- URL は config.json の officialSite.embedUrl。
@@ -60,17 +59,14 @@
 
   var video = document.getElementById('video');
   var idle  = document.getElementById('idle');
-  var live  = document.getElementById('live');
   var msg   = document.getElementById('idleMsg');
 
   var player = window.KosensaiPlayer.create(video, function (state, detail) {
-    if (state === 'playing') {
-      idle.classList.remove('is-shown');
-      live.classList.add('is-shown');
+    if (state === 'playing' || state === 'connecting') {
+      idle.classList.toggle('is-shown', state !== 'playing');
       return;
     }
     idle.classList.add('is-shown');
-    live.classList.remove('is-shown');
 
     if (state === 'blocked') {
       // Kiosk では誰も触らないので、自動再生を許可した状態で起動すること
@@ -89,7 +85,6 @@
   // 公式サイトの埋め込み先は config.json から取る
   window.KosensaiPlayer.loadConfig().then(function (cfg) {
     var site = cfg.officialSite || {};
-    if (site.label) { document.getElementById('hpLabel').textContent = site.label; }
     document.getElementById('hpFrame').src =
       site.embedUrl || 'https://kosensai.ichinoseki.ac.jp/';
   });

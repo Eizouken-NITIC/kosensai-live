@@ -28,10 +28,10 @@
       label: 'タイムテーブル・お知らせ'
     },
     channels: [
-      { id: 'ch1', label: 'Ch1 第一体育館', title: '第一体育館 メインステージ', desc: 'ステージ企画の中継' },
-      { id: 'ch2', label: 'Ch2 第二体育館', title: '第二体育館 サブステージ', desc: '屋内展示・吹奏楽など' },
-      { id: 'ch3', label: 'Ch3 屋外遊撃', title: '屋外遊撃カメラ', desc: '屋台エリア・校内の様子' },
-      { id: 'ch4', label: 'Ch4 総合', title: '総合チャンネル', desc: 'ダイジェスト・CM・タイムテーブル' }
+      { id: 'ch1', label: '第一体育館' },
+      { id: 'ch2', label: '第二体育館' },
+      { id: 'ch3', label: '屋外' },
+      { id: 'ch4', label: '総合' }
     ]
   };
 

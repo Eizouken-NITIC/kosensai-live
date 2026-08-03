@@ -7,8 +7,6 @@
 <meta name="robots" content="noindex, nofollow">
 <title>高専祭ライブ配信</title>
 <link rel="icon" href="data:,">
-<!-- 見た目は assets/theme.css（暫定・HP 部門とすり合わせる）と
-     assets/viewer.css（レイアウト）に分離してある。ここには style を書かない。 -->
 <link rel="stylesheet" href="/assets/theme.css">
 <link rel="stylesheet" href="/assets/viewer.css">
 </head>
@@ -16,46 +14,36 @@
 
 <header class="site-header">
   <h1>高専祭ライブ配信</h1>
-  <span class="live-badge" id="badge">
-    <span class="dot"></span><span id="badgeText">接続中…</span>
-  </span>
+  <!-- 配信中だけ出す。待機中や接続中はオーバーレイが言うので、ここでは黙る。 -->
+  <span class="live-badge is-hidden" id="badge"><span class="dot"></span>LIVE</span>
 </header>
 
-<nav class="channel-tabs" id="tabs" role="tablist" aria-label="チャンネル選択"></nav>
+<nav class="channel-tabs" id="tabs" role="tablist" aria-label="チャンネル"></nav>
 
 <main class="layout">
-  <section>
-    <div class="stage">
-      <video id="video" playsinline muted autoplay controls preload="none"></video>
+  <div class="stage">
+    <video id="video" playsinline muted autoplay controls preload="none"></video>
 
-      <!-- 接続中はブラウザ内蔵プレイヤーのインジケータに任せ、ここは出さない。
-           出すのは「伝えることがあるとき」だけ。 -->
-      <div class="stage-overlay" id="overlay" role="status" aria-live="polite">
-        <p id="overlayMsg"></p>
-        <small id="overlayHint"></small>
-        <button class="btn is-hidden" id="overlayBtn" type="button">▶ 再生する</button>
-      </div>
+    <!-- 接続中は何も出さない。読み込み表示はブラウザ内蔵プレイヤーに任せる。
+         出すのは「伝えることがあるとき」だけ。 -->
+    <div class="stage-overlay" id="overlay" role="status" aria-live="polite">
+      <p id="overlayMsg"></p>
+      <small id="overlayHint"></small>
+      <button class="btn is-hidden" id="overlayBtn" type="button">▶ 再生する</button>
     </div>
-
-    <div class="channel-meta">
-      <h2 id="chTitle">—</h2>
-      <span id="chDesc"></span>
-    </div>
-  </section>
+  </div>
 
   <aside class="hp-panel">
+    <!-- iframe の中身が自分で見出しを持っているので、こちら側では名前を付けない。
+         狭くて読みづらいとき用に、別タブで開く導線だけ置く。 -->
     <div class="hp-panel-head">
-      <span id="hpLabel">タイムテーブル・お知らせ</span>
       <a id="hpLink" href="https://kosensai.ichinoseki.ac.jp/" target="_blank" rel="noopener">公式サイト ↗</a>
     </div>
-    <!-- 公式サイトをそのまま表示（コンテンツ複製なし）。
-         private→public のサブリソース取得は Chrome LNA の対象外。
+    <!-- private→public のサブリソース取得は Chrome LNA の対象外。
          成立条件は公式サイト側に X-Frame-Options / CSP frame-ancestors が無いこと
          （2026-08-04 時点で無いことを確認済み。docs/checklist.md §G で再確認する）。
-         URL は config.json の officialSite.embedUrl から差し込む。
-         sandbox は必須ではなく（無指定なら制限なし）ハードニング目的。
-         公式サイトは Framer Motion で opacity:0 から表示するため
-         allow-scripts は必ず残すこと。外すと中身が透明のまま何も出ない。 -->
+         allow-scripts は必ず残すこと。公式サイトは opacity:0 から JS で表示するため、
+         外すと中身が透明のまま何も出ない。 -->
     <iframe id="hpFrame"
             title="高専祭公式サイト"
             loading="lazy"
@@ -63,11 +51,6 @@
             sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
   </aside>
 </main>
-
-<footer class="site-footer">
-  この配信は学内ネットワーク限定です。学内Wi-Fiに接続してご覧ください。<br>
-  映像が止まる場合はページを再読み込みしてください。／ 一関高専 電算部・映像研究会
-</footer>
 
 <script src="/vendor/hls.min.js"></script>
 <script src="/assets/player.js"></script>
@@ -78,21 +61,17 @@
   var DEFAULT_CH = 'ch1';
   var STORE_KEY = 'kosensai.ch';
 
-  var video    = document.getElementById('video');
-  var tabsEl   = document.getElementById('tabs');
-  var overlay  = document.getElementById('overlay');
-  var msgEl    = document.getElementById('overlayMsg');
-  var hintEl   = document.getElementById('overlayHint');
-  var btnEl    = document.getElementById('overlayBtn');
-  var badge    = document.getElementById('badge');
-  var badgeTx  = document.getElementById('badgeText');
-  var titleEl  = document.getElementById('chTitle');
-  var descEl   = document.getElementById('chDesc');
+  var video   = document.getElementById('video');
+  var tabsEl  = document.getElementById('tabs');
+  var overlay = document.getElementById('overlay');
+  var msgEl   = document.getElementById('overlayMsg');
+  var hintEl  = document.getElementById('overlayHint');
+  var btnEl   = document.getElementById('overlayBtn');
+  var badge   = document.getElementById('badge');
 
   var channels = [];
   var player = null;
 
-  // ---- 表示の切り替え ------------------------------------------------------
   function showOverlay(message, hint, onClick) {
     msgEl.textContent = message;
     hintEl.textContent = hint || '';
@@ -102,55 +81,36 @@
     overlay.classList.add('is-shown');
   }
 
-  function hideOverlay() {
-    overlay.classList.remove('is-shown');
-  }
-
-  function setBadge(live, text) {
-    badge.classList.toggle('is-live', !!live);
-    badgeTx.textContent = text;
-  }
+  function hideOverlay() { overlay.classList.remove('is-shown'); }
 
   function onState(state, detail) {
-    if (state === 'playing') {
+    badge.classList.toggle('is-hidden', state !== 'playing');
+
+    if (state === 'playing' || state === 'connecting') {
       hideOverlay();
-      setBadge(true, 'LIVE');
-    } else if (state === 'connecting') {
-      // まだ失敗していないので何も断定しない。読み込み表示はブラウザに任せる。
-      hideOverlay();
-      setBadge(false, '接続中…');
     } else if (state === 'waiting') {
-      setBadge(false, '待機中');
       showOverlay('このチャンネルはまだ配信されていません',
-                  '配信が始まると自動で再生されます');
+                  '始まると自動で再生されます');
     } else if (state === 'blocked') {
-      setBadge(false, '待機中');
       showOverlay('タップで再生を開始します', '', detail.resume);
     } else if (state === 'unsupported') {
-      setBadge(false, '非対応');
-      showOverlay('このブラウザは再生に対応していません',
+      showOverlay('このブラウザでは再生できません',
                   'Safari / Chrome の最新版でお試しください');
     }
   }
 
-  // ---- チャンネル選択 ------------------------------------------------------
-  function findChannel(id) {
-    for (var i = 0; i < channels.length; i++) {
-      if (channels[i].id === id) { return channels[i]; }
-    }
-    return null;
-  }
-
   function select(id, updateUrl) {
-    var ch = findChannel(id) || channels[0];
+    var ch = null;
+    for (var i = 0; i < channels.length; i++) {
+      if (channels[i].id === id) { ch = channels[i]; }
+    }
+    ch = ch || channels[0];
     if (!ch) { return; }
 
     Array.prototype.forEach.call(tabsEl.children, function (b) {
       b.setAttribute('aria-selected', String(b.dataset.ch === ch.id));
     });
-    titleEl.textContent = ch.title || ch.label;
-    descEl.textContent = ch.desc || '';
-    document.title = (ch.title || ch.label) + ' | 高専祭ライブ配信';
+    document.title = ch.label + ' | 高専祭ライブ配信';
 
     if (updateUrl) { history.replaceState(null, '', '?ch=' + ch.id); }
     try { localStorage.setItem(STORE_KEY, ch.id); } catch (e) { /* プライベートブラウズ */ }
@@ -171,12 +131,10 @@
     });
   }
 
-  // ---- 起動 ---------------------------------------------------------------
   player = window.KosensaiPlayer.create(video, onState);
 
   window.KosensaiPlayer.loadConfig().then(function (cfg) {
     var site = cfg.officialSite || {};
-    if (site.label) { document.getElementById('hpLabel').textContent = site.label; }
     if (site.homeUrl) { document.getElementById('hpLink').href = site.homeUrl; }
     if (site.embedUrl) { document.getElementById('hpFrame').src = site.embedUrl; }
 

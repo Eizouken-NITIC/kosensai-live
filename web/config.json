@@ -4,6 +4,7 @@
     "channels: 視聴ページのタブ・サイネージの対象 Ch・hosts/obs/srt-urls.sh が",
     "  生成する OBS 用 URL・preflight.sh の突き合わせに反映される。",
     "  id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致させること。",
+    "  label は来場者に見せる唯一の文字列。id の ChN は運用側の呼称なので出さない。",
     "  Ch2（第二体育館）は開催有無が未確定。無くなったら1要素消すだけでよい。",
     "officialSite: 視聴ページ・サイネージに iframe で埋め込む公式サイトの URL。",
     "  2026 の /events（タイムテーブル）と /news（お知らせ）は 2026-08-04 時点で",
@@ -17,9 +18,7 @@
   "channels": [
     {
       "id": "ch1",
-      "label": "Ch1 第一体育館",
-      "title": "第一体育館 メインステージ",
-      "desc": "ステージ企画の中継",
+      "label": "第一体育館",
       "obsListenPort": 9001,
       "srtLatencyUs": 200000,
       "bitrateKbps": 4500,
@@ -27,9 +26,7 @@
     },
     {
       "id": "ch2",
-      "label": "Ch2 第二体育館",
-      "title": "第二体育館 サブステージ",
-      "desc": "屋内展示・吹奏楽など",
+      "label": "第二体育館",
       "obsListenPort": 9002,
       "srtLatencyUs": 200000,
       "bitrateKbps": 4500,
@@ -37,9 +34,7 @@
     },
     {
       "id": "ch3",
-      "label": "Ch3 屋外遊撃",
-      "title": "屋外遊撃カメラ",
-      "desc": "屋台エリア・校内の様子",
+      "label": "屋外",
       "obsListenPort": 9003,
       "srtLatencyUs": 500000,
       "bitrateKbps": 4500,
@@ -47,9 +42,7 @@
     },
     {
       "id": "ch4",
-      "label": "Ch4 総合",
-      "title": "総合チャンネル",
-      "desc": "ダイジェスト・CM・タイムテーブル",
+      "label": "総合",
       "obsListenPort": null,
       "srtLatencyUs": null,
       "bitrateKbps": 5000,

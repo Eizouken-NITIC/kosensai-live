@@ -20,15 +20,18 @@
   letter-spacing: 0.02em;
 }
 
-/* ---- LIVE バッジ ---- */
+/* ---- LIVE バッジ（配信中のみ表示される） ---- */
 .live-badge {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
   font-size: 11px;
-  color: var(--fg-muted);
-  border: 1px solid var(--line);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--live);
+  border: 1px solid var(--live);
+  background: color-mix(in srgb, var(--live) 8%, transparent);
   border-radius: var(--radius-pill);
   padding: 3px 9px;
   white-space: nowrap;
@@ -37,14 +40,6 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--fg-muted);
-}
-.live-badge.is-live {
-  color: var(--live);
-  border-color: var(--live);
-  background: color-mix(in srgb, var(--live) 8%, transparent);
-}
-.live-badge.is-live .dot {
   background: var(--live);
   animation: pulse 1.6s infinite;
 }
@@ -117,6 +112,7 @@
   background: var(--stage-bg);
 }
 
+/* 伝えることがあるときだけ出す。接続中は出さない（ブラウザ内蔵の表示に任せる） */
 .stage-overlay {
   position: absolute;
   inset: 0;
@@ -143,24 +139,6 @@
   font-size: var(--fs-sm);
 }
 
-.channel-meta {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-  padding: var(--sp-3);
-  border-bottom: 1px solid var(--line);
-}
-.channel-meta h2 {
-  margin: 0;
-  font-size: var(--fs-lg);
-  font-weight: 700;
-}
-.channel-meta span {
-  font-size: var(--fs-sm);
-  color: var(--fg-muted);
-}
-
 /* ---- 公式サイト埋め込み（private→public / Chrome LNA 対象外） ---- */
 .hp-panel {
   border-top: 1px solid var(--line);
@@ -179,18 +157,14 @@
 }
 .hp-panel-head {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
   padding: var(--sp-2) var(--sp-3);
   border-bottom: 1px solid var(--line);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--fg-muted);
 }
 .hp-panel-head a {
-  margin-left: auto;
   color: var(--accent);
   text-decoration: none;
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
 .hp-panel iframe {
@@ -204,15 +178,6 @@
   .hp-panel iframe {
     height: auto;
   }
-}
-
-/* ---- フッター ---- */
-.site-footer {
-  padding: var(--sp-3) var(--sp-3) calc(var(--sp-4) + var(--safe-b));
-  font-size: 11px;
-  color: var(--fg-muted);
-  line-height: 1.8;
-  border-top: 1px solid var(--line);
 }
 
 /* ---- 共通部品 ---- */

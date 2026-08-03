@@ -70,32 +70,6 @@ body {
   animation: spin 1s linear infinite;
 }
 
-.signage-live {
-  position: absolute;
-  top: 1.6vh;
-  left: 1.6vw;
-  z-index: 5;
-  display: none;
-  align-items: center;
-  gap: 0.6vw;
-  background: var(--stage-scrim);
-  color: var(--stage-fg);
-  border-radius: var(--radius-pill);
-  padding: 0.5vh 1vw;
-  font-size: 0.9vw;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-}
-.signage-live.is-shown {
-  display: flex;
-}
-.signage-live i {
-  width: 0.7vw;
-  height: 0.7vw;
-  border-radius: 50%;
-  background: var(--live);
-  animation: pulse 1.6s infinite;
-}
 
 /* ---- 右カラム：公式サイト ---- */
 .signage-side {
@@ -110,12 +84,6 @@ body {
   gap: 1vw;
   padding: 1.4vh 1.2vw;
   border-bottom: 1px solid var(--line);
-}
-.signage-side-head .label {
-  font-size: 1vw;
-  font-weight: 700;
-  color: var(--fg-muted);
-  letter-spacing: 0.08em;
 }
 .signage-side-head .clock {
   margin-left: auto;
