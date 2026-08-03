@@ -79,8 +79,6 @@ services:
   # ビットレートや画質を実測したいときだけ本番相当に上げる:
   #   REH_SIZE=1280x720 REH_FPS=30 REH_BITRATE=2500k REH_PRESET=veryfast \
   #     docker compose --profile publish up -d
-  #
-  # profile を付けてあるので、映像を流すときだけ up.sh が起動する。
 
   pub-ch1:
     <<: *publisher

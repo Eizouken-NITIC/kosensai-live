@@ -40,7 +40,7 @@
       setInterval(() => {
         if (frameEl) frameEl.src = frameEl.src;
       }, IFRAME_RELOAD_MS),
-      // 無人運用の保険。再生中はリロードしない。
+      // 再生中はリロードしない
       setInterval(() => {
         if (videoEl?.paused || (videoEl?.readyState ?? 0) < 3) location.reload();
       }, PAGE_RELOAD_MS)
@@ -114,7 +114,6 @@
 <style>
   .signage {
     display: grid;
-    /* 右カラムは固定幅。左は「ヘッダー / 映像 / 導線」の 3 段。 */
     grid-template-columns: minmax(0, 1fr) var(--side, 460px);
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:

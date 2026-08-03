@@ -5,7 +5,7 @@
 
   const DEFAULT_CH = 'ch1';
   const STORE_KEY = 'kosensai.ch';
-  const CHROME_HIDE_MS = 3000; // 操作が止まってから chrome を隠すまで
+  const CHROME_HIDE_MS = 3000;
 
   const player = createPlayer();
 
@@ -87,11 +87,8 @@
 
 <svelte:head><title>KOSENSAI-LIVE</title></svelte:head>
 
-<!-- chrome の表示はページ全体の操作で復帰させる。
-     映像の <section> にハンドラを付けると、静的要素へのポインタ操作として
-     ARIA role を要求されてしまう（a11y_no_static_element_interactions）。
-     実際ここは「操作できる部品」ではなく単なる復帰の合図なので、
-     role を足して黙らせるのではなく body 側で受ける。 -->
+<!-- 映像の <section> にハンドラを付けると a11y_no_static_element_interactions
+     が出るため、chrome の復帰は body 側で受ける。 -->
 <svelte:body onmousemove={showChrome} onpointerdown={showChrome} onfocusin={showChrome} />
 
 <div class="page">
@@ -99,10 +96,9 @@
        映像がビューポートの縦を使い切れる（下に空白が残らない）。 -->
   <section bind:this={stageEl} class="stage">
     <!-- svelte-ignore a11y_media_has_caption -->
-    <!-- コントロールはブラウザ内蔵のものを使う。自前で作ると各ブラウザ・
-         各言語での作法から外れるうえ、アクセシビリティも自前で担保する
-         ことになる。ライブとしての見え方は hls.js の liveDurationInfinity
-         （duration を Infinity にする）側で担保する。 -->
+    <!-- コントロールはブラウザ内蔵のものを使う。自前実装は各ブラウザ・言語の
+         作法とアクセシビリティを自前で担保することになる。ライブとしての
+         duration 制御は player.svelte.js 側（liveDurationInfinity）。 -->
     <video bind:this={videoEl} playsinline muted autoplay controls preload="none"></video>
 
     <div class="scrim chrome" class:visible={chromeVisible || pinned}>
@@ -130,8 +126,7 @@
       <div class="cover" role="status" aria-live="polite">
         <p>このチャンネルはまだ配信されていません</p>
         <small>始まると自動で再生されます</small>
-        <!-- 自動リトライは続いているが、待てない人のために手動の出口を出す。
-             見えない当たり判定にはせず、ボタンとして明示する。 -->
+        <!-- 自動リトライは続いているが、待てない人のために手動の出口も出す。 -->
         <button class="retry" type="button" onclick={() => player.load(current)}>
           今すぐ再読み込み
         </button>

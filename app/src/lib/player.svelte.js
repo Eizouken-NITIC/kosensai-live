@@ -1,8 +1,5 @@
 /* HLS 再生の状態機械。
  *
- * 素の JS 版（旧 web/assets/player.js）から移植したもの。
- * 挙動はリハーサル環境で実機確認済みなので、ロジックは変えていない。
- *
  * 状態:
  *   'connecting'  接続を試している最中。まだ失敗していない
  *   'playing'     再生中
@@ -48,7 +45,6 @@ export function createPlayer() {
     }
   }
 
-  /** 取得に失敗したときの共通処理。待ち時間を延ばしつつ再試行する。 */
   function fail() {
     clearRetry();
     const wait = RETRY_MS[Math.min(failures, RETRY_MS.length - 1)];
@@ -127,12 +123,9 @@ export function createPlayer() {
       liveSyncDurationCount: 3,
       liveMaxLatencyDurationCount: 10,
       maxBufferLength: 20,
-      // ライブとして再生させる。
-      // これが false（既定）だと duration がスライディングウィンドウの長さに
-      // なり、ブラウザ内蔵プレイヤーが「18秒の動画」として 扱ってしまう
-      // （シークバーが出て 0:00 / 0:18 と表示される）。true にすると
-      // setLiveSeekableRange が使われ duration が Infinity になるので、
-      // ライブ配信として扱われる。
+      // ライブとして再生させる。false（既定）だと duration がスライディング
+      // ウィンドウの長さになり、ブラウザ内蔵プレイヤーが「18秒の動画」として
+      // 扱ってしまう（シークバーが出て 0:00 / 0:18 と表示される）。
       liveDurationInfinity: true,
       // 巻き戻せる量を絞る。長時間の無人運用でメモリを食わせない。
       backBufferLength: 30,
@@ -156,7 +149,7 @@ export function createPlayer() {
     hls.attachMedia(video);
   }
 
-  /** <video> を渡して初期化する。Svelte の use: から呼ぶ。 */
+  /** <video> を渡して初期化する。 */
   function attach(el) {
     video = el;
 

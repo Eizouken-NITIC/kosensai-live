@@ -39,7 +39,6 @@ echo
 
 rm -rf out
 for ch in ${CHANNELS}; do
-  # マウント先は docker run より先に作っておく
   mkdir -p "out/${ch}"
 done
 
