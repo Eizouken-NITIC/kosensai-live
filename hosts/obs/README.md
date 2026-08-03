@@ -1,4 +1,4 @@
-# hosts/hq-obs — 本部メイン PC（OBS）
+# hosts/obs — 本部メイン PC（OBS）
 
 **設置場所:** 本部・統合制御室
 **担当:** 映像研（マシン調達は NW 班）
@@ -10,8 +10,8 @@
 
 ```bash
 # 配信サーバー側の .env が読める場所で実行する
-./hosts/hq-obs/srt-urls.sh                    # MediaMTX が同一ホスト
-MTX_HOST=10.1.2.3 OBS_HOST=10.1.2.4 ./hosts/hq-obs/srt-urls.sh
+./hosts/obs/srt-urls.sh                    # MediaMTX が同一ホスト
+MTX_HOST=10.1.2.3 OBS_HOST=10.1.2.4 ./hosts/obs/srt-urls.sh
 ```
 
 チャンネル定義（ポート・latency・ビットレート）の出どころは
@@ -73,8 +73,8 @@ srt://<OBSマシンのIP>:9001?passphrase=<ch1用>&latency=200000
 srt://<OBSマシンのIP>:9003?passphrase=<ch3用>&latency=500000
 ```
 
-> ATEM Mini Pro のファームウェアが SRT 送出対応版（9.5〜9.6 以降）であることを
-> **実機で** 確認すること。
+> ATEM 側の SRT 送出はファームウェア 9.5〜9.6 以降の機能。
+> 古ければ上げるだけなので、セットアップ時に最新にしておく（`hosts/field/README.md`）。
 
 ---
 
@@ -93,7 +93,7 @@ srt://127.0.0.1:8890?streamid=publish:<ch>&passphrase=<ch用>&latency=120000
 | Ch3 | `publish:ch3` | `MTX_PATHS_CH3_...` | 120000 | CBR 4500 kbps |
 | Ch4 | `publish:ch4` | `MTX_PATHS_CH4_...` | 120000 | CBR 5000 kbps |
 
-パスフレーズは `hosts/stream-server/.env` と**必ず一致させる**。
+パスフレーズは `hosts/server/.env` と**必ず一致させる**。
 実値入りの URL は `./srt-urls.sh` が出力する。
 
 ### エンコード設定

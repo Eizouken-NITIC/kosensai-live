@@ -2,7 +2,7 @@
 # 本部 OBS に入力する SRT URL 一覧を生成する。
 #
 # チャンネル定義（web/channels.json）とパスフレーズ
-# （hosts/stream-server/.env）から組み立てるので、手打ちミスが起きない。
+# （hosts/server/.env）から組み立てるので、手打ちミスが起きない。
 #
 #   ./srt-urls.sh                       # MediaMTX と OBS が同一ホスト
 #   MTX_HOST=10.1.2.3 ./srt-urls.sh     # 別ホストの場合
@@ -14,7 +14,7 @@ set -euo pipefail
 HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
 
-ENV_FILE="${ENV_FILE:-${REPO_DIR}/hosts/stream-server/.env}"
+ENV_FILE="${ENV_FILE:-${REPO_DIR}/hosts/server/.env}"
 CHANNELS="${REPO_DIR}/web/channels.json"
 MTX_HOST="${MTX_HOST:-127.0.0.1}"
 MTX_PORT="${MTX_PORT:-8890}"

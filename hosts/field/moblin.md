@@ -1,7 +1,7 @@
 # Ch3 屋外遊撃（iPhone 15 Pro + Moblin）
 
 屋台エリア・行列状況・休憩スペースのゲリラ中継。学内 Wi-Fi での移動運用。
-接続先 URL は `hosts/hq-obs/srt-urls.sh` の出力をそのまま使う（手打ち禁止）。
+接続先 URL は `hosts/obs/srt-urls.sh` の出力をそのまま使う（手打ち禁止）。
 
 ## 1. 機材
 

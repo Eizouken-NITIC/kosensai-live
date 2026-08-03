@@ -1,8 +1,8 @@
 {
   "_comment": [
     "チャンネル定義の単一の情報源。ここを直せば視聴ページ・サイネージ・",
-    "hosts/hq-obs/srt-urls.sh の3箇所すべてに反映される。",
-    "id は MediaMTX のパス名（hosts/stream-server/mediamtx.yml の paths:）と一致させること。",
+    "hosts/obs/srt-urls.sh の3箇所すべてに反映される。",
+    "id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致させること。",
     "Ch2（第二体育館）は開催有無が未確定。無くなったらこの配列から1要素消すだけでよい。"
   ],
   "channels": [

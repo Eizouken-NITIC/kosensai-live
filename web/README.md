@@ -1,6 +1,6 @@
 # web — 配信サイト（視聴ページ・サイネージページ）
 
-配信サーバー（`hosts/stream-server/`）の Caddy が `/srv/live` としてマウントし、
+配信サーバー（`hosts/server/`）の Caddy が `/srv/live` としてマウントし、
 そのまま静的配信する成果物。特定のマシンに紐づくものではなく、
 **電算部 HP 部門と共同で内容を詰める**ものなので `hosts/` の外に置いてある。
 
@@ -50,10 +50,10 @@ web/
 
 - 視聴ページのタブ
 - サイネージの対象 Ch
-- `hosts/hq-obs/srt-urls.sh` が生成する OBS 用 URL
-- `hosts/stream-server/scripts/preflight.sh` の突き合わせチェック
+- `hosts/obs/srt-urls.sh` が生成する OBS 用 URL
+- `hosts/server/scripts/preflight.sh` の突き合わせチェック
 
-`id` は MediaMTX のパス名（`hosts/stream-server/mediamtx.yml` の `paths:`）と
+`id` は MediaMTX のパス名（`hosts/server/mediamtx.yml` の `paths:`）と
 一致していなければならない。preflight がずれを検出する。
 
 **Ch2（第二体育館）は開催有無が未確定。** 無くなったら `channels.json` から

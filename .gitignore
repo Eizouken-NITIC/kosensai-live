@@ -1,6 +1,6 @@
 # 実値のパスフレーズ。絶対にコミットしない。
 .env
-hosts/stream-server/.env
+hosts/server/.env
 
 # 証明書（certbot で取得したもの）
 *.pem

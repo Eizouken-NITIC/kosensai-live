@@ -27,10 +27,6 @@ live.kosensai.ichinoseki.ac.jp {
 		}
 
 		header {
-			# 同一オリジンなので本来不要だが、hls.js が fetch mode を
-			# cors にするケースへの保険
-			Access-Control-Allow-Origin *
-			Cache-Control "no-cache"
 			-Server
 		}
 	}

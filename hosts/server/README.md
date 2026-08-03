@@ -1,6 +1,6 @@
-# hosts/stream-server — 配信サーバー
+# hosts/server — 配信サーバー
 
-**設置場所:** 総合情報センター / Proxmox 上の LXC（または VM）
+**設置場所:** 総合情報センター / Proxmox 上の VM
 **担当:** 映像研（ハードウェアと NW は NW 班）
 **役割:** MediaMTX（SRT 受信 → HLS 生成）+ Caddy（TLS 終端・静的配信・リバースプロキシ）
 
@@ -20,23 +20,54 @@
 
 ## 1. マシン要件
 
-Ubuntu 22.04 LXC（`features: nesting=1` で Docker-in-LXC を有効化）または VM。
+**Proxmox の VM 1 台に、MediaMTX と Caddy を Docker Compose で同居させる。**
 
 | 項目 | 値 |
 | --- | --- |
+| 形態 | **VM**（LXC ではなく。理由は下記） |
+| OS | Ubuntu 22.04 / 24.04 |
 | CPU | 2 コア以上（トランスコードはせず HLS リマックスのみ） |
 | RAM | 2GB 以上 |
 | ディスク | 20GB（ログ・セグメント一時ファイル） |
 | ネットワーク | ブリッジ接続・配信用 VLAN・**固定 IP** |
+
+### なぜ MediaMTX と Caddy を分けないか
+
+**分けられない。** MediaMTX は `hlsAddress: 127.0.0.1:8888` でループバックにしか
+バインドせず、TLS 終端を Caddy に集約する設計になっている
+（`hlsTrustedProxies: [127.0.0.1]`）。別マシンに分けると HLS をネットワークに
+晒すことになり、「外部に直接晒さない」という前提が崩れる。
+同一ホストに置き、両方 `network_mode: host` で動かす。
+
+### なぜ LXC ではなく VM か
+
+SRT の再送バッファのために `net.core.rmem_max` を上げる必要があるが、
+**この sysctl がネットワーク名前空間ごとに持てるかどうかはカーネル次第**。
+新しめのカーネルでは namespaced だが、古いカーネルではホスト全体で 1 つしかない。
+
+- **VM なら**、カーネルが独立しているのでゲスト内で設定すれば必ず効く。
+- **LXC だと**、カーネルを Proxmox ホストと共有するため、namespaced でない
+  カーネルでは **Proxmox ホスト側**で設定する必要があり、他のゲストにも影響する。
+  サーバーは NW 班の管理物なので、ホスト全体の設定変更を依頼しなくて済む形が望ましい。
+
+加えて Docker-in-LXC は `nesting=1` 等の追加設定が要る。VM の方が部品が少ない。
+
+LXC でやる場合は、コンテナ内で設定して**読み戻しで効いているか必ず確認する**こと。
+
+```bash
+sysctl -w net.core.rmem_max=26214400
+sysctl -n net.core.rmem_max        # 26214400 が返らなければホスト側で設定が必要
+```
 
 ## 2. セットアップ
 
 ```bash
 # SRT の再送バッファを確保（デフォルトだと不足する）
 sudo sysctl -w net.core.rmem_max=26214400
+sudo sysctl -n net.core.rmem_max     # 26214400 が返ること（§1 参照）
 echo 'net.core.rmem_max=26214400' | sudo tee /etc/sysctl.d/99-srt.conf
 
-git clone <このリポジトリ> && cd kosensai-broadcast/hosts/stream-server
+git clone <このリポジトリ> && cd kosensai-broadcast/hosts/server
 
 # パスフレーズを 4 本生成して .env に記入（Ch ごとに別の値・10〜79 文字）
 cp .env.example .env
@@ -52,7 +83,7 @@ docker compose up -d
 ```
 
 `.env` の値は **本部 OBS 側の passphrase と一致させる**こと。
-本部に渡す SRT URL は `hosts/hq-obs/srt-urls.sh` で生成できる。
+本部に渡す SRT URL は `hosts/obs/srt-urls.sh` で生成できる。
 
 ## 3. 運用コマンド
 

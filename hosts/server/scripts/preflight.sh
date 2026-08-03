@@ -14,7 +14,7 @@ ok()   { printf '  \033[32mOK\033[0m   %s\n' "$1"; }
 warn() { printf '  \033[33mWARN\033[0m %s\n' "$1"; }
 ng()   { printf '  \033[31mNG\033[0m   %s\n' "$1"; FAIL=1; }
 
-echo "== 配信サーバー設定 (hosts/stream-server/) =="
+echo "== 配信サーバー設定 (hosts/server/) =="
 for f in mediamtx.yml Caddyfile docker-compose.yml; do
   [[ -f "$f" ]] && ok "$f" || ng "$f が無い"
 done
@@ -55,7 +55,7 @@ if command -v python3 >/dev/null; then
   if python3 - "${REPO_DIR}" <<'PY'
 import json, re, sys, pathlib
 repo = pathlib.Path(sys.argv[1])
-yml  = (repo / "hosts/stream-server/mediamtx.yml").read_text(encoding="utf-8")
+yml  = (repo / "hosts/server/mediamtx.yml").read_text(encoding="utf-8")
 body = yml.split("\npaths:", 1)[1] if "\npaths:" in yml else ""
 mtx  = set(re.findall(r"^  ([A-Za-z0-9_-]+):\s*$", body, re.M))
 web  = {c["id"] for c in json.loads((repo / "web/channels.json").read_text(encoding="utf-8"))["channels"]}

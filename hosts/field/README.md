@@ -12,7 +12,7 @@
 | `moblin.md` | Ch3 屋外遊撃（iPhone 15 Pro + Moblin + DJI Mic） |
 | このファイル | Ch1 / Ch2（ATEM Mini Pro）と音声取り込み |
 
-現場に渡す SRT 接続先は手打ちせず、`hosts/hq-obs/srt-urls.sh` の
+現場に渡す SRT 接続先は手打ちせず、`hosts/obs/srt-urls.sh` の
 「現場側(Caller)には次を渡す」の行をそのまま使うこと。
 
 ---
@@ -34,8 +34,8 @@ Ch1（第一体育館）: srt://<OBSマシンのIP>:9001?passphrase=<ch1用>&lat
 Ch2（第二体育館）: srt://<OBSマシンのIP>:9002?passphrase=<ch2用>&latency=200000
 ```
 
-> ⚠️ **ファームウェアが SRT 送出対応版（9.5〜9.6 以降）であることを実機で確認する。**
-> ここは当日まで放置すると詰むポイント。
+SRT 送出はファームウェア 9.5〜9.6 以降の機能。古ければ ATEM Software Control で
+アップデートすれば済むので、セットアップのついでに最新に上げておく。
 
 ### PTZ カメラの制御
 

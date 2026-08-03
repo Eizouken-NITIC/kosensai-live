@@ -18,11 +18,11 @@
 現場 (ATEM Mini Pro / iPhone+Moblin)      ← hosts/field/
    │  SRT Caller → :9001-9003
    ▼
-本部メイン PC (OBS)                        ← hosts/hq-obs/
+本部メイン PC (OBS)                        ← hosts/obs/
    │  Ch1〜3 受信・Ch4 合成・4系統エンコード
    │  SRT Caller → :8890 (streamid=publish:chN)
    ▼
-配信サーバー (MediaMTX + Caddy)            ← hosts/stream-server/
+配信サーバー (Proxmox VM / MediaMTX + Caddy) ← hosts/server/
    │  HLS 127.0.0.1:8888 → Caddy :443
    ├───────────────► 来場者スマホ           ← web/index.html
    └───────────────► 校内サイネージ (RPi)   ← hosts/signage/ + web/signage/
@@ -49,11 +49,11 @@ MediaMTX はトランスコード／ABR を行わないので、**エンコー�
 ```
 kosensai-broadcast/
 ├─ hosts/                     ★ マシンごと。ここがデプロイ単位
-│  ├─ stream-server/          配信サーバー (Proxmox LXC: MediaMTX + Caddy)
+│  ├─ server/                 配信サーバー (Proxmox VM: MediaMTX + Caddy)
 │  │  ├─ docker-compose.yml / mediamtx.yml / Caddyfile / .env.example
 │  │  ├─ certs/               証明書置き場（git 管理外）
 │  │  └─ scripts/             preflight / get-cert / smoke-test
-│  ├─ hq-obs/                 本部メイン PC
+│  ├─ obs/                    本部メイン PC
 │  │  ├─ README.md            OBS の入力・出力・エンコード・録画
 │  │  └─ srt-urls.sh          OBS に入れる SRT URL を生成（手打ち禁止）
 │  ├─ signage/                校内サイネージ端末 (Raspberry Pi)
@@ -62,7 +62,7 @@ kosensai-broadcast/
 │  └─ field/                  現場（ATEM / iPhone）— 機材設定のドキュメントのみ
 │     ├─ README.md            Ch1/Ch2 ATEM・PTZ・音声取り込み
 │     └─ moblin.md            Ch3 遊撃 iPhone
-├─ web/                       配信サイト（HP 部門と共同。stream-server が配信する）
+├─ web/                       配信サイト（HP 部門と共同。server が配信する）
 │  ├─ index.html / signage/index.html
 │  ├─ channels.json           ★ チャンネル定義の単一の情報源
 │  ├─ assets/                 theme.css(暫定) / viewer.css / signage.css / player.js
@@ -75,8 +75,8 @@ kosensai-broadcast/
 
 | 担当するもの | 読むファイル |
 | --- | --- |
-| 配信サーバーを立てる | [hosts/stream-server/README.md](hosts/stream-server/README.md) |
-| 本部 OBS を組む | [hosts/hq-obs/README.md](hosts/hq-obs/README.md) |
+| 配信サーバーを立てる | [hosts/server/README.md](hosts/server/README.md) |
+| 本部 OBS を組む | [hosts/obs/README.md](hosts/obs/README.md) |
 | サイネージ端末を置く | [hosts/signage/README.md](hosts/signage/README.md) |
 | 現場の機材を組む | [hosts/field/README.md](hosts/field/README.md) |
 | 配信サイトを触る | [web/README.md](web/README.md) |
@@ -113,7 +113,7 @@ git clone <このリポジトリ>
 cd kosensai-broadcast
 
 # 配信サーバーを立てる場合
-cd hosts/stream-server
+cd hosts/server
 cp .env.example .env && $EDITOR .env    # パスフレーズ 4 本
 sudo ./scripts/get-cert.sh              # 証明書（前日までに）
 ./scripts/preflight.sh                  # 起動前チェック
@@ -185,7 +185,6 @@ header_down Location "^/(.*)$" "/hls/$1"
 
 - 実ブラウザ 3 環境（Chrome Android / Safari iOS / Chromium RPi）での再生
 - OBS 1 台での 4Ch 同時エンコード負荷
-- ATEM Mini Pro のファームウェアが SRT 対応版か
 - 公式サイトに `X-Frame-Options` が付いていないか（iframe 合成の成立条件）
 
 ---

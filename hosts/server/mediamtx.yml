@@ -15,7 +15,7 @@ logDestinations: [stdout]
 
 # SRT の再送バッファ確保のため、ホスト側で
 #   sysctl -w net.core.rmem_max=26214400
-# を入れておくこと（README §2 / LXC 設定メモ）。
+# を入れておくこと（README §1・§2）。
 readTimeout: 10s
 writeTimeout: 10s
 
