@@ -58,7 +58,7 @@ cd rehearsal
 
 ### 1-3. サイネージページ
 
-`https://live.kosensai.ichinoseki.ac.jp:8443/signage/`
+`http://localhost:8080/signage/`
 
 | 確認項目 | 合格条件 |
 | --- | --- |
