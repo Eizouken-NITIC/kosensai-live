@@ -10,25 +10,12 @@
 
   let official = $state({ embedUrl: '' });
   let clock = $state('--:--');
-  let clockVisible = $state(false);
   let videoEl = $state(null);
   let frameEl = $state(null);
 
-  const CLOCK_SHOW_MS = 12000; // 出しておく時間
-  let clockTimer = null;
-
-  /* 時計は出しっぱなしにしない。分が変わったタイミングで一定時間だけ出す。
-     常時表示だと映像の一部を恒久的に潰すことになるが、通行人は数十秒あれば
-     目に入るので、間欠で十分。 */
   function tick() {
     const d = new Date();
-    const next = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    if (next !== clock) {
-      clock = next;
-      clockVisible = true;
-      clearTimeout(clockTimer);
-      clockTimer = setTimeout(() => (clockVisible = false), CLOCK_SHOW_MS);
-    }
+    clock = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
   onMount(() => {
@@ -59,7 +46,6 @@
 
     return () => {
       timers.forEach(clearInterval);
-      clearTimeout(clockTimer);
       detach();
     };
   });
@@ -74,27 +60,41 @@
 <svelte:head><title>KOSENSAI-LIVE サイネージ</title></svelte:head>
 
 <div class="signage">
+  <!-- 視聴ページと違い、こちらは映像に重ねず独立した帯にする。
+       離れて見る前提なので、映像の上に文字が乗ると読みにくい。 -->
+  <header>
+    <Wordmark live={player.isLive} />
+    <time class="clock">{clock}</time>
+  </header>
+
   <section class="stage">
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
-    <!-- 時計は映像に重ねる。OBS で焼き込むと HLS の遅延（20秒前後）が
-         そのまま時刻のズレになるので、端末のローカル時刻で出す。
-         逆に「現在の企画名」など映像と同期すべきものは OBS 側で焼き込む。 -->
-    <div class="scrim overlay">
-      <Wordmark live={player.isLive} />
-      <time class="clock" class:visible={clockVisible || !player.isLive}>{clock}</time>
-    </div>
-
     {#if !player.isLive}
       <!-- スピナーは置かない。実際には数秒〜10 秒間隔で再試行しているだけで、
-           回り続ける表示は「今まさに読み込んでいる」という誤った印象を与える。
-           開始時刻も分からないので「まもなく」とは言わない。 -->
+           回り続ける表示は「今まさに読み込んでいる」という誤った印象を与える。-->
       <div class="cover idle">
         <p>現在配信していません</p>
       </div>
     {/if}
   </section>
+
+  <!-- 映像は 16:9 なので縦長の領域だと上下が空く。その分を帯として確保し、
+       通りすがりの人が自分の端末で見るための導線に使う。 -->
+  <div class="invite">
+    <!-- QR は白地に黒で置く。読み取り機は「暗いモジュール／明るい下地」を
+         前提にしているので、反転させると読み取り率が落ちる。
+         なお <img> で読み込んだ SVG は独立した文書として扱われるため、
+         SVG 内の currentColor は親の色を継承しない（黒のまま出る）。 -->
+    <span class="qr">
+      <img src="/assets/qr-viewer.svg" alt="視聴ページの QR コード" />
+    </span>
+    <div class="invite-text">
+      <strong>スマホでも視聴できます</strong>
+      <span>学内Wi-Fi限定 &nbsp;/&nbsp; <code>live.kosensai.ichinoseki.ac.jp</code></span>
+    </div>
+  </div>
 
   <aside class="side">
     {#if official.embedUrl}
@@ -106,64 +106,98 @@
         sandbox="allow-scripts allow-same-origin"
       ></iframe>
     {/if}
-
-    <!-- 通りすがりの人が自分の端末で見るための導線。配信中も常に出す。
-         QR は静的な SVG。学内限定配信なので実行時生成には依存させない。 -->
-    <div class="invite">
-      <img src="/assets/qr-viewer.svg" alt="視聴ページの QR コード" />
-      <div>
-        <strong>スマホでも視聴できます</strong>
-        <span>学内Wi-Fi限定</span>
-        <code>live.kosensai.ichinoseki.ac.jp</code>
-      </div>
-    </div>
   </aside>
 </div>
 
 <style>
   .signage {
     display: grid;
-    grid-template-columns: 1fr var(--side, 26vw);
+    /* 右カラムは固定幅。左は「ヘッダー / 映像 / 導線」の 3 段。 */
+    grid-template-columns: minmax(0, 1fr) var(--side, 460px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'header side'
+      'stage  side'
+      'invite side';
     height: 100dvh;
     overflow: hidden;
     cursor: none;
     user-select: none;
   }
 
-
-  /* 位置と暗がりは .scrim。ここは中身の並べ方だけ。 */
-  .overlay {
+  header {
+    grid-area: header;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 2vw;
-    padding: 2.4vh 2vw 5vh;
+    gap: var(--sp-5);
+    /* 視聴ページのヘッダーと同じくらいの高さに揃える */
+    padding: var(--sp-3) var(--sp-5);
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
   }
   .clock {
-    font-size: 1.8vw;
+    font-size: var(--fs-lg);
     font-weight: 800;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.02em;
     line-height: 1;
-    opacity: 0;
-    transition: opacity 400ms ease;
-  }
-  .clock.visible {
-    opacity: 1;
   }
 
+  .stage {
+    grid-area: stage;
+  }
   /* 配信していない間は映像が無いので、透過ではなく完全に黒で塗る。 */
   .idle {
     background: #000;
   }
   .idle p {
-    margin: 0;
     font-size: 1.4vw;
     color: var(--fg-muted);
   }
 
-  /* ---- 右カラム ---- */
+  .invite {
+    grid-area: invite;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 24px calc(16px + var(--safe-b));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  .qr {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    padding: 8px;
+    background: #fff;
+    border-radius: var(--radius);
+  }
+  .qr img {
+    width: 96px;
+    height: 96px;
+    display: block;
+    /* 拡大時にモジュールの縁がぼけると読み取り率が落ちる */
+    image-rendering: pixelated;
+  }
+  .invite-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .invite-text strong {
+    font-size: 22px;
+  }
+  .invite-text span {
+    font-size: 15px;
+    color: var(--fg-muted);
+  }
+  .invite-text code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
   .side {
+    grid-area: side;
     display: flex;
     flex-direction: column;
     background: var(--surface);
@@ -175,41 +209,5 @@
     width: 100%;
     border: 0;
     background: #fff;
-  }
-
-  .invite {
-    display: flex;
-    align-items: center;
-    gap: 1vw;
-    padding: 1.6vh 1.2vw calc(1.6vh + var(--safe-b));
-    border-top: 1px solid var(--line);
-  }
-  .invite img {
-    flex: 0 0 auto;
-    width: 6.5vw;
-    height: 6.5vw;
-    /* SVG を currentColor にしてあるので、この色がモジュール色になる */
-    color: var(--fg);
-    /* 拡大時にモジュールの縁がぼけると読み取り率が落ちる */
-    image-rendering: pixelated;
-  }
-  .invite div {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4vh;
-    min-width: 0;
-  }
-  .invite strong {
-    font-size: 1vw;
-  }
-  .invite span {
-    font-size: 0.8vw;
-    color: var(--fg-muted);
-  }
-  .invite code {
-    font-size: 0.72vw;
-    color: var(--fg-muted);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    word-break: break-all;
   }
 </style>

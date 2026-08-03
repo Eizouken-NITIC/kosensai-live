@@ -14,6 +14,9 @@
   let current = $state(DEFAULT_CH);
   let chromeVisible = $state(true);
   let videoEl = $state(null);
+  let stageEl = $state(null);
+  let muted = $state(true);
+  let fullscreen = $state(false);
 
   let hideTimer = null;
 
@@ -25,6 +28,23 @@
     chromeVisible = true;
     clearTimeout(hideTimer);
     if (!pinned) hideTimer = setTimeout(() => (chromeVisible = false), CHROME_HIDE_MS);
+  }
+
+  function toggleMute() {
+    if (!videoEl) return;
+    videoEl.muted = !videoEl.muted;
+    muted = videoEl.muted;
+    showChrome();
+  }
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await stageEl?.requestFullscreen();
+    } catch {
+      /* 端末が対応していないだけ。黙って諦める */
+    }
+    showChrome();
   }
 
   function select(id, updateUrl = true) {
@@ -44,6 +64,8 @@
 
   onMount(() => {
     const detach = player.attach(videoEl);
+    const onFs = () => (fullscreen = !!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFs);
 
     (async () => {
       let cfg = { channels: [], officialSite: {} };
@@ -70,6 +92,7 @@
 
     return () => {
       clearTimeout(hideTimer);
+      document.removeEventListener('fullscreenchange', onFs);
       detach();
     };
   });
@@ -89,13 +112,17 @@
   <!-- 映像とその上に重なる chrome。ヘッダー用の帯を別に持たないので、
        映像がビューポートの縦を使い切れる（下に空白が残らない）。 -->
   <section
+    bind:this={stageEl}
     class="stage"
     onmousemove={showChrome}
     onpointerdown={showChrome}
     onfocusin={showChrome}
   >
     <!-- svelte-ignore a11y_media_has_caption -->
-    <video bind:this={videoEl} playsinline muted autoplay controls preload="none"></video>
+    <!-- controls は付けない。ライブ配信なのでシークバーに意味がなく、
+         むしろ末端がライブ点に追従しないぶん誤解を招く。
+         必要な操作（音量・全画面）だけ自前で置く。 -->
+    <video bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
     <div class="scrim chrome" class:visible={chromeVisible || pinned}>
       <div class="chrome-top">
@@ -112,6 +139,19 @@
             </button>
           {/each}
         </nav>
+
+        <div class="controls">
+          <button type="button" onclick={toggleMute} aria-label={muted ? '音を出す' : '消音する'}>
+            {muted ? '🔇' : '🔊'}
+          </button>
+          <button
+            type="button"
+            onclick={toggleFullscreen}
+            aria-label={fullscreen ? '全画面をやめる' : '全画面にする'}
+          >
+            {fullscreen ? '⤡' : '⤢'}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -225,9 +265,27 @@
     color: #fff;
     border-bottom-color: var(--accent);
   }
-  nav button:focus-visible {
+  nav button:focus-visible,
+  .controls button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 3px;
+  }
+
+  /* ライブなので操作は音量と全画面だけ。再生位置の操作は置かない。 */
+  .controls {
+    margin-left: auto;
+    display: flex;
+    gap: var(--sp-2);
+  }
+  .controls button {
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: var(--sp-1) var(--sp-2);
+    font-size: var(--fs-md);
+    line-height: 1;
+    color: #fff;
+    cursor: pointer;
   }
 
   .resume {

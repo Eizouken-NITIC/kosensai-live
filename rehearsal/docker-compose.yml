@@ -67,10 +67,18 @@ services:
 
   # --- テストパターン送出 --------------------------------------------------
   # イメージにフォントが無いので drawtext は使えない。Ch の見分けは
-  # 色相と音程でつける。testsrc はカウンタを描くので遅延の目視にも使える。
+  # 「生成パターンそのもの」と音程でつける。hue フィルタは 1 画素ずつ
+  # 処理するぶん CPU を食うので使わない（実測で 1 割ほど重かった）。
   #
-  #   Ch1 そのまま(A 440Hz) / Ch2 緑寄り(C 523Hz)
-  #   Ch3 青寄り(E 659Hz)   / Ch4 紫寄り(G 784Hz)
+  #   Ch1 testsrc    カウンタ付きの動くパターン (A 440Hz)
+  #   Ch2 smptebars  静止（エンコードがほぼ無料）  (C 523Hz)
+  #   Ch3 rgbtestsrc 静止                          (E 659Hz)
+  #   Ch4 testsrc2   別の動くパターン              (G 784Hz)
+  #
+  # 既定は 640x360@15 の ultrafast。UI の確認にはこれで足りる。
+  # ビットレートや画質を実測したいときだけ本番相当に上げる:
+  #   REH_SIZE=1280x720 REH_FPS=30 REH_BITRATE=2500k REH_PRESET=veryfast \
+  #     docker compose --profile publish up -d
   #
   # profile を付けてあるので、映像を流すときだけ up.sh が起動する。
 
@@ -86,7 +94,7 @@ services:
       - "-f"
       - "lavfi"
       - "-i"
-      - "testsrc=size=1280x720:rate=30"
+      - "testsrc=size=${REH_SIZE:-640x360}:rate=${REH_FPS:-15}"
       - "-f"
       - "lavfi"
       - "-i"
@@ -94,11 +102,11 @@ services:
       - "-c:v"
       - "libx264"
       - "-preset"
-      - "veryfast"
+      - "${REH_PRESET:-ultrafast}"
       - "-tune"
       - "zerolatency"
       - "-b:v"
-      - "2500k"
+      - "${REH_BITRATE:-1200k}"
       - "-g"
       - "60"
       - "-pix_fmt"
@@ -106,7 +114,7 @@ services:
       - "-c:a"
       - "aac"
       - "-b:a"
-      - "128k"
+      - "64k"
       - "-ar"
       - "48000"
       - "-f"
@@ -125,7 +133,7 @@ services:
       - "-f"
       - "lavfi"
       - "-i"
-      - "testsrc=size=1280x720:rate=30,hue=h=120"
+      - "smptebars=size=${REH_SIZE:-640x360}:rate=${REH_FPS:-15}"
       - "-f"
       - "lavfi"
       - "-i"
@@ -133,11 +141,11 @@ services:
       - "-c:v"
       - "libx264"
       - "-preset"
-      - "veryfast"
+      - "${REH_PRESET:-ultrafast}"
       - "-tune"
       - "zerolatency"
       - "-b:v"
-      - "2500k"
+      - "${REH_BITRATE:-1200k}"
       - "-g"
       - "60"
       - "-pix_fmt"
@@ -145,7 +153,7 @@ services:
       - "-c:a"
       - "aac"
       - "-b:a"
-      - "128k"
+      - "64k"
       - "-ar"
       - "48000"
       - "-f"
@@ -164,7 +172,7 @@ services:
       - "-f"
       - "lavfi"
       - "-i"
-      - "testsrc=size=1280x720:rate=30,hue=h=210"
+      - "rgbtestsrc=size=${REH_SIZE:-640x360}:rate=${REH_FPS:-15}"
       - "-f"
       - "lavfi"
       - "-i"
@@ -172,11 +180,11 @@ services:
       - "-c:v"
       - "libx264"
       - "-preset"
-      - "veryfast"
+      - "${REH_PRESET:-ultrafast}"
       - "-tune"
       - "zerolatency"
       - "-b:v"
-      - "2500k"
+      - "${REH_BITRATE:-1200k}"
       - "-g"
       - "60"
       - "-pix_fmt"
@@ -184,7 +192,7 @@ services:
       - "-c:a"
       - "aac"
       - "-b:a"
-      - "128k"
+      - "64k"
       - "-ar"
       - "48000"
       - "-f"
@@ -203,7 +211,7 @@ services:
       - "-f"
       - "lavfi"
       - "-i"
-      - "testsrc=size=1280x720:rate=30,hue=h=280"
+      - "testsrc2=size=${REH_SIZE:-640x360}:rate=${REH_FPS:-15}"
       - "-f"
       - "lavfi"
       - "-i"
@@ -211,11 +219,11 @@ services:
       - "-c:v"
       - "libx264"
       - "-preset"
-      - "veryfast"
+      - "${REH_PRESET:-ultrafast}"
       - "-tune"
       - "zerolatency"
       - "-b:v"
-      - "2500k"
+      - "${REH_BITRATE:-1200k}"
       - "-g"
       - "60"
       - "-pix_fmt"
@@ -223,7 +231,7 @@ services:
       - "-c:a"
       - "aac"
       - "-b:a"
-      - "128k"
+      - "64k"
       - "-ar"
       - "48000"
       - "-f"
