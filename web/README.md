@@ -16,7 +16,7 @@
 web/
 ├─ index.html            視聴ページ（Ch タブ切替 + 公式サイト iframe）
 ├─ signage/index.html    サイネージページ（Kiosk 全画面）
-├─ config.json         ★ チャンネル定義の単一の情報源
+├─ config.json           ★ Ch 定義と公式サイト URL の単一の情報源
 ├─ assets/
 │  ├─ theme.css          ⚠️ 暫定テーマ。HP 部門とすり合わせて差し替える
 │  ├─ viewer.css         視聴ページのレイアウト

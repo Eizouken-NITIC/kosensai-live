@@ -64,7 +64,7 @@ kosensai-broadcast/
 │     └─ moblin.md            Ch3 遊撃 iPhone
 ├─ web/                       配信サイト（HP 部門と共同。server が配信する）
 │  ├─ index.html / signage/index.html
-│  ├─ config.json           ★ チャンネル定義の単一の情報源
+│  ├─ config.json           ★ Ch 定義と公式サイト URL の単一の情報源
 │  ├─ assets/                 theme.css(暫定) / viewer.css / signage.css / player.js
 │  └─ vendor/hls.min.js
 └─ docs/
