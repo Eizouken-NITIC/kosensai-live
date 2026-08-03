@@ -45,6 +45,20 @@
   }
 
   onMount(() => {
+    /* media-chrome はカスタム要素を定義するので、prerender 時（DOM が無い）には
+       読み込めない。必要な要素だけ個別に読む（barrel import より軽い）。 */
+    Promise.all([
+      import('media-chrome/dist/media-controller.js'),
+      import('media-chrome/dist/media-control-bar.js'),
+      import('media-chrome/dist/media-play-button.js'),
+      import('media-chrome/dist/media-mute-button.js'),
+      import('media-chrome/dist/media-volume-range.js'),
+      import('media-chrome/dist/media-live-button.js'),
+      import('media-chrome/dist/media-fullscreen-button.js')
+    ]).catch(() => {
+      /* 読めなくても再生自体は続く。コントロールが出ないだけ。 */
+    });
+
     const detach = player.attach(videoEl);
 
     (async () => {
@@ -95,11 +109,23 @@
   <!-- 映像とその上に重なる chrome。ヘッダー用の帯を別に持たないので、
        映像がビューポートの縦を使い切れる（下に空白が残らない）。 -->
   <section bind:this={stageEl} class="stage">
-    <!-- svelte-ignore a11y_media_has_caption -->
-    <!-- コントロールはブラウザ内蔵のものを使う。自前実装は各ブラウザ・言語の
-         作法とアクセシビリティを自前で担保することになる。ライブとしての
-         duration 制御は player.svelte.js 側（liveDurationInfinity）。 -->
-    <video bind:this={videoEl} playsinline muted autoplay controls preload="none"></video>
+    <!-- ネイティブコントロールにはライブ点へ戻る導線が無く、シークバーの
+         末端まで手で戻すしかない。mediastreamtype="live" を明示すると
+         LIVE ボタンが出て、押すとライブ点へシークする。MediaMTX の HLS は
+         DVR 判定用の非標準タグを出さないので、自動判定に任せず指定する。 -->
+    <media-controller mediastreamtype="live">
+      <!-- svelte-ignore a11y_media_has_caption -->
+      <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>
+
+      <media-control-bar>
+        <media-play-button></media-play-button>
+        <media-mute-button></media-mute-button>
+        <media-volume-range></media-volume-range>
+        <span class="spacer"></span>
+        <media-live-button></media-live-button>
+        <media-fullscreen-button></media-fullscreen-button>
+      </media-control-bar>
+    </media-controller>
 
     <div class="scrim chrome" class:visible={chromeVisible || pinned}>
       <div class="chrome-top">
@@ -179,6 +205,24 @@
   }
 
   /* ---- 映像（枠は app.css の .stage） ---- */
+  :global(media-controller) {
+    width: 100%;
+    height: 100%;
+    /* 既定の色をテーマに合わせる。個別に上書きせず変数で渡す。 */
+    --media-primary-color: #fff;
+    --media-secondary-color: rgb(255 255 255 / 0.2);
+    --media-control-background: transparent;
+    --media-control-hover-background: rgb(255 255 255 / 0.15);
+    --media-font-family: var(--font);
+    --media-live-button-indicator-color: var(--live);
+  }
+  :global(media-control-bar) {
+    background: linear-gradient(to top, rgb(0 0 0 / 0.75), transparent);
+    padding: var(--sp-2) var(--sp-2) var(--sp-1);
+  }
+  :global(.spacer) {
+    flex: 1 1 auto;
+  }
   @media (max-width: 999px) {
     /* 縦画面では映像を 16:9 に留め、残りをパネルに渡す */
     .stage {

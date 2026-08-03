@@ -1,0 +1,1 @@
+import{G as t}from"./DgoJgpDD.js";const c=new WeakMap,a=e=>{let s=c.get(e);return s||c.set(e,s=new Set),s},r=new t.ResizeObserver(e=>{for(const s of e)for(const o of a(s.target))o(s)});function b(e,s){a(e).add(s),r.observe(e)}function l(e,s){const o=a(e);o.delete(s),o.size||r.unobserve(e)}export{b as o,l as u};
