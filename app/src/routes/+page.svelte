@@ -20,8 +20,7 @@
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
-  // 再生していない間はバーを出しっぱなしにする。
-  // 何も映っていない画面で UI まで消えると、ただの黒い板になるため。
+  // 映像が無い画面で UI まで消えると黒い板になる
   const pinned = $derived(!player.isLive);
 
   function showOverlay() {
@@ -48,8 +47,7 @@
   onMount(() => {
     player.prefetch();
 
-    /* media-chrome はカスタム要素を定義するので、prerender 時（DOM が無い）には
-       読み込めない。必要な要素だけ個別に読む（barrel import より軽い）。 */
+    // カスタム要素の定義には DOM が要るので prerender 時には読めない
     Promise.all([
       import('media-chrome/dist/media-controller.js'),
       import('media-chrome/dist/media-control-bar.js'),
@@ -60,7 +58,7 @@
       import('media-chrome/dist/media-live-button.js'),
       import('media-chrome/dist/media-fullscreen-button.js'),
     ]).catch(() => {
-      /* 読めなくても再生自体は続く。コントロールが出ないだけ。 */
+      /* コントロールが出ないだけで再生は続く */
     });
 
     if (!videoEl) return;
@@ -95,7 +93,6 @@
     };
   });
 
-  // 再生が止まったらバーを出し直す
   $effect(() => {
     if (pinned) {
       clearTimeout(hideTimer);
@@ -106,24 +103,15 @@
 
 <svelte:head><title>KOSENSAI-LIVE</title></svelte:head>
 
-<!-- 映像の <section> にハンドラを付けると a11y_no_static_element_interactions
-     が出るため、バーの復帰は body 側で受ける。 -->
+<!-- section に付けると a11y_no_static_element_interactions が出るので body で受ける -->
 <svelte:body onmousemove={showOverlay} onpointerdown={showOverlay} onfocusin={showOverlay} />
 
 <div class="page">
-  <!-- 映像とその上に重なる上端のバー。ヘッダー用の帯を別に持たないので、
-       映像がビューポートの縦を使い切れる（下に空白が残らない）。 -->
   <section class="stage">
-    <!-- ネイティブコントロールにはライブ点へ戻る導線が無く、シークバーの
-         末端まで手で戻すしかない。mediastreamtype="live" を明示すると
-         LIVE ボタンが出て、押すとライブ点へシークする。MediaMTX の HLS は
-         DVR 判定用の非標準タグを出さないので、自動判定に任せず指定する。 -->
-    <!-- 2 つのオフセットは hls.js の liveSyncDurationCount: 3 から逆算した値で、
-         セグメント長 2 秒との積により通常の再生位置は seekable.end - 6 秒になる。
-         seektoliveoffset は LIVE ボタンのシーク先を seekable.end から手前へずらす。
-         既定の 0 はバッファの末端そのもので、押した直後に一度停止する。
-         liveedgeoffset は LIVE ボタンが点灯する範囲で、通常の再生位置を含む
-         必要がある。いずれもセグメント 1 本分の余裕を足してある。 -->
+    <!-- MediaMTX は DVR 判定用の非標準タグを出さないので mediastreamtype を明示する。
+         オフセットは通常の再生位置 seekable.end - 6 秒（liveSyncDurationCount: 3
+         × セグメント 2 秒）を基準に、セグメント 1 本分の余裕を足した値。
+         seektoliveoffset の既定 0 はバッファ末端で、押した直後に一度停止する。 -->
     <media-controller mediastreamtype="live" seektoliveoffset="2" liveedgeoffset="8">
       <!-- svelte-ignore a11y_media_has_caption -->
       <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>
@@ -132,9 +120,6 @@
         <media-play-button></media-play-button>
         <media-mute-button></media-mute-button>
         <media-volume-range></media-volume-range>
-        <!-- ライブでは duration が Infinity なので、シークバーの範囲は
-             seekable（スライディングウィンドウ）から取られる。掴める幅は
-             mediamtx.yml の hlsSegmentCount × hlsSegmentDuration に一致する。 -->
         <media-time-range></media-time-range>
         <media-live-button></media-live-button>
         <media-fullscreen-button></media-fullscreen-button>
@@ -159,8 +144,7 @@
       </div>
     </div>
 
-    <!-- 伝えることがあるときだけ出す。接続中は出さない
-         （読み込み表示はブラウザ内蔵プレイヤーに任せる）。 -->
+    <!-- 接続中は出さない。読み込み表示はプレイヤーに任せる -->
     {#if player.state === 'waiting'}
       <div class="cover" role="status" aria-live="polite">
         <p>このチャンネルはまだ配信されていません</p>
@@ -178,8 +162,6 @@
     {/if}
   </section>
 
-  <!-- 右カラム。今は公式サイト 1 枚だが、コメントを足すときは
-       ここをタブで差し替える想定（レイアウトは変えずに済む）。 -->
   <aside class="panel">
     {#if official.embedUrl}
       <iframe
@@ -190,7 +172,6 @@
         sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
       ></iframe>
     {/if}
-    <!-- 帯を 1 本使わずに済ませるため、導線は浮かせる -->
     <a class="open-official" href={official.homeUrl} target="_blank" rel="noopener">
       公式サイトを開く ↗
     </a>
@@ -202,8 +183,7 @@
     display: grid;
     grid-template-rows: auto 1fr;
     height: 100dvh;
-    /* グリッドの子（映像・iframe）がわずかにはみ出して
-       ページ全体がスクロールできてしまうのを止める */
+    /* 子がはみ出してページ全体がスクロールするのを止める */
     overflow: hidden;
   }
   @media (min-width: 1000px) {
@@ -217,7 +197,6 @@
   :global(media-controller) {
     width: 100%;
     height: 100%;
-    /* 既定の色をテーマに合わせる。個別に上書きせず変数で渡す。 */
     --media-primary-color: #fff;
     --media-secondary-color: rgb(255 255 255 / 0.2);
     --media-control-background: transparent;
@@ -250,8 +229,7 @@
   }
   .topbar-inner {
     display: flex;
-    /* 文字どうしのベースラインで揃える。center にすると
-       タブの下線を含んだ箱の中央がロゴに揃ってしまい、文字がずれる。 */
+    /* center だとタブの下線を含んだ箱がロゴに揃い、文字がずれる */
     align-items: baseline;
     gap: var(--sp-3) var(--sp-5);
     flex-wrap: wrap;
@@ -327,7 +305,6 @@
     background: #fff;
   }
 
-  /* 帯を作らずに浮かせる */
   .open-official {
     position: absolute;
     right: var(--sp-3);

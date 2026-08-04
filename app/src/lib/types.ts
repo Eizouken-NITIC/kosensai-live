@@ -14,7 +14,6 @@ export type Channel = {
 };
 
 export type OfficialSite = {
-  /** 別タブで開くリンク先。 */
   homeUrl: string;
   /** iframe に出す URL。/events が公開されたらここを向ける。 */
   embedUrl: string;
@@ -26,6 +25,16 @@ export type SiteConfig = {
   officialSite: OfficialSite;
 };
 
-/** 再生の状態。connecting と waiting を分けているのは、Ch を切り替えた直後に
- *  「まだ配信が始まっていない」と断定してしまわないため。 */
+/**
+ * 再生の状態。
+ *
+ * - `connecting`  接続を試している最中。まだ失敗していない
+ * - `playing`     再生中
+ * - `waiting`     取得に失敗した。その Ch はまだ配信されていない
+ * - `blocked`     ブラウザの自動再生ポリシーで止められた
+ * - `unsupported` HLS を再生できないブラウザ
+ *
+ * `connecting` と `waiting` を分けているのは、Ch を切り替えた直後に
+ * 配信されていないと断定してしまわないため。
+ */
 export type PlayerState = 'connecting' | 'playing' | 'waiting' | 'blocked' | 'unsupported';
