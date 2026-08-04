@@ -35,6 +35,16 @@ for p in / /signage/ /config.json /assets/qr-viewer.svg /healthz; do
 done
 
 echo
+echo "== 同梱物のライセンス本文 =="
+# OFL-1.1 は再配布するコピーがライセンス本文を伴うことを条件としている。
+# ビルド構成の変更で配信物から抜け落ちても、他の項目には現れない。
+for f in /licenses/hls.js-Apache-2.0.txt /licenses/media-chrome-MIT.txt \
+         /licenses/noto-sans-jp-OFL-1.1.txt; do
+  c=$(code "$f")
+  [[ "$c" == "200" ]] && ok "$f" || ng "$f (http $c)"
+done
+
+echo
 echo "== ページが参照しているアセット =="
 assets=$(C "${BASE}/" | grep -oE '/_app/[^"]+\.(js|css)' | sort -u)
 if [[ -z "${assets}" ]]; then

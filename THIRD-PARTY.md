@@ -1,7 +1,11 @@
 # サードパーティのソフトウェア
 
-本リポジトリには第三者が著作権を有するソフトウェアが含まれています。内訳と適用される
-ライセンスは次のとおりです。ライセンスの全文は `licenses/` に収録しています。
+`LICENSE` に記載のMIT Licenseが適用される範囲は、本リポジトリのオリジナルコードに
+限られます。本リポジトリには第三者が著作権を有するソフトウェアが含まれており、それらには
+以下のライセンスが適用されます。
+
+ライセンスの全文は `app/static/licenses/` に収録しています。このディレクトリはビルド時に
+配信物へ含まれるため、配信サイトの `/licenses/` からも取得できます。
 
 ## 配布物へ同梱しているもの
 
@@ -10,9 +14,9 @@
 
 | ソフトウェア | バージョン | ライセンス | 著作権者 | 全文 |
 | --- | --- | --- | --- | --- |
-| [hls.js](https://github.com/video-dev/hls.js) | 1.6.16 | Apache-2.0 | Dailymotion | [licenses/hls.js-Apache-2.0.txt](licenses/hls.js-Apache-2.0.txt) |
-| [Media Chrome](https://github.com/muxinc/media-chrome) | 4.19.2 | MIT | Mux, Inc. | [licenses/media-chrome-MIT.txt](licenses/media-chrome-MIT.txt) |
-| [Noto Sans JP](https://github.com/notofonts/noto-cjk) | Fontsource 5.3 経由 | OFL-1.1 | Google Inc. | [licenses/noto-sans-jp-OFL-1.1.txt](licenses/noto-sans-jp-OFL-1.1.txt) |
+| [hls.js](https://github.com/video-dev/hls.js) | 1.6.16 | Apache-2.0 | Dailymotion | [app/static/licenses/hls.js-Apache-2.0.txt](app/static/licenses/hls.js-Apache-2.0.txt) |
+| [Media Chrome](https://github.com/muxinc/media-chrome) | 4.19.2 | MIT | Mux, Inc. | [app/static/licenses/media-chrome-MIT.txt](app/static/licenses/media-chrome-MIT.txt) |
+| [Noto Sans JP](https://github.com/notofonts/noto-cjk) | Fontsource 5.3 経由 | OFL-1.1 | Google Inc. | [app/static/licenses/noto-sans-jp-OFL-1.1.txt](app/static/licenses/noto-sans-jp-OFL-1.1.txt) |
 
 hls.js と Media Chrome は Vite によってバンドルされ、`web/_app/immutable/chunks/` 配下へ
 出力されます。
@@ -21,7 +25,7 @@ Noto Sans JP は [Fontsource](https://github.com/fontsource/font-files) の
 `@fontsource-variable/noto-sans-jp` を経由して取得しており、フォントファイルは
 unicode-range で分割された 124 個の woff2 として `web/_app/immutable/assets/` 配下へ
 出力されます。SIL Open Font License 1.1 は、フォントを再配布する各コピーが著作権表示と
-ライセンス本文を伴うことを条件としています。`licenses/noto-sans-jp-OFL-1.1.txt` が
+ライセンス本文を伴うことを条件としています。`app/static/licenses/noto-sans-jp-OFL-1.1.txt` が
 これに当たります。
 
 ## 実行時に取得するもの
