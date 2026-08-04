@@ -14,6 +14,9 @@ rehearsal/out/
 *.mkv
 *.mp4
 
+# 一度きりの切り分けに使う実験コード
+scratch/
+
 # OS
 .DS_Store
 Thumbs.db
