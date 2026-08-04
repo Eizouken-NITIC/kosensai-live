@@ -18,16 +18,6 @@
 | [Media Chrome](https://github.com/muxinc/media-chrome) | 4.19.2 | MIT | Mux, Inc. | [app/static/licenses/media-chrome-MIT.txt](app/static/licenses/media-chrome-MIT.txt) |
 | [Noto Sans JP](https://github.com/notofonts/noto-cjk) | Fontsource 5.3 経由 | OFL-1.1 | Google Inc. | [app/static/licenses/noto-sans-jp-OFL-1.1.txt](app/static/licenses/noto-sans-jp-OFL-1.1.txt) |
 
-hls.js と Media Chrome は Vite によってバンドルされ、`web/_app/immutable/chunks/` 配下へ
-出力されます。
-
-Noto Sans JP は [Fontsource](https://github.com/fontsource/font-files) の
-`@fontsource-variable/noto-sans-jp` を経由して取得しており、フォントファイルは
-unicode-range で分割された 124 個の woff2 として `web/_app/immutable/assets/` 配下へ
-出力されます。SIL Open Font License 1.1 は、フォントを再配布する各コピーが著作権表示と
-ライセンス本文を伴うことを条件としています。`app/static/licenses/noto-sans-jp-OFL-1.1.txt` が
-これに当たります。
-
 ## 実行時に取得するもの
 
 次のソフトウェアは配信サーバー上で Docker がイメージとして取得するものであり、本リポジトリ
