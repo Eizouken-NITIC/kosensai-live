@@ -2,7 +2,7 @@
 #
 # 学内サーバーには外部からの HTTP-01 審査通信が届かないため、
 # Caddy の自動 ACME は使わず、certbot（DNS-01・手動）で取得した
-# 証明書を明示指定する。取得手順は scripts/get-cert.sh / README §4。
+# 証明書を明示指定する。
 {
 	# 自動 HTTPS のリダイレクトだけ有効、ACME 発行はしない
 	auto_https disable_redirects
@@ -17,7 +17,7 @@ live.kosensai.ichinoseki.ac.jp {
 	# https://live.../hls/ch1/index.m3u8 → http://127.0.0.1:8888/ch1/index.m3u8
 	handle_path /hls/* {
 		reverse_proxy 127.0.0.1:8888 {
-			# ⚠️ MediaMTX は最初のプレイリスト要求を、セッション Cookie を張るために
+			# MediaMTX は最初のプレイリスト要求を、セッション Cookie を張るために
 			#    Location: /ch1/index.m3u8?cookieCheck=1 へ 302 する。
 			#    handle_path が /hls を剥がしている都合上、この Location をそのまま
 			#    返すとクライアントは /hls 抜きの URL を叩き、静的ファイル配信側へ

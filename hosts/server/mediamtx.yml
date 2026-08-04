@@ -4,7 +4,7 @@
 # パスフレーズはこのファイルに書かない。
 # docker-compose の env_file (.env) から
 #   MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE=...
-# の形で注入する（README §3 参照）。
+# の形で注入する。
 ###############################################
 
 ###############################################
@@ -15,7 +15,7 @@ logDestinations: [stdout]
 
 # SRT の再送バッファ確保のため、ホスト側で
 #   sysctl -w net.core.rmem_max=26214400
-# を入れておくこと（README §1・§2）。
+# を入れておくこと。
 readTimeout: 10s
 writeTimeout: 10s
 

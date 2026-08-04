@@ -1,6 +1,6 @@
 # 高専祭ライブ配信 / 配信サーバー一式
 #
-# 想定: Proxmox 上の VM に Docker を入れて実行（VM を選ぶ理由は README §1）。
+# 想定: Proxmox 上の VM に Docker を入れて実行する。
 #   起動  : docker compose up -d
 #   更新  : git pull && docker compose restart caddy
 #   ログ  : docker compose logs -f mediamtx

@@ -12,7 +12,7 @@
 #   本番の Caddyfile（hlsAddress が 127.0.0.1 前提）をそのまま使える。
 
 x-passphrases: &passphrases
-  # ⚠️ リハーサル専用の使い捨て値。本番は hosts/server/.env に別の値を入れる。
+  # リハーサル専用の使い捨て値。本番は hosts/server/.env に別の値を入れる。
   MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE: rehearsal-ch1-passphrase
   MTX_PATHS_CH2_SRTPUBLISHPASSPHRASE: rehearsal-ch2-passphrase
   MTX_PATHS_CH3_SRTPUBLISHPASSPHRASE: rehearsal-ch3-passphrase
