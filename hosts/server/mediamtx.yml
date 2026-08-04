@@ -13,9 +13,6 @@
 logLevel: info
 logDestinations: [stdout]
 
-# SRT の再送バッファ確保のため、ホスト側で
-#   sysctl -w net.core.rmem_max=26214400
-# を入れておくこと。
 readTimeout: 10s
 writeTimeout: 10s
 
@@ -34,15 +31,12 @@ hlsEncryption: no                  # TLS 終端は Caddy に集約
 hlsAllowOrigins: ["*"]
 hlsTrustedProxies: [127.0.0.1]     # Caddy → MediaMTX のプロキシ信頼
 hlsVariant: mpegts                 # 既定は lowLatency。ブラウザ互換性優先で明示的に mpegts
-# 再生遅延はプレイヤーが確保するセグメント 3 本分になる。実際のセグメント長は
-# IDR フレームの間隔にも従うため、OBS のキーフレーム間隔 2 秒と一致させる。
+# セグメントはキーフレームでしか分割されない。OBS のキーフレーム間隔と揃える。
 hlsSegmentDuration: 2s
-# 視聴を開始した時点でシークできる幅を決める。遅延には影響しない。視聴を続けている間は、
-# クライアント側のバッファ（hls.js の backBufferLength は既定で Infinity）でさらに広がる。
-# セグメントはメモリ上に保持されるため、本数がそのまま RAM の消費量になる。
-# 4 チャンネル合計 18.5 Mbps で 180 本 × 2 秒 = 6 分、およそ 830 MB を占める。
+# 視聴を開始した時点で遡れる幅。視聴を続けている間はクライアント側のバッファで伸びる。
+# セグメントはメモリ上に保持され、4 チャンネル合計 18.5 Mbps では約 830 MB を占める。
 hlsSegmentCount: 180
-# 視聴者がいない間もセグメントを生成し、要求から生成までの待ち時間を無くす。
+# no にすると muxer が停止し、最初の要求から再生開始まで 10 秒以上かかる。
 hlsAlwaysRemux: yes
 
 ###############################################
