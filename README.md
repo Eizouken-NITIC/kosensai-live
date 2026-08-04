@@ -133,7 +133,6 @@ docker compose up -d
 ```bash
 cd rehearsal
 ./scripts/up.sh          # テストパターン4本 → MediaMTX → Caddy → 視聴ページ
-./scripts/check.sh       # 疎通確認
 ./scripts/down.sh
 ```
 

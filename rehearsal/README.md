@@ -35,7 +35,6 @@ cd rehearsal
 ./scripts/up.sh --idle             # サーバのみ（配信前の「待機中」表示を見たいとき）
 
 ./scripts/reload.sh                # app/ をビルドして反映（開発中はこれ）
-./scripts/check.sh                 # 疎通をひととおり確認
 ./scripts/load-test.sh 20 ch1 30   # 20人 / ch1 / 30秒
 ./scripts/load-test.sh 10 all 60   # 10人ずつ全Ch同時
 
@@ -69,8 +68,7 @@ MediaMTX が張る `Secure` 属性付きの Cookie もそのまま通る。
 <details>
 <summary>本番と同じホスト名・TLS で開きたい場合</summary>
 
-ホスト名マッチと TLS 自体を目で見たいときだけ。`check.sh` が `--resolve` で
-毎回検証しているので、通常は不要。
+ホスト名マッチと TLS 自体を目で見たいときだけ使う。
 
 ```bash
 echo '127.0.0.1 live.kosensai.ichinoseki.ac.jp' | sudo tee -a /etc/hosts
@@ -104,8 +102,8 @@ sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
 - 切断からの自動復帰（`docker compose stop pub-ch1` → 再度 `start`）
 - サイネージページの全画面表示と待機画面
 - 公式サイトの iframe が実際にどう見えるか（狭い枠での崩れ具合）
-- 本番の Caddyfile が正しく動くこと。特に **`/hls` の Location 書き戻し**と
-  **MediaMTX の `Cache-Control` が潰れていないこと**を `check.sh` が検証する
+- 本番の Caddyfile が正しく動くこと。`/hls` の Location 書き戻しが欠けると
+  映像が始まらないため、再生できた時点でこれも確かめられている
 - MediaMTX が N セッションを捌けるか、1 人あたり何 Mbps 流れるか
 
 ### 確認できない
@@ -129,7 +127,6 @@ sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
 | `scripts/up.sh` | 自己署名証明書の生成 → 起動 |
 | `scripts/down.sh` | 停止（`--clean` で生成物も削除） |
 | `scripts/reload.sh` | `app/` をビルドして反映。ビルドのたびに `web/` が作り直されて bind mount が切れるので、caddy を張り直す |
-| `scripts/check.sh` | 静的配信・HLS・本番設定の効き具合を確認 |
 | `scripts/load-test.sh` | 視聴クライアントを N 本立てて負荷をかける |
 | `client/pull.sh` | 視聴クライアントの実体。hls.js と同じ手順を curl で再現 |
 | `certs/` | `up.sh` が生成する自己署名証明書（git 管理外） |

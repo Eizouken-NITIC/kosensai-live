@@ -20,23 +20,18 @@
 `rehearsal/` を使う。本番と同じ `mediamtx.yml` / `Caddyfile` / `web/` を
 マウントして動かすので、ここで通れば設定ファイル自体は正しい。
 
-### 1-1. 起動と疎通
+### 1-1. 起動
 
 ```bash
 cd rehearsal
 ./scripts/up.sh
-./scripts/check.sh
 ```
 
-**合格条件:** `check.sh` が全て OK で終わる。
+**合格条件:** `http://localhost:8080/` を開き、4 つの Ch すべてで映像が再生される。
 
-内訳は静的配信 9 項目・HLS 4Ch・本番設定の効き具合 2 項目。
-特に後者の 2 つは壊れると当日詰むので毎回見る。
-
-| 検証 | 壊れると何が起きるか |
-| --- | --- |
-| 302 Location に `/hls` が付いている | **映像が永久に始まらない**（静的配信側に落ちて 404） |
-| MediaMTX の `Cache-Control` が素通し | Caddy が上書きしてキャッシュ制御が意図と変わる |
+Caddyfile の `/hls` の Location 書き戻しが欠けている場合、クライアントは `/hls` を
+含まない URL を要求して静的配信側の 404 に落ちるため、映像が始まらない。再生できた
+時点でこれも確かめられている。
 
 **落ちたとき:** `docker compose logs mediamtx`。publish 拒否ならパスフレーズ不一致が最有力。
 

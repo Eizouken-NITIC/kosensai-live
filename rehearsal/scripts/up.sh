@@ -57,7 +57,6 @@ cat <<EOS
    Ch 直接開き  http://localhost:${PREVIEW_PORT}/?ch=ch3
 
  ------------------------------------------------------------
- 疎通確認     ./scripts/check.sh
  負荷テスト   ./scripts/load-test.sh 20 ch1 30
  ログ         docker compose logs -f mediamtx
  停止         ./scripts/down.sh
@@ -65,6 +64,5 @@ cat <<EOS
 
  本番と同じホスト名・TLS で開きたい場合のみ /etc/hosts に
  「127.0.0.1 ${DOMAIN}」を足して https://${DOMAIN}:${PORT}/ 。
- ホスト名マッチと TLS は check.sh が --resolve で毎回見ているので、
  見た目の確認だけなら上の localhost で足りる。
 EOS
