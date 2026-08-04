@@ -31,7 +31,7 @@ Notion「ソフトウェア構成・設定例 §5」「インフラ・ネット�
 
 ## B. サーバー構築
 
-- [ ] Proxmox に VM を作成（Ubuntu 22.04/24.04・CPU 2 コア+ / RAM 2GB+ / Disk 20GB）
+- [ ] Proxmox に VM を作成（Ubuntu 22.04/24.04・CPU 2 コア+ / RAM 4GB+ / Disk 20GB）
 - [ ] Docker + docker compose plugin をインストール
 - [ ] `sysctl -w net.core.rmem_max=26214400` を設定し、`sysctl -n` で読み戻して効いていることを確認
       → `/etc/sysctl.d/99-srt.conf` にも永続化
