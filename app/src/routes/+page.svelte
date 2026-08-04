@@ -46,6 +46,8 @@
   }
 
   onMount(() => {
+    player.prefetch();
+
     /* media-chrome はカスタム要素を定義するので、prerender 時（DOM が無い）には
        読み込めない。必要な要素だけ個別に読む（barrel import より軽い）。 */
     Promise.all([
@@ -54,8 +56,9 @@
       import('media-chrome/dist/media-play-button.js'),
       import('media-chrome/dist/media-mute-button.js'),
       import('media-chrome/dist/media-volume-range.js'),
+      import('media-chrome/dist/media-time-range.js'),
       import('media-chrome/dist/media-live-button.js'),
-      import('media-chrome/dist/media-fullscreen-button.js')
+      import('media-chrome/dist/media-fullscreen-button.js'),
     ]).catch(() => {
       /* 読めなくても再生自体は続く。コントロールが出ないだけ。 */
     });
@@ -123,7 +126,10 @@
         <media-play-button></media-play-button>
         <media-mute-button></media-mute-button>
         <media-volume-range></media-volume-range>
-        <span class="spacer"></span>
+        <!-- ライブでは duration が Infinity なので、シークバーの範囲は
+             seekable（スライディングウィンドウ）から取られる。掴める幅は
+             mediamtx.yml の hlsSegmentCount × hlsSegmentDuration に一致する。 -->
+        <media-time-range></media-time-range>
         <media-live-button></media-live-button>
         <media-fullscreen-button></media-fullscreen-button>
       </media-control-bar>
@@ -144,7 +150,6 @@
             </button>
           {/each}
         </nav>
-
       </div>
     </div>
 
@@ -222,9 +227,6 @@
     background: linear-gradient(to top, rgb(0 0 0 / 0.75), transparent);
     padding: var(--sp-2) var(--sp-2) var(--sp-1);
   }
-  :global(.spacer) {
-    flex: 1 1 auto;
-  }
   @media (max-width: 999px) {
     /* 縦画面では映像を 16:9 に留め、残りをパネルに渡す */
     .stage {
@@ -284,7 +286,6 @@
     outline: 2px solid var(--accent);
     outline-offset: 3px;
   }
-
 
   .retry {
     pointer-events: auto;

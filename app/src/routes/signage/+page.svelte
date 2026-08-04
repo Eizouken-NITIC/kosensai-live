@@ -22,6 +22,8 @@
   }
 
   onMount(() => {
+    player.prefetch();
+
     if (!videoEl) return;
     const detach = player.attach(videoEl);
     const ch = new URLSearchParams(location.search).get('ch') ?? 'ch4';
@@ -45,7 +47,7 @@
       // 再生中はリロードしない
       setInterval(() => {
         if (videoEl?.paused || (videoEl?.readyState ?? 0) < 3) location.reload();
-      }, PAGE_RELOAD_MS)
+      }, PAGE_RELOAD_MS),
     ];
 
     return () => {

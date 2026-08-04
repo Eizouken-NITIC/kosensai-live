@@ -4,6 +4,6 @@ export default {
   plugins: [sveltekit()],
   build: {
     sourcemap: false,
-    target: 'es2020'
-  }
+    target: 'es2020',
+  },
 };

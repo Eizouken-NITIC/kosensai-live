@@ -105,8 +105,11 @@ services:
       - "zerolatency"
       - "-b:v"
       - "${REH_BITRATE:-1200k}"
-      - "-g"
-      - "60"
+      # キーフレーム間隔を 2 秒に固定する。HLS のセグメントはキーフレームでしか
+      # 切れないため、これが hlsSegmentDuration の下限になる。-g はフレーム数
+      # 指定でフレームレートに依存するので、時刻で指定する形を使う。
+      - "-force_key_frames"
+      - "expr:gte(t,n_forced*2)"
       - "-pix_fmt"
       - "yuv420p"
       - "-c:a"
@@ -144,8 +147,11 @@ services:
       - "zerolatency"
       - "-b:v"
       - "${REH_BITRATE:-1200k}"
-      - "-g"
-      - "60"
+      # キーフレーム間隔を 2 秒に固定する。HLS のセグメントはキーフレームでしか
+      # 切れないため、これが hlsSegmentDuration の下限になる。-g はフレーム数
+      # 指定でフレームレートに依存するので、時刻で指定する形を使う。
+      - "-force_key_frames"
+      - "expr:gte(t,n_forced*2)"
       - "-pix_fmt"
       - "yuv420p"
       - "-c:a"
@@ -183,8 +189,11 @@ services:
       - "zerolatency"
       - "-b:v"
       - "${REH_BITRATE:-1200k}"
-      - "-g"
-      - "60"
+      # キーフレーム間隔を 2 秒に固定する。HLS のセグメントはキーフレームでしか
+      # 切れないため、これが hlsSegmentDuration の下限になる。-g はフレーム数
+      # 指定でフレームレートに依存するので、時刻で指定する形を使う。
+      - "-force_key_frames"
+      - "expr:gte(t,n_forced*2)"
       - "-pix_fmt"
       - "yuv420p"
       - "-c:a"
@@ -222,8 +231,11 @@ services:
       - "zerolatency"
       - "-b:v"
       - "${REH_BITRATE:-1200k}"
-      - "-g"
-      - "60"
+      # キーフレーム間隔を 2 秒に固定する。HLS のセグメントはキーフレームでしか
+      # 切れないため、これが hlsSegmentDuration の下限になる。-g はフレーム数
+      # 指定でフレームレートに依存するので、時刻で指定する形を使う。
+      - "-force_key_frames"
+      - "expr:gte(t,n_forced*2)"
       - "-pix_fmt"
       - "yuv420p"
       - "-c:a"

@@ -1,0 +1,7 @@
+node_modules
+.svelte-kit
+../web
+pnpm-lock.yaml
+
+# 上流の配布物をそのまま置いているので整形しない
+static/vendor

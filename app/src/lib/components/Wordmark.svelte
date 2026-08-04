@@ -4,15 +4,17 @@
   let { live = false, size = 'md' }: { live?: boolean; size?: 'md' | 'lg' } = $props();
 </script>
 
+<!-- .mark は inline-flex なので、要素間の改行は描画されない（詰めて並ぶ）。 -->
 <span class="mark" class:live data-size={size}>
-  <span class="kosensai">KOSENSAI</span><span class="sep">-</span><span class="live-part">LIVE</span>
+  <span class="kosensai">KOSENSAI</span>
+  <span class="sep">-</span>
+  <span class="live-part">LIVE</span>
 </span>
 
 <style>
   .mark {
     display: inline-flex;
     align-items: baseline;
-    font-family: var(--font-mark);
     font-weight: 800;
     letter-spacing: 0.06em;
     line-height: 1;

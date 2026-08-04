@@ -13,7 +13,7 @@ REH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REH_DIR}/../app"
 
 echo "== ビルド =="
-npm run build 2>&1 | tail -3
+pnpm run build 2>&1 | tail -3
 
 cd "${REH_DIR}"
 echo

@@ -45,11 +45,11 @@
   --fs-lg: 18px;
 
   /* --- 書体 ---
-     欧文のワードマークだけ字幅を締めたいので別に持つ。 */
-  --font: "Noto Sans JP Variable", -apple-system, BlinkMacSystemFont,
-    "Hiragino Sans", sans-serif;
-  --font-mark: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-    sans-serif;
+     同梱している Noto Sans JP に固定する。フォールバックは同梱フォントの
+     読み込みに失敗した場合にのみ適用され、通常の描画には関与しない。
+     ワードマークも同じ書体を使う。端末の既定書体に委ねると、macOS・Windows・
+     サイネージの Raspberry Pi でロゴの字形が変化するため。 */
+  --font: 'Noto Sans JP Variable', sans-serif;
 
   /* --- 端末のノッチ回避（触らない） --- */
   --safe-t: env(safe-area-inset-top, 0px);

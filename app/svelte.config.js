@@ -11,9 +11,9 @@ export default {
       assets: '../web',
       fallback: undefined,
       precompress: false,
-      strict: true
+      strict: true,
     }),
     // 学内限定・オフライン前提なので、実行時に外部を取りに行かせない
-    prerender: { handleHttpError: 'fail' }
-  }
+    prerender: { handleHttpError: 'fail' },
+  },
 };

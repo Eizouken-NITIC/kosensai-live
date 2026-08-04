@@ -34,9 +34,13 @@ hlsEncryption: no                  # TLS 終端は Caddy に集約
 hlsAllowOrigins: ["*"]
 hlsTrustedProxies: [127.0.0.1]     # Caddy → MediaMTX のプロキシ信頼
 hlsVariant: mpegts                 # 既定は lowLatency。ブラウザ互換性優先で明示的に mpegts
-hlsSegmentCount: 3
-hlsSegmentDuration: 6s
-hlsAlwaysRemux: no                 # 視聴者ゼロのときはセグメント生成を止める
+# 再生遅延はプレイヤーが確保するセグメント 3 本分になる。実際のセグメント長は
+# IDR フレームの間隔にも従うため、OBS のキーフレーム間隔 2 秒と一致させる。
+hlsSegmentDuration: 2s
+# シークできる幅が hlsSegmentCount × hlsSegmentDuration になる。遅延には影響しない。
+hlsSegmentCount: 7
+# 視聴者がいない間もセグメントを生成し、要求から生成までの待ち時間を無くす。
+hlsAlwaysRemux: yes
 
 ###############################################
 # 使わないプロトコルは全部落とす
