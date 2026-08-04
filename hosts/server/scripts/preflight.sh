@@ -22,8 +22,7 @@ done
 echo
 echo "== 配信サイト (web/) =="
 for f in index.html signage/index.html config.json \
-         assets/theme.css assets/viewer.css assets/signage.css assets/player.js \
-         vendor/hls.min.js; do
+         assets/theme.css assets/viewer.css assets/signage.css assets/player.js; do
   [[ -f "${REPO_DIR}/web/${f}" ]] && ok "web/${f}" || ng "web/${f} が無い"
 done
 

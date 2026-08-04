@@ -118,7 +118,13 @@
          末端まで手で戻すしかない。mediastreamtype="live" を明示すると
          LIVE ボタンが出て、押すとライブ点へシークする。MediaMTX の HLS は
          DVR 判定用の非標準タグを出さないので、自動判定に任せず指定する。 -->
-    <media-controller mediastreamtype="live">
+    <!-- 2 つのオフセットは hls.js の liveSyncDurationCount: 3 から逆算した値で、
+         セグメント長 2 秒との積により通常の再生位置は seekable.end - 6 秒になる。
+         seektoliveoffset は LIVE ボタンのシーク先を seekable.end から手前へずらす。
+         既定の 0 はバッファの末端そのもので、押した直後に一度停止する。
+         liveedgeoffset は LIVE ボタンが点灯する範囲で、通常の再生位置を含む
+         必要がある。いずれもセグメント 1 本分の余裕を足してある。 -->
+    <media-controller mediastreamtype="live" seektoliveoffset="2" liveedgeoffset="8">
       <!-- svelte-ignore a11y_media_has_caption -->
       <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
@@ -163,10 +169,6 @@
         <button class="retry" type="button" onclick={() => player.load(current)}>
           今すぐ再読み込み
         </button>
-      </div>
-    {:else if player.state === 'blocked'}
-      <div class="cover">
-        <button class="resume" type="button" onclick={() => player.resume()}>▶ 再生する</button>
       </div>
     {:else if player.state === 'unsupported'}
       <div class="cover" role="status">
@@ -303,18 +305,6 @@
   .retry:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-  }
-  .resume {
-    pointer-events: auto;
-    appearance: none;
-    border: 0;
-    border-radius: var(--radius);
-    padding: var(--sp-3) var(--sp-5);
-    background: #fff;
-    color: #000;
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
   }
 
   /* ---- 右カラム ---- */

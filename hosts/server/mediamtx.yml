@@ -37,7 +37,8 @@ hlsVariant: mpegts                 # 既定は lowLatency。ブラウザ互換�
 # 再生遅延はプレイヤーが確保するセグメント 3 本分になる。実際のセグメント長は
 # IDR フレームの間隔にも従うため、OBS のキーフレーム間隔 2 秒と一致させる。
 hlsSegmentDuration: 2s
-# 視聴開始時点でシークできる幅が hlsSegmentCount × hlsSegmentDuration になる。遅延には影響しない。
+# 視聴を開始した時点でシークできる幅を決める。遅延には影響しない。視聴を続けている間は、
+# クライアント側のバッファ（hls.js の backBufferLength は既定で Infinity）でさらに広がる。
 # セグメントはメモリ上に保持されるため、本数がそのまま RAM の消費量になる。
 # 4 チャンネル合計 18.5 Mbps で 180 本 × 2 秒 = 6 分、およそ 830 MB を占める。
 hlsSegmentCount: 180

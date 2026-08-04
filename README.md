@@ -66,7 +66,7 @@ kosensai-broadcast/
 │  ├─ index.html / signage/index.html
 │  ├─ config.json           ★ Ch 定義と公式サイト URL の単一の情報源
 │  ├─ assets/                 theme.css(暫定) / viewer.css / signage.css / player.js
-│  └─ vendor/hls.min.js
+│  └─ _app/immutable/         SvelteKit のビルド成果物（hls.js を含む）
 ├─ rehearsal/                 ★ ローカルリハーサル環境（PC 1台で全部立ち上がる）
 │  ├─ docker-compose.yml      本番の設定をマウントして使う + テストパターン4本
 │  ├─ scripts/                up / down / check / load-test
@@ -175,8 +175,9 @@ ffmpeg のテストパターンを SRT で流して確認した内容。
 - **publish が無い間 `/hls/chN/index.m3u8` は 404。**
   → 視聴ページはこれを「配信開始前」と解釈して 10 秒ごとにリトライする。
 - **静的配信・ヘッダーは想定通り。** `/`・`/signage/`・`/config.json`・
-  `/assets/*`・`/vendor/hls.min.js`・`/healthz` がすべて 200。
-  vendor は `max-age=604800, immutable`、HTML は `no-cache`。
+  `/assets/*`・`/healthz` がすべて 200。
+  `/_app/immutable/*`（SvelteKit のビルド成果物。hls.js を含む）は
+  `max-age=604800, immutable`、HTML は `no-cache`。
 
 ### ⚠️ この検証で見つかって直したもの
 

@@ -1,5 +1,10 @@
 import type { PlayerState } from './types';
 
+// hls.js は動的 import で読むため、型は dist/hls.d.ts から導出する。
+type HlsConstructor = typeof import('hls.js').default;
+type HlsInstance = InstanceType<HlsConstructor>;
+type HlsErrorData = import('hls.js').ErrorData;
+
 /* HLS 再生の状態機械。
  *
  * 状態:
@@ -13,69 +18,37 @@ import type { PlayerState } from './types';
  * 「まだ配信が始まっていない」と断定してしまわないため。
  */
 
-// 失敗のたびに間隔を延ばす。切替直後の一時的な失敗からは素早く復帰し、
-// 放置される場合も 5 秒間隔までに留める。サイネージは無人でチャンネル切替も
-// 起きないため、上限がそのまま「配信開始に気づくまでの待ち時間」になる。
-const RETRY_MS = [1000, 2000, 3000, 5000];
+// hls.js の retryForHttpStatus() は HTTP 4xx を再試行の対象外にしているため、
+// 未配信のチャンネルが返す 404 は hls.js 側では一度も再試行されない。この
+// タイマーはそのための再試行であり、5xx とタイムアウトは hls.js が受け持つ。
+// 未配信である旨の表示は最初のエラーの時点で行うため、この間隔は表示までの
+// 時間には影響しない。
+const RETRY_MS = 5000;
 
-// タブへ戻ってから、接続を張り直すかどうかを判断するまでの猶予
-const RESUME_GRACE_MS = 1500;
-
-/* hls.js は <script> で後から読むため、型は使うぶんだけ最小限に持つ。
-   同梱している 1.6.15 の型定義パッケージは入れていない。 */
-type HlsInstance = {
-  on(event: string, cb: (evt: string, data: HlsErrorData) => void): void;
-  loadSource(url: string): void;
-  attachMedia(el: HTMLVideoElement): void;
-  recoverMediaError(): void;
-  destroy(): void;
-};
-type HlsErrorData = { fatal: boolean; type: string };
-type HlsConstructor = {
-  new (config: Record<string, unknown>): HlsInstance;
-  isSupported(): boolean;
-  Events: { MANIFEST_PARSED: string; ERROR: string };
-  ErrorTypes: { MEDIA_ERROR: string };
-};
-
-declare global {
-  interface Window {
-    Hls?: HlsConstructor;
-  }
-}
-
-/* hls.js は static/vendor から読む（学内完結のため CDN を使わない）。
-   Promise を保持して、読み込み中に再度呼ばれても <script> を二重に挿入しない。 */
+/* hls.js は動的 import で読む。学内 LAN 完結の要件はバンドルへ含まれることで
+   満たされ、Vite が別チャンクへ分割するため初期バンドルは膨らまない。
+   Promise を保持して、読み込み中に再度呼ばれても import を二重に発行しない。 */
 let hlsJsPromise: Promise<HlsConstructor> | null = null;
 
 function loadHlsJs(): Promise<HlsConstructor> {
-  if (window.Hls) return Promise.resolve(window.Hls);
-  if (hlsJsPromise) return hlsJsPromise;
-  hlsJsPromise = new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = '/vendor/hls.min.js';
-    s.onload = () =>
-      window.Hls ? resolve(window.Hls) : reject(new Error('hls.js が読めなかった'));
-    s.onerror = () => reject(new Error('hls.js を読み込めなかった'));
-    document.head.appendChild(s);
-  });
+  if (!hlsJsPromise) {
+    hlsJsPromise = import('hls.js').then((mod) => mod.default);
+  }
   return hlsJsPromise;
 }
 
 export function createPlayer() {
   let state = $state<PlayerState>('connecting');
   let channel = $state<string | null>(null);
-  /* 配信を受信できているかどうか。state から導出せず別に持つのは、Ch 切替や
-     タブ復帰で接続を張り直す間も直前の値を保つため。導出すると張り直しのたびに
-     一度 false へ落ち、ワードマークの LIVE が明滅する。実際に受信できなく
-     なったこと（fail / blocked / unsupported）が判明した時点でのみ false にする。 */
+  /* 配信を受信できているかどうか。state から導出せず別に持つのは、Ch 切替で
+     接続を張り直す間も直前の値を保つため。導出すると切り替えるたびに一度
+     false へ落ち、ワードマークの LIVE が明滅する。実際に受信できなくなったこと
+     （fail / blocked / unsupported）が判明した時点でのみ false にする。 */
   let live = $state(false);
 
   let video: HTMLVideoElement | null = null;
   let hls: HlsInstance | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
-  let resumeCheck: ReturnType<typeof setTimeout> | undefined;
-  let failures = 0;
   let resumeFn: (() => void) | null = null;
 
   function clearRetry() {
@@ -87,11 +60,9 @@ export function createPlayer() {
 
   function fail() {
     clearRetry();
-    const wait = RETRY_MS[Math.min(failures, RETRY_MS.length - 1)];
-    failures += 1;
     state = 'waiting';
     live = false;
-    retryTimer = setTimeout(() => load(channel, true), wait);
+    retryTimer = setTimeout(() => load(channel, true), RETRY_MS);
   }
 
   function teardown() {
@@ -114,7 +85,9 @@ export function createPlayer() {
     const p = video?.play();
     if (p && p.catch) {
       p.catch(() => {
-        // モバイル・Kiosk の自動再生ブロック。ユーザー操作を 1 回もらう。
+        // モバイル・Kiosk の自動再生ブロック。resumeFn は、操作する人がいない
+        // サイネージが自動で再試行するためにある。視聴ページは
+        // <media-play-button> の操作がそのまま video.play() になる。
         resumeFn = () => video?.play().catch(() => {});
         state = 'blocked';
         live = false;
@@ -128,7 +101,6 @@ export function createPlayer() {
     teardown();
     channel = ch;
     if (!isRetry) {
-      failures = 0;
       state = 'connecting';
     }
 
@@ -158,18 +130,17 @@ export function createPlayer() {
 
     const H = Hls;
     const instance = new H({
-      // ライブ先頭に追従しつつ、Wi-Fi の揺れに耐えるバッファ設定
+      // ライブ先頭に追従しつつ、Wi-Fi の揺れに耐えるバッファ設定。
+      // 遡れる幅を制限しないため、許容遅延の上限（liveMaxLatencyDurationCount）は
+      // 既定の Infinity のままにする。値を与えると、それを超えて巻き戻した時点で
+      // hls.js が再生位置をライブ点へ戻す。
       lowLatencyMode: false,
       liveSyncDurationCount: 3,
-      liveMaxLatencyDurationCount: 10,
       maxBufferLength: 20,
       // ライブとして再生させる。false（既定）だと duration がスライディング
       // ウィンドウの長さになり、プレイヤーが有限長の動画として扱ってしまう。
       // Infinity にすると media-chrome は seekable の範囲でシークバーを描く。
       liveDurationInfinity: true,
-      manifestLoadingMaxRetry: 2,
-      levelLoadingMaxRetry: 4,
-      fragLoadingMaxRetry: 4,
     });
 
     hls = instance;
@@ -195,38 +166,18 @@ export function createPlayer() {
 
     const onPlaying = () => {
       clearRetry();
-      failures = 0;
       state = 'playing';
       live = true;
-    };
-    /* タブへ戻った直後は、デコードが中断されていて readyState が下がっている
-       ことがある。その時点で接続を張り直すと、再生できる状態だった場合でも
-       バッファを捨てて数秒の空白を作る。まず再生を促し、それでも進まなかった
-       ものだけを張り直す。 */
-    const onVisibility = () => {
-      if (document.hidden) {
-        clearRetry();
-        return;
-      }
-      if (!channel) return;
-      v.play().catch(() => {});
-      clearTimeout(resumeCheck);
-      resumeCheck = setTimeout(() => {
-        if (v.paused || v.readyState < 3) load(channel);
-      }, RESUME_GRACE_MS);
     };
 
     v.addEventListener('playing', onPlaying);
     v.addEventListener('error', fail);
     v.addEventListener('ended', fail);
-    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       v.removeEventListener('playing', onPlaying);
       v.removeEventListener('error', fail);
       v.removeEventListener('ended', fail);
-      document.removeEventListener('visibilitychange', onVisibility);
-      clearTimeout(resumeCheck);
       teardown();
       video = null;
     };
@@ -243,8 +194,8 @@ export function createPlayer() {
       return live;
     },
     resume: () => resumeFn?.(),
-    /* hls.js（gzip 後 172KB）の取得を先に始める。load() の中で取りに行くと、
-       config.json の取得完了を待ってから 172KB のダウンロードとパースが始まり、
+    /* hls.js のチャンクの取得を先に始める。load() の中で取りに行くと、
+       config.json の取得完了を待ってからダウンロードとパースが始まり、
        その分だけプレイリストの要求が後ろへずれる。 */
     prefetch: () => {
       loadHlsJs().catch(() => {

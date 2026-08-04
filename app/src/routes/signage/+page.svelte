@@ -56,7 +56,7 @@
     };
   });
 
-  // 自動再生がブロックされたら黙って再試行する。無人運用なので誰も操作しない。
+  // 無人で運用するため、自動再生がブロックされても操作する人がいない。
   // Kiosk は --autoplay-policy=no-user-gesture-required で起動すること。
   $effect(() => {
     if (player.state === 'blocked') player.resume();
@@ -118,7 +118,7 @@
 <style>
   .signage {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--side, 460px);
+    grid-template-columns: minmax(0, 1fr) 460px;
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
       'header side'
@@ -138,8 +138,6 @@
     gap: var(--sp-5);
     /* 視聴ページのヘッダーと同じくらいの高さに揃える */
     padding: var(--sp-3) var(--sp-5);
-    background: var(--surface);
-    border-bottom: 1px solid var(--line);
   }
   .clock {
     font-size: var(--fs-lg);
@@ -166,8 +164,6 @@
     align-items: center;
     gap: 20px;
     padding: 16px 24px calc(16px + var(--safe-b));
-    background: var(--surface);
-    border-top: 1px solid var(--line);
   }
   .qr {
     flex: 0 0 auto;

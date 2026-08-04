@@ -1,11 +1,13 @@
 <script lang="ts">
-  /* LIVE 部分の色そのものが配信状態のインジケータ（別バッジは置かない）。
-     配信 UI の慣習に合わせて点滅はさせない。 */
-  let { live = false, size = 'md' }: { live?: boolean; size?: 'md' | 'lg' } = $props();
+  /* LIVE 部分の色そのものが配信状態のインジケータで、別バッジは置かない。
+     点滅と発光は検討して採らなかった。点滅は配信 UI の慣習に反する。
+     text-shadow による発光は暗い無地の上でしか読めず、映像に重なる視聴ページと
+     サイネージで見え方が変わる。 */
+  let { live = false }: { live?: boolean } = $props();
 </script>
 
 <!-- .mark は inline-flex なので、要素間の改行は描画されない（詰めて並ぶ）。 -->
-<span class="mark" class:live data-size={size}>
+<span class="mark" class:live>
   <span class="kosensai">KOSENSAI</span>
   <span class="sep">-</span>
   <span class="live-part">LIVE</span>
@@ -15,18 +17,12 @@
   .mark {
     display: inline-flex;
     align-items: baseline;
+    font-size: var(--fs-md);
     font-weight: 800;
     letter-spacing: 0.06em;
     line-height: 1;
     white-space: nowrap;
     user-select: none;
-  }
-  .mark[data-size='md'] {
-    font-size: var(--fs-md);
-  }
-  .mark[data-size='lg'] {
-    font-size: 2.4vw;
-    letter-spacing: 0.1em;
   }
 
   .kosensai {
@@ -44,7 +40,5 @@
   }
   .mark.live .live-part {
     color: var(--live);
-    /* 点滅ではなく、わずかな発光で「通電している」ことを示す */
-    text-shadow: 0 0 12px color-mix(in srgb, var(--live) 55%, transparent);
   }
 </style>

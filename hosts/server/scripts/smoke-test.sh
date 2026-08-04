@@ -92,7 +92,6 @@ check "/hls/${CH}/index.m3u8" "https://${DOMAIN}/hls/${CH}/index.m3u8"
 check "/ (視聴ページ)"         "https://${DOMAIN}/"
 check "/signage/ (サイネージ)" "https://${DOMAIN}/signage/"
 check "/config.json"        "https://${DOMAIN}/config.json"
-check "/vendor/hls.min.js"    "https://${DOMAIN}/vendor/hls.min.js"
 
 if (( FAIL )); then
   echo

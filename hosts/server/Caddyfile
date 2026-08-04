@@ -41,9 +41,10 @@ live.kosensai.ichinoseki.ac.jp {
 		root * /srv/live
 		encode zstd gzip
 
-		# hls.js 等の vendor ファイルは長期キャッシュ
-		@vendor path /vendor/*
-		header @vendor Cache-Control "public, max-age=604800, immutable"
+		# SvelteKit のビルド成果物はファイル名にコンテンツハッシュを含み、
+		# 内容が変われば別パスになるため長期キャッシュしてよい。
+		@immutable path /_app/immutable/*
+		header @immutable Cache-Control "public, max-age=604800, immutable"
 
 		# HTML は都度取り直す（当日の差し替えを即反映させる）
 		@html path *.html /

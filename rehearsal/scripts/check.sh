@@ -29,7 +29,7 @@ code() { # code <path>
 echo "== 静的配信 =="
 # SvelteKit のビルド成果物はハッシュ付きのパスになるので、個別の CSS/JS は
 # 列挙せず、HTML が実際に参照しているものを引いて確認する。
-for p in / /signage/ /config.json /assets/qr-viewer.svg /vendor/hls.min.js /healthz; do
+for p in / /signage/ /config.json /assets/qr-viewer.svg /healthz; do
   c=$(code "$p")
   [[ "$c" == "200" ]] && ok "$p" || ng "$p (http $c)"
 done
@@ -45,6 +45,19 @@ else
     [[ "$(code "$a")" == "200" ]] || { ng "$a"; miss=1; }
   done <<<"${assets}"
   (( miss )) || ok "$(wc -l <<<"${assets}" | tr -d ' ') 件すべて 200"
+fi
+
+echo
+echo "== hls.js（動的 import のためページ参照からは見えない） =="
+# player.svelte.ts は import('hls.js') で読むため、初期 HTML には出現しない。
+# ビルド成果物からチャンクを特定して直接確認する。
+hls_chunk=$(grep -l 'SubtitleTrackController' ../web/_app/immutable/chunks/*.js 2>/dev/null | head -1)
+if [[ -z "${hls_chunk}" ]]; then
+  ng "hls.js のチャンクが見つからない"
+else
+  hls_path="/_app/immutable/chunks/$(basename "${hls_chunk}")"
+  c=$(code "${hls_path}")
+  [[ "$c" == "200" ]] && ok "${hls_path}" || ng "${hls_path} (http $c)"
 fi
 
 echo
