@@ -2,14 +2,13 @@
   import { onMount } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
   import Wordmark from '$lib/components/Wordmark.svelte';
-  import type { OfficialSite } from '$lib/types';
+  import { officialSite } from '$lib/config';
 
   const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 公式サイト側の更新を拾う
   const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転のリーク対策（無人運用の保険）
 
   const player = createPlayer();
 
-  let official = $state<Partial<OfficialSite>>({ embedUrl: '' });
   let clock = $state('--:--');
   /** @type {HTMLVideoElement | null} */
   let videoEl = $state<HTMLVideoElement | null>(null);
@@ -28,15 +27,6 @@
     const detach = player.attach(videoEl);
     const ch = new URLSearchParams(location.search).get('ch') ?? 'ch4';
     player.load(ch);
-
-    (async () => {
-      try {
-        const r = await fetch('/config.json', { cache: 'no-cache' });
-        if (r.ok) official = (await r.json()).officialSite ?? {};
-      } catch {
-        /* 設定が読めなくても再生は試みる */
-      }
-    })();
 
     tick();
     const timers = [
@@ -103,10 +93,10 @@
   </div>
 
   <aside class="side">
-    {#if official.embedUrl}
+    {#if officialSite.embedUrl}
       <iframe
         bind:this={frameEl}
-        src={official.embedUrl}
+        src={officialSite.embedUrl}
         title="高専祭公式サイト"
         referrerpolicy="no-referrer"
         sandbox="allow-scripts allow-same-origin"

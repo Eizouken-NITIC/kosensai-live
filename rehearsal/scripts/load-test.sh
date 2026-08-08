@@ -25,7 +25,7 @@ docker inspect rehearsal-mediamtx >/dev/null 2>&1 \
 
 if [[ "${CH}" == "all" ]]; then
   CHANNELS=$(python3 -c "
-import json;print(' '.join(c['id'] for c in json.load(open('../web/config.json'))['channels']))")
+import json;print(' '.join(c['id'] for c in json.load(open('../config.json'))['channels']))")
 else
   CHANNELS="${CH}"
 fi

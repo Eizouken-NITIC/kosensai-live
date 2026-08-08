@@ -21,9 +21,15 @@ done
 
 echo
 echo "== 配信サイト (web/) =="
-for f in index.html signage/index.html config.json \
-         assets/theme.css assets/viewer.css assets/signage.css assets/player.js; do
-  [[ -f "${REPO_DIR}/web/${f}" ]] && ok "web/${f}" || ng "web/${f} が無い"
+# web/ は app/ のビルド成果物である。ここに無い場合は cd app && pnpm build を実行する。
+for f in index.html signage/index.html; do
+  [[ -f "${REPO_DIR}/web/${f}" ]] && ok "web/${f}" || ng "web/${f} が無い（cd app && pnpm build）"
+done
+[[ -d "${REPO_DIR}/web/_app/immutable" ]] && ok "web/_app/immutable/" \
+  || ng "web/_app/immutable/ が無い（cd app && pnpm build）"
+# OFL-1.1 は配布物にライセンス本文を伴うことを求めるため、欠けたまま配信しない。
+for f in hls.js-Apache-2.0.txt media-chrome-MIT.txt noto-sans-jp-OFL-1.1.txt; do
+  [[ -f "${REPO_DIR}/web/licenses/${f}" ]] && ok "web/licenses/${f}" || ng "web/licenses/${f} が無い"
 done
 
 echo
@@ -49,7 +55,7 @@ else
 fi
 
 echo
-echo "== mediamtx.yml と web/config.json のチャンネル定義が一致しているか =="
+echo "== mediamtx.yml と config.json のチャンネル定義が一致しているか =="
 if command -v python3 >/dev/null; then
   if python3 - "${REPO_DIR}" <<'PY'
 import json, re, sys, pathlib
@@ -57,7 +63,7 @@ repo = pathlib.Path(sys.argv[1])
 yml  = (repo / "hosts/server/mediamtx.yml").read_text(encoding="utf-8")
 body = yml.split("\npaths:", 1)[1] if "\npaths:" in yml else ""
 mtx  = set(re.findall(r"^  ([A-Za-z0-9_-]+):\s*$", body, re.M))
-web  = {c["id"] for c in json.loads((repo / "web/config.json").read_text(encoding="utf-8"))["channels"]}
+web  = {c["id"] for c in json.loads((repo / "config.json").read_text(encoding="utf-8"))["channels"]}
 if mtx == web:
     print("  \033[32mOK\033[0m   %s" % sorted(mtx))
 else:

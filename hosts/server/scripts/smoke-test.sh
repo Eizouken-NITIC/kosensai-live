@@ -91,7 +91,6 @@ check "/healthz"              "https://${DOMAIN}/healthz"
 check "/hls/${CH}/index.m3u8" "https://${DOMAIN}/hls/${CH}/index.m3u8"
 check "/ (視聴ページ)"         "https://${DOMAIN}/"
 check "/signage/ (サイネージ)" "https://${DOMAIN}/signage/"
-check "/config.json"        "https://${DOMAIN}/config.json"
 
 if (( FAIL )); then
   echo

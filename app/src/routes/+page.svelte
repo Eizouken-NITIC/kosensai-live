@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
   import Wordmark from '$lib/components/Wordmark.svelte';
-  import type { Channel, OfficialSite, SiteConfig } from '$lib/types';
+  import { channels, officialSite } from '$lib/config';
 
   const DEFAULT_CH = 'ch1';
   const STORE_KEY = 'kosensai.ch';
@@ -10,8 +10,6 @@
 
   const player = createPlayer();
 
-  let channels = $state<Channel[]>([]);
-  let official = $state<OfficialSite>({ homeUrl: '', embedUrl: '' });
   let current = $state(DEFAULT_CH);
   let overlayVisible = $state(true);
   /** @type {HTMLVideoElement | null} */
@@ -64,28 +62,16 @@
     if (!videoEl) return;
     const detach = player.attach(videoEl);
 
-    (async () => {
-      let cfg: Partial<SiteConfig> = {};
+    const params = new URLSearchParams(location.search);
+    let initial = params.get('ch');
+    if (!initial) {
       try {
-        const r = await fetch('/config.json', { cache: 'no-cache' });
-        if (r.ok) cfg = await r.json();
+        initial = localStorage.getItem(STORE_KEY);
       } catch {
-        /* 設定が読めなくても再生自体は試みる */
+        /* プライベートブラウズ */
       }
-      channels = cfg.channels ?? [];
-      official = cfg.officialSite ?? { homeUrl: '', embedUrl: '' };
-
-      const params = new URLSearchParams(location.search);
-      let initial = params.get('ch');
-      if (!initial) {
-        try {
-          initial = localStorage.getItem(STORE_KEY);
-        } catch {
-          /* noop */
-        }
-      }
-      select(initial ?? DEFAULT_CH, false);
-    })();
+    }
+    select(initial ?? DEFAULT_CH, false);
 
     return () => {
       clearTimeout(hideTimer);
@@ -166,16 +152,16 @@
   </section>
 
   <aside class="panel">
-    {#if official.embedUrl}
+    {#if officialSite.embedUrl}
       <iframe
-        src={official.embedUrl}
+        src={officialSite.embedUrl}
         title="高専祭公式サイト"
         loading="lazy"
         referrerpolicy="no-referrer"
         sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
       ></iframe>
     {/if}
-    <a class="open-official" href={official.homeUrl} target="_blank" rel="noopener">
+    <a class="open-official" href={officialSite.homeUrl} target="_blank" rel="noopener">
       公式サイトを開く ↗
     </a>
   </aside>
