@@ -80,17 +80,20 @@ sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
 
 </details>
 
-## テストパターンの見分け方
+## テストパターン
 
-イメージにフォントが入っていないため `drawtext` が使えない。Ch の判別は
-色相と音程で行う。`testsrc` はカウンタを描くので遅延の目視にも使える。
+全チャンネルで映像はカラーバー（`smptebars`）、音声は 1kHz の基準音（-18dBFS）に
+揃えてある。チャンネルの識別は、映像へ焼き込んだ `CH1`〜`CH4` の文字で行う。
+下段の経過時刻は遅延の目視に使う。
 
-| Ch | 色 | 音 |
-| --- | --- | --- |
-| ch1 | そのまま | A 440Hz |
-| ch2 | 緑寄り（hue +120） | C 523Hz |
-| ch3 | 青寄り（hue +210） | E 659Hz |
-| ch4 | 紫寄り（hue +280） | G 784Hz |
+送出の内容は [publish.sh](publish.sh) にある。
+
+以前はチャンネルごとに生成パターンと音程を変えて見分けていたが、これはイメージに
+フォントが無く `drawtext` を使えなかったことへの回避策であり、実機から届く信号とも
+異なっていた。`publisher.Dockerfile` でフォントを追加して解消してある。
+
+音声は全チャンネルで同一であるため、音だけで切替を判別することはできない。判別は
+画面の文字で行う。
 
 ## 何を確認できるか / できないか
 
@@ -123,6 +126,8 @@ sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
 | ファイル | 内容 |
 | --- | --- |
 | `docker-compose.yml` | MediaMTX + Caddy + プレビュー入口 + テストパターン送出 4 本 |
+| `publisher.Dockerfile` | テストパターン送出用の ffmpeg。フォントを追加して `drawtext` を使えるようにする |
+| `publish.sh` | 1 チャンネル分の送出。カラーバー・基準音・チャンネル名・経過時刻を組み立てる |
 | `preview.Caddyfile` | `localhost:8080` 用の入口。Host を付け替えて本番 Caddy に渡す |
 | `scripts/up.sh` | 自己署名証明書の生成 → 起動 |
 | `scripts/down.sh` | 停止（`--clean` で生成物も削除） |

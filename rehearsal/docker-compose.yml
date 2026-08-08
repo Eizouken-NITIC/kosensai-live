@@ -18,13 +18,26 @@ x-passphrases: &passphrases
   MTX_PATHS_CH3_SRTPUBLISHPASSPHRASE: rehearsal-ch3-passphrase
   MTX_PATHS_CH4_SRTPUBLISHPASSPHRASE: rehearsal-ch4-passphrase
 
+# 送出の内容は publish.sh にある。チャンネルごとに異なるのは名前とパスフレーズだけ
+# なので、compose 側には引数だけを置く。
+#
+# 既定は 640x360@15 の ultrafast。UI の確認にはこれで足りる。
+# ビットレートや画質を実測したいときだけ本番相当に上げる:
+#   REH_SIZE=1280x720 REH_FPS=30 REH_BITRATE=2500k REH_PRESET=veryfast \
+#     docker compose --profile publish up -d
 x-publisher: &publisher
-  # ffmpeg 同梱タグ。arm64/amd64 どちらもネイティブで動く
-  image: bluenviron/mediamtx:1.19.3-ffmpeg
+  build:
+    context: .
+    dockerfile: publisher.Dockerfile
   network_mode: "service:mediamtx"
   depends_on: [mediamtx]
   restart: unless-stopped
-  entrypoint: ["ffmpeg"]
+  profiles: ["publish"]
+  environment:
+    REH_SIZE: "${REH_SIZE:-}"
+    REH_FPS: "${REH_FPS:-}"
+    REH_BITRATE: "${REH_BITRATE:-}"
+    REH_PRESET: "${REH_PRESET:-}"
 
 services:
   mediamtx:
@@ -66,184 +79,22 @@ services:
       - ./preview.Caddyfile:/etc/caddy/Caddyfile:ro
 
   # --- テストパターン送出 --------------------------------------------------
-  # イメージにフォントが無いので drawtext は使えない。Ch の見分けは
-  # 「生成パターンそのもの」と音程でつける。hue フィルタは 1 画素ずつ
-  # 処理するぶん CPU を食うので使わない（実測で 1 割ほど重かった）。
-  #
-  #   Ch1 testsrc    カウンタ付きの動くパターン (A 440Hz)
-  #   Ch2 smptebars  静止（エンコードがほぼ無料）  (C 523Hz)
-  #   Ch3 rgbtestsrc 静止                          (E 659Hz)
-  #   Ch4 testsrc2   別の動くパターン              (G 784Hz)
-  #
-  # 既定は 640x360@15 の ultrafast。UI の確認にはこれで足りる。
-  # ビットレートや画質を実測したいときだけ本番相当に上げる:
-  #   REH_SIZE=1280x720 REH_FPS=30 REH_BITRATE=2500k REH_PRESET=veryfast \
-  #     docker compose --profile publish up -d
-
   pub-ch1:
     <<: *publisher
     container_name: rehearsal-pub-ch1
-    profiles: ["publish"]
-    command:
-      - "-hide_banner"
-      - "-loglevel"
-      - "warning"
-      - "-re"
-      - "-f"
-      - "lavfi"
-      - "-i"
-      - "testsrc=size=${REH_SIZE:-640x360}:rate=${REH_FPS:-15}"
-      - "-f"
-      - "lavfi"
-      - "-i"
-      - "sine=frequency=440:sample_rate=48000"
-      - "-c:v"
-      - "libx264"
-      - "-preset"
-      - "${REH_PRESET:-ultrafast}"
-      - "-tune"
-      - "zerolatency"
-      - "-b:v"
-      - "${REH_BITRATE:-1200k}"
-      # キーフレーム間隔を 2 秒に固定する。HLS のセグメントはキーフレームでしか
-      # 切れないため、これが hlsSegmentDuration の下限になる。-g はフレーム数
-      # 指定でフレームレートに依存するので、時刻で指定する形を使う。
-      - "-force_key_frames"
-      - "expr:gte(t,n_forced*2)"
-      - "-pix_fmt"
-      - "yuv420p"
-      - "-c:a"
-      - "aac"
-      - "-b:a"
-      - "64k"
-      - "-ar"
-      - "48000"
-      - "-f"
-      - "mpegts"
-      - "srt://127.0.0.1:8890?streamid=publish:ch1&passphrase=rehearsal-ch1-passphrase&latency=120000"
+    command: ["ch1", "rehearsal-ch1-passphrase"]
 
   pub-ch2:
     <<: *publisher
     container_name: rehearsal-pub-ch2
-    profiles: ["publish"]
-    command:
-      - "-hide_banner"
-      - "-loglevel"
-      - "warning"
-      - "-re"
-      - "-f"
-      - "lavfi"
-      - "-i"
-      - "smptebars=size=${REH_SIZE:-640x360}:rate=${REH_FPS:-15}"
-      - "-f"
-      - "lavfi"
-      - "-i"
-      - "sine=frequency=523:sample_rate=48000"
-      - "-c:v"
-      - "libx264"
-      - "-preset"
-      - "${REH_PRESET:-ultrafast}"
-      - "-tune"
-      - "zerolatency"
-      - "-b:v"
-      - "${REH_BITRATE:-1200k}"
-      # キーフレーム間隔を 2 秒に固定する。HLS のセグメントはキーフレームでしか
-      # 切れないため、これが hlsSegmentDuration の下限になる。-g はフレーム数
-      # 指定でフレームレートに依存するので、時刻で指定する形を使う。
-      - "-force_key_frames"
-      - "expr:gte(t,n_forced*2)"
-      - "-pix_fmt"
-      - "yuv420p"
-      - "-c:a"
-      - "aac"
-      - "-b:a"
-      - "64k"
-      - "-ar"
-      - "48000"
-      - "-f"
-      - "mpegts"
-      - "srt://127.0.0.1:8890?streamid=publish:ch2&passphrase=rehearsal-ch2-passphrase&latency=120000"
+    command: ["ch2", "rehearsal-ch2-passphrase"]
 
   pub-ch3:
     <<: *publisher
     container_name: rehearsal-pub-ch3
-    profiles: ["publish"]
-    command:
-      - "-hide_banner"
-      - "-loglevel"
-      - "warning"
-      - "-re"
-      - "-f"
-      - "lavfi"
-      - "-i"
-      - "rgbtestsrc=size=${REH_SIZE:-640x360}:rate=${REH_FPS:-15}"
-      - "-f"
-      - "lavfi"
-      - "-i"
-      - "sine=frequency=659:sample_rate=48000"
-      - "-c:v"
-      - "libx264"
-      - "-preset"
-      - "${REH_PRESET:-ultrafast}"
-      - "-tune"
-      - "zerolatency"
-      - "-b:v"
-      - "${REH_BITRATE:-1200k}"
-      # キーフレーム間隔を 2 秒に固定する。HLS のセグメントはキーフレームでしか
-      # 切れないため、これが hlsSegmentDuration の下限になる。-g はフレーム数
-      # 指定でフレームレートに依存するので、時刻で指定する形を使う。
-      - "-force_key_frames"
-      - "expr:gte(t,n_forced*2)"
-      - "-pix_fmt"
-      - "yuv420p"
-      - "-c:a"
-      - "aac"
-      - "-b:a"
-      - "64k"
-      - "-ar"
-      - "48000"
-      - "-f"
-      - "mpegts"
-      - "srt://127.0.0.1:8890?streamid=publish:ch3&passphrase=rehearsal-ch3-passphrase&latency=120000"
+    command: ["ch3", "rehearsal-ch3-passphrase"]
 
   pub-ch4:
     <<: *publisher
     container_name: rehearsal-pub-ch4
-    profiles: ["publish"]
-    command:
-      - "-hide_banner"
-      - "-loglevel"
-      - "warning"
-      - "-re"
-      - "-f"
-      - "lavfi"
-      - "-i"
-      - "testsrc2=size=${REH_SIZE:-640x360}:rate=${REH_FPS:-15}"
-      - "-f"
-      - "lavfi"
-      - "-i"
-      - "sine=frequency=784:sample_rate=48000"
-      - "-c:v"
-      - "libx264"
-      - "-preset"
-      - "${REH_PRESET:-ultrafast}"
-      - "-tune"
-      - "zerolatency"
-      - "-b:v"
-      - "${REH_BITRATE:-1200k}"
-      # キーフレーム間隔を 2 秒に固定する。HLS のセグメントはキーフレームでしか
-      # 切れないため、これが hlsSegmentDuration の下限になる。-g はフレーム数
-      # 指定でフレームレートに依存するので、時刻で指定する形を使う。
-      - "-force_key_frames"
-      - "expr:gte(t,n_forced*2)"
-      - "-pix_fmt"
-      - "yuv420p"
-      - "-c:a"
-      - "aac"
-      - "-b:a"
-      - "64k"
-      - "-ar"
-      - "48000"
-      - "-f"
-      - "mpegts"
-      - "srt://127.0.0.1:8890?streamid=publish:ch4&passphrase=rehearsal-ch4-passphrase&latency=120000"
+    command: ["ch4", "rehearsal-ch4-passphrase"]

@@ -12,9 +12,8 @@
 
   let current = $state(DEFAULT_CH);
   let overlayVisible = $state(true);
-  /** @type {HTMLVideoElement | null} */
   let videoEl = $state<HTMLVideoElement | null>(null);
-  /** @type {HTMLElement | null} */
+  let liveBtn = $state<HTMLElement | null>(null);
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -62,6 +61,19 @@
     if (!videoEl) return;
     const detach = player.attach(videoEl);
 
+    // media-chrome の LIVE ボタンは、再生中かつ先端と判定されている間クリックを
+    // 無視する。先端の判定には liveedgeoffset の 8 秒の幅があるため、その範囲内で
+    // 数秒遅れていても押せない。無視される条件のときだけ、こちらから要求を出す。
+    const btn = liveBtn;
+    const onLiveClick = () => {
+      if (!btn) return;
+      if (btn.hasAttribute('mediapaused') || !btn.hasAttribute('mediatimeislive')) return;
+      btn.dispatchEvent(
+        new CustomEvent('mediaseektoliverequest', { composed: true, bubbles: true }),
+      );
+    };
+    btn?.addEventListener('click', onLiveClick);
+
     const params = new URLSearchParams(location.search);
     let initial = params.get('ch');
     if (!initial) {
@@ -75,6 +87,7 @@
 
     return () => {
       clearTimeout(hideTimer);
+      btn?.removeEventListener('click', onLiveClick);
       detach();
     };
   });
@@ -110,7 +123,7 @@
         <media-mute-button></media-mute-button>
         <media-volume-range></media-volume-range>
         <media-time-range></media-time-range>
-        <media-live-button></media-live-button>
+        <media-live-button bind:this={liveBtn}></media-live-button>
         <media-fullscreen-button></media-fullscreen-button>
       </media-control-bar>
     </media-controller>
