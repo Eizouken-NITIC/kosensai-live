@@ -13,9 +13,6 @@
 logLevel: info
 logDestinations: [stdout]
 
-readTimeout: 10s
-writeTimeout: 10s
-
 ###############################################
 # SRT server（本部OBS からの受け口）
 ###############################################
@@ -30,7 +27,8 @@ hlsAddress: 127.0.0.1:8888
 hlsEncryption: no                  # TLS 終端は Caddy に集約
 hlsAllowOrigins: ["*"]
 hlsTrustedProxies: [127.0.0.1]     # Caddy → MediaMTX のプロキシ信頼
-hlsVariant: mpegts                 # 既定は lowLatency。ブラウザ互換性優先で明示的に mpegts
+hlsVariant: mpegts                 # 既定の lowLatency は fMP4(LL-HLS) を生成する。
+                                   # 6 秒以上の遅延を許容する設計なので、通常の mpegts を使う。
 # セグメントはキーフレームでしか分割されない。OBS のキーフレーム間隔と揃える。
 hlsSegmentDuration: 2s
 # 視聴を開始した時点で遡れる幅。視聴を続けている間はクライアント側のバッファで伸びる。

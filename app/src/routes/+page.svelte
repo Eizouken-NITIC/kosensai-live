@@ -6,7 +6,7 @@
 
   const DEFAULT_CH = 'ch1';
   const STORE_KEY = 'kosensai.ch';
-  const OVERLAY_HIDE_MS = 3000;
+  const OVERLAY_HIDE_MS = 2000;
 
   const player = createPlayer();
 
