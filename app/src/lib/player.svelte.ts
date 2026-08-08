@@ -107,7 +107,6 @@ export function createPlayer() {
 
     const H = Hls;
     const instance = new H({
-      liveSyncDurationCount: 3,
       // false だと duration がウィンドウ長になり、有限長の動画として扱われる
       liveDurationInfinity: true,
     });
