@@ -3,6 +3,8 @@
   import { createPlayer } from '$lib/player.svelte.js';
   import Wordmark from '$lib/components/Wordmark.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
+  import { setNowPlaying } from '$lib/mediaSession';
+  import { channels } from '$lib/config';
 
   const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先の更新を拾う
   const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転のリーク対策（無人運用の保険）
@@ -25,6 +27,7 @@
     const detach = player.attach(videoEl);
     const ch = new URLSearchParams(location.search).get('ch') ?? 'ch4';
     player.load(ch);
+    setNowPlaying(channels.find((c) => c.id === ch)?.label ?? ch);
 
     tick();
     const timers = [

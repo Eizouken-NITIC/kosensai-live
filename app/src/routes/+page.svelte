@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
   import { loadMediaChrome, keepLiveButtonEnabled } from '$lib/mediaChrome';
+  import { setNowPlaying } from '$lib/mediaSession';
   import Wordmark from '$lib/components/Wordmark.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import { channels } from '$lib/config';
@@ -33,6 +34,7 @@
     if (!ch) return;
     current = ch.id;
     document.title = `${ch.label} | KOSENSAI-LIVE`;
+    setNowPlaying(ch.label);
     if (updateUrl) history.replaceState(null, '', `?ch=${ch.id}`);
     try {
       localStorage.setItem(STORE_KEY, ch.id);

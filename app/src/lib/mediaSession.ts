@@ -1,0 +1,25 @@
+/** OS の再生通知（ロック画面・通知領域）に出す情報を設定する。
+ *
+ * 設定しない場合、表題にはページの URL が出る。 */
+export function setNowPlaying(title: string): void {
+  if (!('mediaSession' in navigator)) return;
+
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title,
+    artist: 'KOSENSAI-LIVE',
+    album: '高専祭ライブ配信',
+  });
+
+  // ライブ配信であり、先頭からの経過時間と全体の長さに意味がない。
+  // 設定しないと 00:00 / 00:00 のシークバーが出る。
+  navigator.mediaSession.setPositionState?.();
+
+  // 同じ理由でシーク操作も受け付けない。
+  for (const action of ['seekto', 'seekbackward', 'seekforward'] as const) {
+    try {
+      navigator.mediaSession.setActionHandler(action, null);
+    } catch {
+      /* この操作に未対応のブラウザ */
+    }
+  }
+}
