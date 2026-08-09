@@ -33,10 +33,11 @@
 {/if}
 
 <style>
+  /* .panel は縦の flex なので、残りの高さをこれが取る */
   iframe {
     flex: 1 1 auto;
+    min-height: 0;
     width: 100%;
-    height: 100%;
     border: 0;
     background: #fff;
   }

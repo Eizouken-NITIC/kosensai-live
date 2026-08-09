@@ -54,8 +54,8 @@
 
 <svelte:head><title>KOSENSAI-LIVE サイネージ</title></svelte:head>
 
-<div class="signage">
-  <header>
+<div class="signage screen">
+  <header class="bar">
     <Wordmark live={player.isLive} />
     <time class="clock">{clock}</time>
   </header>
@@ -91,33 +91,26 @@
     </div>
   </div>
 
-  <aside class="side">
+  <aside class="panel">
     <EmbeddedSite bind:this={site} />
   </aside>
 </div>
 
 <style>
   .signage {
-    display: grid;
     grid-template-columns: minmax(0, 1fr) 460px;
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'header side'
-      'stage  side'
-      'invite side';
-    height: 100dvh;
-    overflow: hidden;
+      'header panel'
+      'stage  panel'
+      'invite panel';
     cursor: none;
     user-select: none;
   }
 
   header {
     grid-area: header;
-    display: flex;
-    align-items: baseline;
     justify-content: space-between;
-    gap: var(--sp-5);
-    /* 視聴ページのヘッダーと同じくらいの高さに揃える */
     padding: var(--sp-3) var(--sp-5);
   }
   .clock {
@@ -184,11 +177,9 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
-  .side {
-    grid-area: side;
-    display: flex;
-    flex-direction: column;
-    background: var(--surface);
-    min-width: 0;
+  /* 枠は app.css の .panel。左辺が映像と接する。 */
+  .panel {
+    grid-area: panel;
+    border-left-width: 1px;
   }
 </style>

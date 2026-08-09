@@ -142,12 +142,12 @@
 <svelte:body onmousemove={showOverlay} onpointerdown={showOverlay} onfocusin={showOverlay} />
 <svelte:window bind:innerWidth={winWidth} />
 
-<div class="page" class:dragging>
+<div class="page screen" class:dragging>
   <!-- 幅 1000px 以上では映像と同じグリッドのセルに置いて重ね、それ未満では
        映像の上の行に積む。縦画面では映像が 16:9 に収まるため、重ねると
        映像の大部分が隠れる。タッチにはホバーが無く、消すこともできない。 -->
   <div class="topbar" class:visible={overlayVisible || pinned}>
-    <div class="topbar-inner">
+    <div class="bar">
       <Wordmark live={player.isLive} />
 
       <nav aria-label="チャンネル">
@@ -234,12 +234,8 @@
 
 <style>
   .page {
-    display: grid;
     /* バー・映像・パネルを縦に積む */
     grid-template-rows: auto auto 1fr;
-    height: 100dvh;
-    /* 子がはみ出してページ全体がスクロールするのを止める */
-    overflow: hidden;
   }
   @media (min-width: 1000px) {
     .page {
@@ -274,11 +270,8 @@
     padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) 0;
     background: var(--surface);
   }
-  .topbar-inner {
-    display: flex;
-    /* center だとタブの下線を含んだ箱がロゴに揃い、文字がずれる */
-    align-items: baseline;
-    gap: var(--sp-3) var(--sp-5);
+  /* 幅が足りなければタブの列を次の行へ送る */
+  .bar {
     flex-wrap: wrap;
   }
 
@@ -357,19 +350,17 @@
     outline-offset: 2px;
   }
 
-  /* ---- 右カラム ---- */
+  /* ---- 右カラム（枠は app.css の .panel） ---- */
+  /* 縦画面では映像の下に付くので上辺、横並びでは左辺が映像と接する */
   .panel {
     grid-row: 3;
-    position: relative;
-    min-height: 0;
-    background: var(--surface);
-    border-top: 1px solid var(--line);
+    border-top-width: 1px;
   }
   @media (min-width: 1000px) {
     .panel {
       grid-area: 1 / 2;
-      border-top: 0;
-      border-left: 1px solid var(--line);
+      border-top-width: 0;
+      border-left-width: 1px;
       /* JS が外れても最小・最大は保たれる */
       width: clamp(280px, var(--panel-w), 60vw);
     }
