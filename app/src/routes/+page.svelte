@@ -242,9 +242,12 @@
   }
 
   /* ---- 上端のバー ---- */
+  /* 下の余白を置かず、タブのインジケータをバーの下端に接する位置で終わらせる。
+     ベースライン揃えのため、インジケータの分だけ下へ伸びた高さの中心に
+     ロゴの中心が一致する。 */
   .topbar {
     grid-row: 1;
-    padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) var(--sp-3);
+    padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) 0;
     background: var(--surface);
     border-bottom: 1px solid var(--line);
   }
