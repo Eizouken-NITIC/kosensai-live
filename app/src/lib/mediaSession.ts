@@ -7,7 +7,6 @@ export function setNowPlaying(title: string): void {
   navigator.mediaSession.metadata = new MediaMetadata({
     title,
     artist: 'KOSENSAI-LIVE',
-    album: '高専祭ライブ配信',
   });
 
   // ライブ配信であり、先頭からの経過時間と全体の長さに意味がない。
