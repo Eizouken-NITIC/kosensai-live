@@ -115,11 +115,11 @@
 
 <div class="page">
   <section class="stage">
-    <!-- MediaMTX は DVR 判定用の非標準タグを出さないので mediastreamtype を明示する。
-         seektoliveoffset は 0 とし、LIVE ボタンの移動先を末端にする。
-         liveedgeoffset は通常の再生位置（末端から 6 秒手前）にセグメント 1 本分を
-         加えた値にする。いずれも既定値のままでは、LIVE ボタンが通常の再生位置よりも
-         後ろへ移動する。 -->
+    <!-- mediastreamtype: MediaMTX は DVR 判定用の非標準タグを出さないため明示する。
+         seektoliveoffset: 既定は liveedgeoffset と同値で、LIVE ボタンが通常の再生位置
+           よりも後ろへ移動してしまう。0 は末端を指す。
+         liveedgeoffset: 通常の再生位置は末端から 6 秒手前。セグメント 1 本分を余裕と
+           して加える。狭めると再生位置の揺れで LIVE の点灯が変化する。 -->
     <media-controller mediastreamtype="live" seektoliveoffset="0" liveedgeoffset="8">
       <!-- svelte-ignore a11y_media_has_caption -->
       <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>

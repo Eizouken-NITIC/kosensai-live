@@ -25,9 +25,10 @@ srtAddress: :8890
 hls: yes
 hlsAddress: 127.0.0.1:8888
 hlsEncryption: no                  # TLS 終端は Caddy に集約
+# 視聴ページと HLS は同一オリジンのため実際には検査されない。Caddy 側では付与しない。
 hlsAllowOrigins: ["*"]
 hlsTrustedProxies: [127.0.0.1]     # Caddy → MediaMTX のプロキシ信頼
-# LL-HLS を使わない。既定が lowLatency のため明示する。
+# 既定は lowLatency。明示しないと LL-HLS になる。
 hlsVariant: mpegts
 # OBS のキーフレーム間隔と同一にする。
 # HLS のセグメントはキーフレームでのみ分割されるため、片方だけを変更すると
@@ -36,12 +37,11 @@ hlsSegmentDuration: 2s
 # app/src/lib/player.svelte.ts の backBufferLength と同一にする（180 × 2 秒 = 360 秒）。
 # セグメントはメモリ上に保持される。4 チャンネル合計 18.5 Mbps で約 830 MB を占める。
 hlsSegmentCount: 180
-# 視聴者がいない間もセグメントの生成を継続する。
-# no にすると muxer が停止し、次の視聴開始が 10 秒以上遅れる。
+# no にすると視聴者ゼロで muxer が停止し、次の視聴開始が 10 秒以上遅れる。
 hlsAlwaysRemux: yes
 
 ###############################################
-# 使わないプロトコルは全部落とす
+# 使わないプロトコルは無効化する
 ###############################################
 rtsp: no
 rtmp: no
@@ -62,7 +62,6 @@ paths:
   # Ch1: 第一体育館（ATEM Mini Pro → 本部OBS → ここ）
   ch1:
     source: publisher
-    # srtPublishPassphrase は MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE で注入
 
   # Ch2: 第二体育館（開催有無は未確定 / 2026-07 時点）
   ch2:
