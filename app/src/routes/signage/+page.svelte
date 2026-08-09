@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
   import Wordmark from '$lib/components/Wordmark.svelte';
-  import { officialSite } from '$lib/config';
+  import OfficialSite from '$lib/components/OfficialSite.svelte';
 
   const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 公式サイト側の更新を拾う
   const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転のリーク対策（無人運用の保険）
@@ -10,10 +10,8 @@
   const player = createPlayer();
 
   let clock = $state('--:--');
-  /** @type {HTMLVideoElement | null} */
   let videoEl = $state<HTMLVideoElement | null>(null);
-  /** @type {HTMLIFrameElement | null} */
-  let frameEl = $state<HTMLIFrameElement | null>(null);
+  let site = $state<ReturnType<typeof OfficialSite> | null>(null);
 
   function tick() {
     const d = new Date();
@@ -31,9 +29,7 @@
     tick();
     const timers = [
       setInterval(tick, 5000),
-      setInterval(() => {
-        if (frameEl) frameEl.src = frameEl.src;
-      }, IFRAME_RELOAD_MS),
+      setInterval(() => site?.reload(), IFRAME_RELOAD_MS),
       // 再生中はリロードしない
       setInterval(() => {
         if (videoEl?.paused || (videoEl?.readyState ?? 0) < 3) location.reload();
@@ -87,15 +83,7 @@
   </div>
 
   <aside class="side">
-    {#if officialSite.embedUrl}
-      <iframe
-        bind:this={frameEl}
-        src={officialSite.embedUrl}
-        title="高専祭公式サイト"
-        referrerpolicy="no-referrer"
-        sandbox="allow-scripts allow-same-origin"
-      ></iframe>
-    {/if}
+    <OfficialSite bind:this={site} />
   </aside>
 </div>
 
@@ -188,11 +176,5 @@
     background: var(--surface);
     border-left: 1px solid var(--line);
     min-width: 0;
-  }
-  .side iframe {
-    flex: 1 1 auto;
-    width: 100%;
-    border: 0;
-    background: #fff;
   }
 </style>

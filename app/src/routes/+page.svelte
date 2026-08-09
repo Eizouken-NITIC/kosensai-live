@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
+  import { loadMediaChrome, keepLiveButtonEnabled } from '$lib/mediaChrome';
   import Wordmark from '$lib/components/Wordmark.svelte';
-  import { channels, officialSite } from '$lib/config';
+  import OfficialSite from '$lib/components/OfficialSite.svelte';
+  import { channels } from '$lib/config';
 
   const DEFAULT_CH = 'ch1';
   const STORE_KEY = 'kosensai.ch';
@@ -43,46 +45,13 @@
 
   onMount(() => {
     player.prefetch();
-
-    // カスタム要素の定義には DOM が要るので prerender 時には読めない
-    Promise.all([
-      import('media-chrome/dist/media-controller.js'),
-      import('media-chrome/dist/media-control-bar.js'),
-      import('media-chrome/dist/media-play-button.js'),
-      import('media-chrome/dist/media-mute-button.js'),
-      import('media-chrome/dist/media-volume-range.js'),
-      import('media-chrome/dist/media-time-range.js'),
-      import('media-chrome/dist/media-live-button.js'),
-      import('media-chrome/dist/media-fullscreen-button.js'),
-    ]).catch(() => {
-      /* コントロールが出ないだけで再生は続く */
-    });
+    loadMediaChrome();
 
     if (!videoEl) return;
     const detach = player.attach(videoEl);
+    const releaseLiveBtn = keepLiveButtonEnabled(liveBtn);
 
-    // media-chrome の LIVE ボタンは、再生中かつ先端と判定されている間クリックを
-    // 無視する。先端の判定には liveedgeoffset の 8 秒の幅があるため、その範囲内で
-    // 数秒遅れていても押せない。無視される条件のときだけ、こちらから要求を出す。
-    const btn = liveBtn;
-    const onLiveClick = () => {
-      if (!btn) return;
-      if (btn.hasAttribute('mediapaused') || !btn.hasAttribute('mediatimeislive')) return;
-      btn.dispatchEvent(
-        new CustomEvent('mediaseektoliverequest', { composed: true, bubbles: true }),
-      );
-    };
-    btn?.addEventListener('click', onLiveClick);
-
-    // 同じ条件で aria-disabled も付くが、上のとおり実際には操作できる。
-    // 支援技術へ誤った状態を伝えないよう取り除く。
-    const ariaFix = new MutationObserver(() => {
-      if (btn?.getAttribute('aria-disabled') === 'true') btn.removeAttribute('aria-disabled');
-    });
-    if (btn) ariaFix.observe(btn, { attributes: true, attributeFilter: ['aria-disabled'] });
-
-    const params = new URLSearchParams(location.search);
-    let initial = params.get('ch');
+    let initial = new URLSearchParams(location.search).get('ch');
     if (!initial) {
       try {
         initial = localStorage.getItem(STORE_KEY);
@@ -94,8 +63,7 @@
 
     return () => {
       clearTimeout(hideTimer);
-      btn?.removeEventListener('click', onLiveClick);
-      ariaFix.disconnect();
+      releaseLiveBtn();
       detach();
     };
   });
@@ -174,18 +142,7 @@
   </section>
 
   <aside class="panel">
-    {#if officialSite.embedUrl}
-      <iframe
-        src={officialSite.embedUrl}
-        title="高専祭公式サイト"
-        loading="lazy"
-        referrerpolicy="no-referrer"
-        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-      ></iframe>
-    {/if}
-    <a class="open-official" href={officialSite.homeUrl} target="_blank" rel="noopener">
-      公式サイトを開く ↗
-    </a>
+    <OfficialSite allowPopups withLink />
   </aside>
 </div>
 
@@ -359,32 +316,9 @@
       min-width: 280px;
       max-width: 60vw;
     }
-    .panel > * {
+    /* 子は別コンポーネントなので、スコープを跨いで打ち消す */
+    .panel > :global(*) {
       direction: ltr;
     }
-  }
-  .panel iframe {
-    width: 100%;
-    height: 100%;
-    border: 0;
-    background: #fff;
-  }
-
-  .open-official {
-    position: absolute;
-    right: var(--sp-3);
-    bottom: calc(var(--sp-3) + var(--safe-b));
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--radius-round);
-    background: rgb(0 0 0 / 0.72);
-    color: #fff;
-    font-size: var(--fs-xs);
-    font-weight: 600;
-    text-decoration: none;
-    backdrop-filter: blur(6px);
-  }
-  .open-official:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
   }
 </style>
