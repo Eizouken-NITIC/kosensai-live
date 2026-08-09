@@ -115,6 +115,12 @@
       <!-- svelte-ignore a11y_media_has_caption -->
       <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
+      <!-- 自動再生の制約でミュート起動するため、音を出すには操作が要る。
+           コントロールバーは操作しないと現れず、タッチではホバーも無いので、
+           そこにあるミュートボタンには気づけない。消音中だけ大きく別に出す。
+           noautohide が無いと、コントロールバーと一緒に消える。 -->
+      <media-mute-button class="unmute" noautohide></media-mute-button>
+
       <media-control-bar>
         <media-play-button></media-play-button>
         <media-mute-button></media-mute-button>
@@ -141,14 +147,6 @@
         <p>このブラウザでは再生できません</p>
         <small>Safari / Chrome の最新版でお試しください</small>
       </div>
-    {/if}
-
-    <!-- 自動再生の制約でミュート起動するため、音を出すには操作が要る。
-         コントロールバーは操作しないと現れないので、気づける位置に出す。 -->
-    {#if player.isLive && player.isMuted}
-      <button class="unmute" type="button" onclick={() => player.unmute()}>
-        🔇 タップで音声をオン
-      </button>
     {/if}
   </section>
 
@@ -304,27 +302,21 @@
     outline-offset: 2px;
   }
 
-  /* コントロールバーの上に重ならない高さに置く */
-  .unmute {
+  /* 消音中だけ出す。コントロールバーの上に重ならない高さへ置く。 */
+  :global(media-mute-button.unmute) {
     position: absolute;
-    left: var(--sp-3);
-    bottom: calc(var(--sp-6) + var(--sp-4));
+    left: var(--sp-4);
+    bottom: calc(var(--sp-6) + var(--sp-5));
     z-index: 1;
-    appearance: none;
-    border: 0;
     border-radius: var(--radius-round);
-    padding: var(--sp-2) var(--sp-4);
     background: rgb(0 0 0 / 0.72);
-    color: #fff;
-    font: inherit;
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    cursor: pointer;
     backdrop-filter: blur(6px);
+    --media-button-icon-height: 28px;
+    --media-control-padding: var(--sp-3);
+    --media-control-hover-background: rgb(0 0 0 / 0.85);
   }
-  .unmute:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
+  :global(media-mute-button.unmute:not([mediavolumelevel='off'])) {
+    display: none;
   }
 
   /* ---- 右カラム ---- */
