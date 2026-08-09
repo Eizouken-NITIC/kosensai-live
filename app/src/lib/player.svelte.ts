@@ -156,9 +156,6 @@ export function createPlayer() {
     get state() {
       return state;
     },
-    get channel() {
-      return channel;
-    },
     get isLive() {
       return live;
     },

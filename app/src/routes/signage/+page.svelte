@@ -121,6 +121,12 @@
   .stage {
     grid-area: stage;
   }
+  .stage video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+  }
   /* 配信していない間は映像が無いので、透過ではなく完全に黒で塗る。 */
   .idle {
     background: #000;
