@@ -8,6 +8,7 @@ export function loadMediaChrome(): void {
     import('media-chrome/dist/media-volume-range.js'),
     import('media-chrome/dist/media-time-range.js'),
     import('media-chrome/dist/media-live-button.js'),
+    import('media-chrome/dist/media-pip-button.js'),
     import('media-chrome/dist/media-fullscreen-button.js'),
   ]).catch(() => {
     /* コントロールが出ないだけで再生は続く */

@@ -182,6 +182,7 @@
         <media-volume-range></media-volume-range>
         <media-time-range></media-time-range>
         <media-live-button bind:this={liveBtn}></media-live-button>
+        <media-pip-button></media-pip-button>
         <media-fullscreen-button></media-fullscreen-button>
       </media-control-bar>
     </media-controller>
@@ -248,26 +249,7 @@
     }
   }
 
-  /* ---- 映像（枠は app.css の .stage） ---- */
-  :global(media-controller) {
-    width: 100%;
-    height: 100%;
-    --media-primary-color: #fff;
-    --media-secondary-color: rgb(255 255 255 / 0.2);
-    --media-control-background: transparent;
-    --media-control-hover-background: rgb(255 255 255 / 0.15);
-    --media-font-family: var(--font);
-    --media-live-button-indicator-color: var(--live);
-  }
-  :global(media-control-bar) {
-    background: linear-gradient(to top, rgb(0 0 0 / 0.75), transparent);
-    padding: var(--sp-2) var(--sp-2) var(--sp-1);
-  }
-  /* media-chrome は先端と判定している間 --media-cursor を not-allowed にする。
-     こちらで押せるようにしてあるので、押せる見た目に戻す。 */
-  :global(media-live-button) {
-    --media-cursor: pointer;
-  }
+  /* ---- 映像（枠は app.css の .stage、コントロールの外観も app.css） ---- */
   .stage {
     grid-row: 2;
   }
@@ -296,12 +278,8 @@
     display: flex;
     /* center だとタブの下線を含んだ箱がロゴに揃い、文字がずれる */
     align-items: baseline;
-    gap: var(--sp-5);
-  }
-  /* 折り返すとロゴだけの行ができてバーが 2 段になる。
-     入り切らない分は nav を横スクロールさせる。 */
-  .topbar-inner :global(.mark) {
-    flex: 0 0 auto;
+    gap: var(--sp-3) var(--sp-5);
+    flex-wrap: wrap;
   }
 
   /* 幅 1000px 以上では映像と同じセルに置いて重ねる。暗がりを敷いて文字を読ませ、
@@ -377,15 +355,6 @@
   .retry:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-  }
-
-  /* 消音中は、音を出す操作がここにあることを示す */
-  :global(media-mute-button[mediavolumelevel='off']),
-  :global(media-volume-range[mediamuted]) {
-    --media-icon-color: var(--live);
-    --media-primary-color: var(--live);
-    --media-range-bar-color: var(--live);
-    --media-range-thumb-background: var(--live);
   }
 
   /* ---- 右カラム ---- */
