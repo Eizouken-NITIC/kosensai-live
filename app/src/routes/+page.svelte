@@ -74,6 +74,13 @@
     };
     btn?.addEventListener('click', onLiveClick);
 
+    // 同じ条件で aria-disabled も付くが、上のとおり実際には操作できる。
+    // 支援技術へ誤った状態を伝えないよう取り除く。
+    const ariaFix = new MutationObserver(() => {
+      if (btn?.getAttribute('aria-disabled') === 'true') btn.removeAttribute('aria-disabled');
+    });
+    if (btn) ariaFix.observe(btn, { attributes: true, attributeFilter: ['aria-disabled'] });
+
     const params = new URLSearchParams(location.search);
     let initial = params.get('ch');
     if (!initial) {
@@ -88,6 +95,7 @@
     return () => {
       clearTimeout(hideTimer);
       btn?.removeEventListener('click', onLiveClick);
+      ariaFix.disconnect();
       detach();
     };
   });
@@ -209,6 +217,11 @@
   :global(media-control-bar) {
     background: linear-gradient(to top, rgb(0 0 0 / 0.75), transparent);
     padding: var(--sp-2) var(--sp-2) var(--sp-1);
+  }
+  /* media-chrome は先端と判定している間 --media-cursor を not-allowed にする。
+     こちらで押せるようにしてあるので、押せる見た目に戻す。 */
+  :global(media-live-button) {
+    --media-cursor: pointer;
   }
   @media (max-width: 999px) {
     /* 縦画面では映像を 16:9 に留め、残りをパネルに渡す */
