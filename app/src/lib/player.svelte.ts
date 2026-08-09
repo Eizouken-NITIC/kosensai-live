@@ -91,7 +91,7 @@ export function createPlayer() {
     }
     const canHlsJs = !!(Hls && Hls.isSupported());
 
-    // Safari(iOS/macOS) はネイティブ HLS の方が安定かつ省電力なので優先する
+    // Safari はここへ入る。hls.js を使わずネイティブの HLS で再生する。
     if (!canHlsJs && canNative) {
       el.src = url;
       el.addEventListener('error', fail, { once: true });

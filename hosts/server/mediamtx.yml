@@ -72,6 +72,4 @@ paths:
   ch4:
     source: publisher
 
-  # 'all_others' はあえて定義しない。
-  # 定義するとワイルドカードとして任意のパスへの publish を許してしまうため、
-  # ch1〜ch4 以外への送出は拒否させる。
+  # all_others を追加すると、任意のパス名への publish を許すことになる。

@@ -56,8 +56,6 @@
 <svelte:head><title>KOSENSAI-LIVE サイネージ</title></svelte:head>
 
 <div class="signage">
-  <!-- 視聴ページと違い、こちらは映像に重ねず独立した帯にする。
-       離れて見る前提なので、映像の上に文字が乗ると読みにくい。 -->
   <header>
     <Wordmark live={player.isLive} />
     <time class="clock">{clock}</time>
@@ -68,16 +66,12 @@
     <video bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
     {#if !player.isLive}
-      <!-- スピナーは置かない。実際には 5 秒間隔で再試行しているだけであり、
-           回り続ける表示は読み込みが進行中であるという誤った印象を与える。-->
       <div class="cover idle">
         <p>現在配信していません</p>
       </div>
     {/if}
   </section>
 
-  <!-- 映像は 16:9 なので縦長の領域だと上下が空く。その分を帯として確保し、
-       通りすがりの人が自分の端末で見るための導線に使う。 -->
   <div class="invite">
     <!-- QR は白地に黒で置く。読み取り機は「暗いモジュール／明るい下地」を
          前提にしているので、反転させると読み取り率が落ちる。
