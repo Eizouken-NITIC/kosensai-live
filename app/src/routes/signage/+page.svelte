@@ -189,7 +189,6 @@
     display: flex;
     flex-direction: column;
     background: var(--surface);
-    border-left: 1px solid var(--line);
     min-width: 0;
   }
 </style>

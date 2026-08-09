@@ -12,7 +12,7 @@
 現場・本部OBS の代わり            本番と同じもの                  本番と同じもの
 ┌──────────────┐   SRT   ┌──────────────────┐  HLS  ┌───────────────┐
 │ ffmpeg × 4   │────────►│ MediaMTX         │──────►│ Caddy :443    │
-│ testsrc      │  :8890  │ ../hosts/server/ │ :8888 │ ../hosts/     │
+│ カラーバー   │  :8890  │ ../hosts/server/ │ :8888 │ ../hosts/     │
 │ (Ch1〜Ch4)   │         │   mediamtx.yml   │       │  server/      │
 └──────────────┘         └──────────────────┘       │   Caddyfile   │
                                                      │ ../web/       │
@@ -31,7 +31,7 @@
 cd rehearsal
 
 ./scripts/up.sh                    # サーバ + テストパターン4本
-./scripts/up.sh --idle             # サーバのみ（配信前の「待機中」表示を見たいとき）
+./scripts/up.sh --idle             # サーバのみ（配信が始まる前の表示を見たいとき）
 
 ./scripts/reload.sh                # app/ をビルドして反映（開発中はこれ）
 ./scripts/load-test.sh 20 ch1 30   # 20人 / ch1 / 30秒
@@ -95,10 +95,10 @@ sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
 ### 確認できる
 
 - 視聴ページの Ch タブ切替、`?ch=` 直接開き、前回選択の復元
-- **配信開始前の挙動**（`--idle` で起動 → 「まだ配信が始まっていないようです」→
+- **配信開始前の挙動**（`--idle` で起動 → 「読み込み中…」→
   publisher を上げると**リロードなしで**再生が始まる）
 - 切断からの自動復帰（`docker compose stop pub-ch1` → 再度 `start`）
-- サイネージページの全画面表示と待機画面
+- サイネージページの全画面表示と、配信が始まる前の表示
 - 公式サイトの iframe が実際にどう見えるか（狭い枠での崩れ具合）
 - 本番の Caddyfile が正しく動くこと。`/hls` の Location 書き戻しが欠けると
   映像が始まらないため、再生できた時点でこれも確かめられている
@@ -113,7 +113,7 @@ sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
 - 実機ブラウザの差異（Safari iOS のネイティブ HLS 経路、サイネージ RPi の Chromium）
 
 `load-test.sh` の「1 人あたり Mbps」が設定ビットレートより低く出るのは正常。
-`testsrc` は圧縮が効きすぎて CBR 指定値まで使い切らないため。実カメラの映像なら
+カラーバーは圧縮が効きすぎて CBR 指定値まで使い切らないため。実カメラの映像なら
 設定値に近づく。
 
 ## ファイル
@@ -140,7 +140,7 @@ sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
 | ポート | 8443（+ プレビュー 8080） | 443 |
 | プレビュー入口 | あり（`/etc/hosts` 回避用） | 無し |
 | ネットワーク | caddy と publisher が mediamtx の netns に相乗り | 全部 `network_mode: host` |
-| 映像ソース | ffmpeg の testsrc × 4 | 現場 ATEM / iPhone → 本部 OBS |
+| 映像ソース | ffmpeg のカラーバー × 4 | 現場 ATEM / iPhone → 本部 OBS |
 | パスフレーズ | compose に直書きの使い捨て値 | `hosts/server/.env` |
 | `mediamtx.yml` | **同じもの**（マウント） | — |
 | `Caddyfile` | **同じもの**（マウント） | — |

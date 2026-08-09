@@ -11,6 +11,13 @@
   const STORE_KEY = 'kosensai.ch';
   const OVERLAY_HIDE_MS = 2000;
 
+  const PANEL_INITIAL = 360;
+  const PANEL_MIN = 280;
+  const PANEL_MAX_RATIO = 0.6;
+  // 矢印キー 1 打あたりの変化量。Shift を押している間は大きく動かす。
+  const PANEL_STEP = 16;
+  const PANEL_STEP_LARGE = 64;
+
   const player = createPlayer();
 
   let current = $state(DEFAULT_CH);
@@ -19,6 +26,10 @@
   let liveBtn = $state<HTMLElement | null>(null);
   // 自動再生の制約でミュート起動する。解除するまでコントロールを消さない。
   let muted = $state(true);
+  let panelWidth = $state(PANEL_INITIAL);
+  let dragging = $state(false);
+  let winWidth = $state(0);
+  const panelMax = $derived(Math.round(winWidth * PANEL_MAX_RATIO));
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -45,6 +56,46 @@
     }
     player.load(ch.id);
     showOverlay();
+  }
+
+  function clampPanel(px: number): number {
+    return Math.round(Math.min(panelMax, Math.max(PANEL_MIN, px)));
+  }
+
+  /* パネルは右にあるので、境界を左へ動かすと幅は増える。 */
+  function onGripPointerDown(event: PointerEvent) {
+    const grip = event.currentTarget as HTMLElement;
+    const startX = event.clientX;
+    const startWidth = panelWidth;
+
+    grip.setPointerCapture(event.pointerId);
+    // 別プロセスで描かれる iframe の上にポインタが入ると、捕捉していても
+    // そちらへ配送されて捕捉が解ける。ドラッグの間だけ当たり判定を外す。
+    dragging = true;
+
+    const onMove = (e: PointerEvent) =>
+      (panelWidth = clampPanel(startWidth - (e.clientX - startX)));
+    const onUp = (e: PointerEvent) => {
+      dragging = false;
+      grip.releasePointerCapture(e.pointerId);
+      grip.removeEventListener('pointermove', onMove);
+      grip.removeEventListener('pointerup', onUp);
+      grip.removeEventListener('pointercancel', onUp);
+    };
+
+    grip.addEventListener('pointermove', onMove);
+    grip.addEventListener('pointerup', onUp);
+    grip.addEventListener('pointercancel', onUp);
+    // ドラッグ中に映像やパネルの文字が選択されるのを止める。
+    event.preventDefault();
+  }
+
+  function onGripKeyDown(event: KeyboardEvent) {
+    const step = event.shiftKey ? PANEL_STEP_LARGE : PANEL_STEP;
+    if (event.key === 'ArrowLeft') panelWidth = clampPanel(panelWidth + step);
+    else if (event.key === 'ArrowRight') panelWidth = clampPanel(panelWidth - step);
+    else return;
+    event.preventDefault();
   }
 
   onMount(() => {
@@ -89,8 +140,9 @@
 
 <!-- section に付けると a11y_no_static_element_interactions が出るので body で受ける -->
 <svelte:body onmousemove={showOverlay} onpointerdown={showOverlay} onfocusin={showOverlay} />
+<svelte:window bind:innerWidth={winWidth} />
 
-<div class="page">
+<div class="page" class:dragging>
   <!-- 幅 1000px 以上では映像と同じグリッドのセルに置いて重ね、それ未満では
        映像の上の行に積む。縦画面では映像が 16:9 に収まるため、重ねると
        映像の大部分が隠れる。タッチにはホバーが無く、消すこともできない。 -->
@@ -153,7 +205,28 @@
     {/if}
   </section>
 
-  <aside class="panel">
+  <!-- 幅 1000px 以上でのみ出る。映像とパネルの境界そのものを掴ませる。
+       CSS の resize は隅の正方形しか作れないため、辺で掴ませるには
+       role="separator" のスプリッターを置くほかにない。 -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <!-- ARIA は separator を、値を持つもの（window splitter）と持たないものに
+       分けている。前者はフォーカスを受けて矢印キーで動かす操作要素であり、
+       aria-valuenow を持つこの要素はそちらに当たる。 -->
+  <div
+    class="grip"
+    role="separator"
+    aria-orientation="vertical"
+    aria-label="パネルの幅"
+    aria-valuenow={panelWidth}
+    aria-valuemin={PANEL_MIN}
+    aria-valuemax={panelMax}
+    tabindex="0"
+    onpointerdown={onGripPointerDown}
+    onkeydown={onGripKeyDown}
+  ></div>
+
+  <aside class="panel" style="--panel-w: {panelWidth}px">
     <EmbeddedSite allowPopups withLink />
   </aside>
 </div>
@@ -170,7 +243,7 @@
   @media (min-width: 1000px) {
     .page {
       grid-template-rows: 1fr;
-      /* 幅は .panel の resize が決める */
+      /* 2 列目の幅は .panel の width が決める */
       grid-template-columns: minmax(0, 1fr) auto;
     }
   }
@@ -211,33 +284,34 @@
   }
 
   /* ---- 上端のバー ---- */
-  /* 下の余白を置かず、タブのインジケータをバーの下端に接する位置で終わらせる。
+  /* 下の余白も区切り線も置かず、タブのインジケータでバーを終わらせる。
      ベースライン揃えのため、インジケータの分だけ下へ伸びた高さの中心に
      ロゴの中心が一致する。 */
   .topbar {
     grid-row: 1;
     padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) 0;
     background: var(--surface);
-    border-bottom: 1px solid var(--line);
   }
   .topbar-inner {
     display: flex;
     /* center だとタブの下線を含んだ箱がロゴに揃い、文字がずれる */
     align-items: baseline;
-    gap: var(--sp-3) var(--sp-5);
-    flex-wrap: wrap;
+    gap: var(--sp-5);
+  }
+  /* 折り返すとロゴだけの行ができてバーが 2 段になる。
+     入り切らない分は nav を横スクロールさせる。 */
+  .topbar-inner :global(.mark) {
+    flex: 0 0 auto;
   }
 
   /* 幅 1000px 以上では映像と同じセルに置いて重ねる。暗がりを敷いて文字を読ませ、
-     操作が無ければ消す。ロゴとタブが 2 行に折り返しても読めるよう、暗い部分を
-     下まで保つ。 */
+     操作が無ければ消す。 */
   @media (min-width: 1000px) {
     .topbar {
       grid-area: 1 / 1;
       align-self: start;
       z-index: 1;
       padding-bottom: var(--sp-6);
-      border-bottom: 0;
       background: linear-gradient(
         to bottom,
         rgb(0 0 0 / 0.85) 0%,
@@ -322,24 +396,44 @@
     background: var(--surface);
     border-top: 1px solid var(--line);
   }
-  /* 幅をブラウザ標準のリサイズで変える。つまみは要素の下端の、
-     direction が始まる側の隅に出る。rtl にすることで映像との継ぎ目側へ移り、
-     左へ引くと広がる向きになる。中身の文字組みは ltr に戻す。 */
   @media (min-width: 1000px) {
     .panel {
       grid-area: 1 / 2;
       border-top: 0;
       border-left: 1px solid var(--line);
-      resize: horizontal;
-      overflow: hidden;
-      direction: rtl;
-      width: 360px;
-      min-width: 280px;
-      max-width: 60vw;
+      /* JS が外れても最小・最大は保たれる */
+      width: clamp(280px, var(--panel-w), 60vw);
     }
-    /* 子は別コンポーネントなので、スコープを跨いで打ち消す */
-    .panel > :global(*) {
-      direction: ltr;
+  }
+
+  /* ---- 境界のつまみ ---- */
+  .grip {
+    display: none;
+  }
+  @media (min-width: 1000px) {
+    .grip {
+      display: block;
+      grid-area: 1 / 2;
+      justify-self: start;
+      /* 境界線の上に、指とマウスのどちらでも狙える幅で重ねる */
+      width: 11px;
+      margin-left: -5px;
+      cursor: col-resize;
+      /* 上端のバーより手前に置く */
+      z-index: 2;
+      /* ドラッグ中にブラウザのパンが割り込むのを止める */
+      touch-action: none;
+    }
+    .grip:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+    /* つまみから外れてもカーソルの形を保つ */
+    .page.dragging {
+      cursor: col-resize;
+    }
+    .page.dragging .panel {
+      pointer-events: none;
     }
   }
 </style>
