@@ -114,6 +114,27 @@
 <svelte:body onmousemove={showOverlay} onpointerdown={showOverlay} onfocusin={showOverlay} />
 
 <div class="page">
+  <!-- 幅 1000px 以上では映像と同じグリッドのセルに置いて重ね、それ未満では
+       映像の上の行に積む。縦画面では映像が 16:9 に収まるため、重ねると
+       映像の大部分が隠れる。タッチにはホバーが無く、消すこともできない。 -->
+  <div class="topbar" class:visible={overlayVisible || pinned}>
+    <div class="topbar-inner">
+      <Wordmark live={player.isLive} />
+
+      <nav aria-label="チャンネル">
+        {#each channels as ch (ch.id)}
+          <button
+            type="button"
+            aria-current={ch.id === current ? 'true' : undefined}
+            onclick={() => select(ch.id)}
+          >
+            {ch.label}
+          </button>
+        {/each}
+      </nav>
+    </div>
+  </div>
+
   <section class="stage">
     <!-- mediastreamtype: MediaMTX は DVR 判定用の非標準タグを出さないため明示する。
          seektoliveoffset: 既定は liveedgeoffset と同値で、LIVE ボタンが通常の再生位置
@@ -133,24 +154,6 @@
         <media-fullscreen-button></media-fullscreen-button>
       </media-control-bar>
     </media-controller>
-
-    <div class="scrim topbar" class:visible={overlayVisible || pinned}>
-      <div class="topbar-inner">
-        <Wordmark live={player.isLive} />
-
-        <nav aria-label="チャンネル">
-          {#each channels as ch (ch.id)}
-            <button
-              type="button"
-              aria-current={ch.id === current ? 'true' : undefined}
-              onclick={() => select(ch.id)}
-            >
-              {ch.label}
-            </button>
-          {/each}
-        </nav>
-      </div>
-    </div>
 
     <!-- 接続中は出さない。読み込み表示はプレイヤーに任せる -->
     {#if player.state === 'waiting'}
@@ -189,7 +192,8 @@
 <style>
   .page {
     display: grid;
-    grid-template-rows: auto 1fr;
+    /* バー・映像・パネルを縦に積む */
+    grid-template-rows: auto auto 1fr;
     height: 100dvh;
     /* 子がはみ出してページ全体がスクロールするのを止める */
     overflow: hidden;
@@ -222,24 +226,27 @@
   :global(media-live-button) {
     --media-cursor: pointer;
   }
+  .stage {
+    grid-row: 2;
+  }
   @media (max-width: 999px) {
     /* 縦画面では映像を 16:9 に留め、残りをパネルに渡す */
     .stage {
       aspect-ratio: 16 / 9;
     }
   }
-
-  /* ---- 映像に重なる上端のバー ---- */
-  /* 位置と暗がりは .scrim。ここは出入りの制御と余白だけ。 */
-  .topbar {
-    padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) var(--sp-6);
-    opacity: 0;
-    transition: opacity 200ms ease;
-    pointer-events: none;
+  @media (min-width: 1000px) {
+    .stage {
+      grid-area: 1 / 1;
+    }
   }
-  .topbar.visible {
-    opacity: 1;
-    pointer-events: auto;
+
+  /* ---- 上端のバー ---- */
+  .topbar {
+    grid-row: 1;
+    padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) var(--sp-3);
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
   }
   .topbar-inner {
     display: flex;
@@ -249,34 +256,30 @@
     flex-wrap: wrap;
   }
 
-  /* 縦画面では映像が 16:9 に収まるため、バーが映像を覆う割合が大きくなる。
-     折り返しを止めて 1 行に収め、余白も詰める。タブは横スクロールで触れる。
-     タッチではホバーが無く、表示中はバーが映像を隠したままになる。 */
-  @media (max-width: 999px) {
+  /* 幅 1000px 以上では映像と同じセルに置いて重ねる。暗がりを敷いて文字を読ませ、
+     操作が無ければ消す。ロゴとタブが 2 行に折り返しても読めるよう、暗い部分を
+     下まで保つ。 */
+  @media (min-width: 1000px) {
     .topbar {
-      padding: calc(var(--sp-2) + var(--safe-t)) var(--sp-3) var(--sp-2);
+      grid-area: 1 / 1;
+      align-self: start;
+      z-index: 1;
+      padding-bottom: var(--sp-6);
+      border-bottom: 0;
+      background: linear-gradient(
+        to bottom,
+        rgb(0 0 0 / 0.85) 0%,
+        rgb(0 0 0 / 0.7) 45%,
+        rgb(0 0 0 / 0.35) 75%,
+        transparent 100%
+      );
+      opacity: 0;
+      transition: opacity 200ms ease;
+      pointer-events: none;
     }
-    .topbar-inner {
-      flex-wrap: nowrap;
-      gap: var(--sp-4);
-    }
-    nav {
-      gap: var(--sp-3);
-    }
-  }
-
-  /* 縦画面では映像が 16:9 に収まるため、バーが覆う割合が大きくなる。
-     折り返しを止めて 1 行に収め、余白も詰める。タブは横スクロールで触れる。 */
-  @media (max-width: 999px) {
-    .topbar {
-      padding: calc(var(--sp-2) + var(--safe-t)) var(--sp-3) var(--sp-2);
-    }
-    .topbar-inner {
-      flex-wrap: nowrap;
-      gap: var(--sp-4);
-    }
-    nav {
-      gap: var(--sp-3);
+    .topbar.visible {
+      opacity: 1;
+      pointer-events: auto;
     }
   }
 
@@ -332,6 +335,7 @@
 
   /* ---- 右カラム ---- */
   .panel {
+    grid-row: 3;
     position: relative;
     min-height: 0;
     background: var(--surface);
@@ -342,6 +346,7 @@
      左へ引くと広がる向きになる。中身の文字組みは ltr に戻す。 */
   @media (min-width: 1000px) {
     .panel {
+      grid-area: 1 / 2;
       border-top: 0;
       border-left: 1px solid var(--line);
       resize: horizontal;
