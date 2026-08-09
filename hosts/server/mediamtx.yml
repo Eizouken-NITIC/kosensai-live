@@ -27,17 +27,14 @@ hlsAddress: 127.0.0.1:8888
 hlsEncryption: no                  # TLS 終端は Caddy に集約
 # 視聴ページと HLS は同一オリジンのため実際には検査されない。Caddy 側では付与しない。
 hlsAllowOrigins: ["*"]
-hlsTrustedProxies: [127.0.0.1]     # Caddy → MediaMTX のプロキシ信頼
-# 既定は lowLatency。明示しないと LL-HLS になる。
+hlsTrustedProxies: [127.0.0.1]     # 前段は Caddy
 hlsVariant: mpegts
 # OBS のキーフレーム間隔と同一にする。
-# HLS のセグメントはキーフレームでのみ分割されるため、片方だけを変更すると
-# 実際のセグメント長は長い方に引き伸ばされる。
 hlsSegmentDuration: 2s
 # app/src/lib/player.svelte.ts の backBufferLength と同一にする（180 × 2 秒 = 360 秒）。
-# セグメントはメモリ上に保持される。4 チャンネル合計 18.5 Mbps で約 830 MB を占める。
+# 4 チャンネル合計 18.5 Mbps で約 830 MB のメモリを占める。
 hlsSegmentCount: 180
-# no にすると視聴者ゼロで muxer が停止し、次の視聴開始が 10 秒以上遅れる。
+# 視聴開始までの待ち時間が 11.89 秒から 0.12 秒になる（リハーサル環境での実測）。
 hlsAlwaysRemux: yes
 
 ###############################################
@@ -46,7 +43,7 @@ hlsAlwaysRemux: yes
 rtsp: no
 rtmp: no
 webrtc: no
-moq: no                            # v1.19 で既定 on。:8892 を勝手に開かせない
+moq: no
 api: no
 metrics: no
 pprof: no

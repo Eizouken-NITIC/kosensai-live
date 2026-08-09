@@ -9,7 +9,6 @@ type HlsErrorData = import('hls.js').ErrorData;
 // ここで拾う。5xx とタイムアウトは hls.js が受け持つ。
 const RETRY_MS = 5000;
 
-// 読み込み中に再度呼ばれても import を二重に発行しない
 let hlsJsPromise: Promise<HlsConstructor> | null = null;
 
 function loadHlsJs(): Promise<HlsConstructor> {
@@ -88,7 +87,7 @@ export function createPlayer() {
     try {
       Hls = await loadHlsJs();
     } catch {
-      /* 読めなければネイティブ側に賭ける */
+      /* 読めなかった場合は下のネイティブ HLS の分岐へ進む */
     }
     const canHlsJs = !!(Hls && Hls.isSupported());
 
@@ -107,10 +106,9 @@ export function createPlayer() {
 
     const H = Hls;
     const instance = new H({
-      // false だと duration がウィンドウ長になり、有限長の動画として扱われる
+      // media-chrome は duration が Infinity のときライブとして描画する
       liveDurationInfinity: true,
-      // mediamtx.yml の hlsSegmentCount × セグメント長と同一にする（180 × 2 秒）。
-      // 既定は Infinity で、取得した区間を破棄しない。
+      // mediamtx.yml の hlsSegmentCount × セグメント長と同一にする（180 × 2 秒）
       backBufferLength: 360,
     });
 
@@ -165,7 +163,7 @@ export function createPlayer() {
       return live;
     },
     resume: () => resumeFn?.(),
-    // config.json の取得を待たずに始める。直列にするとプレイリスト要求がその分遅れる
+    // load() より先に呼ぶと、media-chrome の読み込みと並行して取得できる
     prefetch: () => {
       loadHlsJs().catch(() => {
         /* ネイティブ HLS で再生できる可能性があるので、ここでは状態を変えない */

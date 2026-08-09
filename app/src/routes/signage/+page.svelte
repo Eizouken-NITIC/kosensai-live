@@ -68,8 +68,8 @@
     <video bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
     {#if !player.isLive}
-      <!-- スピナーは置かない。実際には数秒〜10 秒間隔で再試行しているだけで、
-           回り続ける表示は「今まさに読み込んでいる」という誤った印象を与える。-->
+      <!-- スピナーは置かない。実際には 5 秒間隔で再試行しているだけであり、
+           回り続ける表示は読み込みが進行中であるという誤った印象を与える。-->
       <div class="cover idle">
         <p>現在配信していません</p>
       </div>
