@@ -125,14 +125,12 @@
       </media-control-bar>
     </media-controller>
 
-    <!-- 接続中は出さない。読み込み表示はプレイヤーに任せる。
-         プレイリストを取得できない理由は、配信の開始前・サーバーの停止・端末の
-         通信断のいずれもありうる。アプリはこれらを区別できないため、配信の状態を
-         断定せず、受信できていないという観測だけを書く。 -->
-    {#if player.state === 'waiting'}
+    <!-- 映像が出ない理由は、配信の開始前・サーバーの停止・端末の通信断のいずれも
+         ありうる。アプリはこれらを区別できないため、状態を断定せず読み込み中とだけ
+         示す。配信を行わない時間帯は OBS がテロップを送るため、その旨は映像に映る。 -->
+    {#if player.state === 'connecting' || player.state === 'waiting'}
       <div class="cover" role="status" aria-live="polite">
-        <p>映像を受信できていません</p>
-        <small>配信の開始前か、通信が届いていない可能性があります</small>
+        <p>読み込み中…</p>
         <!-- 自動リトライは続いているが、待てない人のために手動の出口も出す。 -->
         <button class="retry" type="button" onclick={() => player.load(current)}>
           今すぐ再読み込み
@@ -143,6 +141,14 @@
         <p>このブラウザでは再生できません</p>
         <small>Safari / Chrome の最新版でお試しください</small>
       </div>
+    {/if}
+
+    <!-- 自動再生の制約でミュート起動するため、音を出すには操作が要る。
+         コントロールバーは操作しないと現れないので、気づける位置に出す。 -->
+    {#if player.isLive && player.isMuted}
+      <button class="unmute" type="button" onclick={() => player.unmute()}>
+        🔇 タップで音声をオン
+      </button>
     {/if}
   </section>
 
@@ -294,6 +300,29 @@
     cursor: pointer;
   }
   .retry:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* コントロールバーの上に重ならない高さに置く */
+  .unmute {
+    position: absolute;
+    left: var(--sp-3);
+    bottom: calc(var(--sp-6) + var(--sp-4));
+    z-index: 1;
+    appearance: none;
+    border: 0;
+    border-radius: var(--radius-round);
+    padding: var(--sp-2) var(--sp-4);
+    background: rgb(0 0 0 / 0.72);
+    color: #fff;
+    font: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+  .unmute:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }

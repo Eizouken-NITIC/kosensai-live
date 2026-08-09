@@ -23,6 +23,8 @@ export function createPlayer() {
   let channel = $state<string | null>(null);
   // state から導出すると Ch 切替のたびに false を経由し、LIVE が明滅する
   let live = $state(false);
+  // 自動再生の制約でミュート起動する。解除は利用者の操作を必要とする。
+  let muted = $state(true);
 
   let video: HTMLVideoElement | null = null;
   let hls: HlsInstance | null = null;
@@ -132,19 +134,25 @@ export function createPlayer() {
   function attach(el: HTMLVideoElement) {
     video = el;
     const v = el;
+    muted = v.muted;
 
     const onPlaying = () => {
       clearRetry();
       state = 'playing';
       live = true;
     };
+    const onVolumeChange = () => {
+      muted = v.muted;
+    };
 
     v.addEventListener('playing', onPlaying);
+    v.addEventListener('volumechange', onVolumeChange);
     v.addEventListener('error', fail);
     v.addEventListener('ended', fail);
 
     return () => {
       v.removeEventListener('playing', onPlaying);
+      v.removeEventListener('volumechange', onVolumeChange);
       v.removeEventListener('error', fail);
       v.removeEventListener('ended', fail);
       teardown();
@@ -158,6 +166,15 @@ export function createPlayer() {
     },
     get isLive() {
       return live;
+    },
+    get isMuted() {
+      return muted;
+    },
+    /** 利用者の操作の中から呼ぶ。操作を伴わない解除はブラウザに拒否され、再生が止まる。 */
+    unmute: () => {
+      if (!video) return;
+      video.muted = false;
+      video.play().catch(() => {});
     },
     resume: () => resumeFn?.(),
     // load() より先に呼ぶと、media-chrome の読み込みと並行して取得できる
