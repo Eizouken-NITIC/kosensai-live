@@ -55,8 +55,9 @@ chromium-browser \
   "https://live.kosensai.ichinoseki.ac.jp/signage/"
 ```
 
-- `--autoplay-policy=no-user-gesture-required` … 無人での自動再生に必須。
-  これがないと `muted` 属性頼みになり、音声を出したい場合に破綻する。
+- `--autoplay-policy=no-user-gesture-required` … **必須。** サイネージページの
+  `<video>` は音声を出すため `muted` を付けていない。ブラウザは音声のある自動再生を
+  ユーザー操作なしでは許可しないため、この指定が無いと再生が始まらない。
 - `--check-for-update-interval` … 会期中に更新ダイアログが出るのを防ぐ。
 
 ### 自動起動（systemd user service）
@@ -105,7 +106,7 @@ sudo loginctl enable-linger "$USER"   # 未ログインでも起動させる
   `setup.sh` は `SIGNAGE_CH` で指定できる。
 - 右カラムの幅と文字サイズは `app/src/routes/signage/+page.svelte` の `<style>` にある。
   縦長ディスプレイや小さいパネルで見づらい場合はここを変更してビルドし直す。
-- 音声を出さない設置場所では、Chromium 起動オプションから
-  `--autoplay-policy` を外し `muted` のままにしておけばよい。
+- 音量は端末側で調整する（`alsamixer` など）。設置場所によって音を出したくない
+  場合は端末を消音する。ページ側は常に音声ありで再生する。
 
 設置前のチェック項目は Notion の「本番前チェックリスト §H」にある。

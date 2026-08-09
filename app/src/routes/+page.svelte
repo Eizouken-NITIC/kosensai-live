@@ -17,6 +17,8 @@
   let overlayVisible = $state(true);
   let videoEl = $state<HTMLVideoElement | null>(null);
   let liveBtn = $state<HTMLElement | null>(null);
+  // 自動再生の制約でミュート起動する。解除するまでコントロールを消さない。
+  let muted = $state(true);
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -50,8 +52,12 @@
     loadMediaChrome();
 
     if (!videoEl) return;
-    const detach = player.attach(videoEl);
+    const v = videoEl;
+    const detach = player.attach(v);
     const releaseLiveBtn = keepLiveButtonEnabled(liveBtn);
+
+    const onVolumeChange = () => (muted = v.muted);
+    v.addEventListener('volumechange', onVolumeChange);
 
     let initial = new URLSearchParams(location.search).get('ch');
     if (!initial) {
@@ -65,6 +71,7 @@
 
     return () => {
       clearTimeout(hideTimer);
+      v.removeEventListener('volumechange', onVolumeChange);
       releaseLiveBtn();
       detach();
     };
@@ -116,12 +123,8 @@
       <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
       <!-- 自動再生の制約でミュート起動するため、音を出すには操作が要る。
-           コントロールバーは操作しないと現れず、タッチではホバーも無いので、
-           そこにあるミュートボタンには気づけない。消音中だけ大きく別に出す。
-           noautohide が無いと、コントロールバーと一緒に消える。 -->
-      <media-mute-button class="unmute" noautohide></media-mute-button>
-
-      <media-control-bar>
+           消えてしまうとミュートボタンに気づけないので、解除するまで消さない。 -->
+      <media-control-bar noautohide={muted || undefined}>
         <media-play-button></media-play-button>
         <media-mute-button></media-mute-button>
         <media-volume-range></media-volume-range>
@@ -302,21 +305,13 @@
     outline-offset: 2px;
   }
 
-  /* 消音中だけ出す。コントロールバーの上に重ならない高さへ置く。 */
-  :global(media-mute-button.unmute) {
-    position: absolute;
-    left: var(--sp-4);
-    bottom: calc(var(--sp-6) + var(--sp-5));
-    z-index: 1;
-    border-radius: var(--radius-round);
-    background: rgb(0 0 0 / 0.72);
-    backdrop-filter: blur(6px);
-    --media-button-icon-height: 28px;
-    --media-control-padding: var(--sp-3);
-    --media-control-hover-background: rgb(0 0 0 / 0.85);
-  }
-  :global(media-mute-button.unmute:not([mediavolumelevel='off'])) {
-    display: none;
+  /* 消音中は、音を出す操作がここにあることを示す */
+  :global(media-mute-button[mediavolumelevel='off']),
+  :global(media-volume-range[mediamuted]) {
+    --media-icon-color: var(--live);
+    --media-primary-color: var(--live);
+    --media-range-bar-color: var(--live);
+    --media-range-thumb-background: var(--live);
   }
 
   /* ---- 右カラム ---- */

@@ -61,8 +61,12 @@
   </header>
 
   <section class="stage">
+    <!-- muted を付けない。音声を出して設置するため。ユーザー操作の無い環境で
+         音ありの自動再生を通すには、Chromium を
+         --autoplay-policy=no-user-gesture-required で起動する必要がある。
+         signage.service に指定してある。 -->
     <!-- svelte-ignore a11y_media_has_caption -->
-    <video bind:this={videoEl} playsinline muted autoplay preload="none"></video>
+    <video bind:this={videoEl} playsinline autoplay preload="none"></video>
 
     <!-- 配信を行わない時間帯は OBS がテロップを送るため、その旨は映像に映る。
          ここでは配信の状態を断定しない。 -->
