@@ -109,10 +109,8 @@ export function createPlayer() {
     const instance = new H({
       // false だと duration がウィンドウ長になり、有限長の動画として扱われる
       liveDurationInfinity: true,
-      // 既定は Infinity で、ページを開いてから取得した区間を一切破棄しない。
-      // シークできる幅が際限なく伸びてシークバーの縮尺が変わり続けるうえ、
-      // 無人で数時間動かすサイネージではメモリを消費し続ける。
-      // mediamtx.yml の hlsSegmentCount: 180 × セグメント 2 秒に合わせる。
+      // mediamtx.yml の hlsSegmentCount × セグメント長と同一にする（180 × 2 秒）。
+      // 既定は Infinity で、取得した区間を破棄しない。
       backBufferLength: 360,
     });
 

@@ -116,12 +116,10 @@
 <div class="page">
   <section class="stage">
     <!-- MediaMTX は DVR 判定用の非標準タグを出さないので mediastreamtype を明示する。
-         hls.js は seekable.end からセグメント 3 本分（2 秒 × 3 = 6 秒）手前を通常の再生
-         位置とする。liveedgeoffset はこれにセグメント 1 本分を加えた値であり、通常の再生
-         中に LIVE の点灯が変化しない範囲を確保する。
-         seektoliveoffset の既定値は liveedgeoffset と同値であるため、指定しない場合は
-         LIVE ボタンを押すと通常の再生位置よりも後ろへ移動する。0 を指定して末端へ
-         シークさせる。未到着のセグメントを待つ間、最大 2 秒の停止が生じる。 -->
+         seektoliveoffset は 0 とし、LIVE ボタンの移動先を末端にする。
+         liveedgeoffset は通常の再生位置（末端から 6 秒手前）にセグメント 1 本分を
+         加えた値にする。いずれも既定値のままでは、LIVE ボタンが通常の再生位置よりも
+         後ろへ移動する。 -->
     <media-controller mediastreamtype="live" seektoliveoffset="0" liveedgeoffset="8">
       <!-- svelte-ignore a11y_media_has_caption -->
       <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>

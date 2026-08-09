@@ -27,14 +27,17 @@ hlsAddress: 127.0.0.1:8888
 hlsEncryption: no                  # TLS 終端は Caddy に集約
 hlsAllowOrigins: ["*"]
 hlsTrustedProxies: [127.0.0.1]     # Caddy → MediaMTX のプロキシ信頼
-hlsVariant: mpegts                 # 既定の lowLatency は fMP4(LL-HLS) を生成する。
-                                   # 6 秒以上の遅延を許容する設計なので、通常の mpegts を使う。
-# セグメントはキーフレームでしか分割されない。OBS のキーフレーム間隔と揃える。
+# LL-HLS を使わない。既定が lowLatency のため明示する。
+hlsVariant: mpegts
+# OBS のキーフレーム間隔と同一にする。
+# HLS のセグメントはキーフレームでのみ分割されるため、片方だけを変更すると
+# 実際のセグメント長は長い方に引き伸ばされる。
 hlsSegmentDuration: 2s
-# 視聴を開始した時点で遡れる幅。視聴を続けている間はクライアント側のバッファで伸びる。
-# セグメントはメモリ上に保持され、4 チャンネル合計 18.5 Mbps では約 830 MB を占める。
+# app/src/lib/player.svelte.ts の backBufferLength と同一にする（180 × 2 秒 = 360 秒）。
+# セグメントはメモリ上に保持される。4 チャンネル合計 18.5 Mbps で約 830 MB を占める。
 hlsSegmentCount: 180
-# no にすると muxer が停止し、最初の要求から再生開始まで 10 秒以上かかる。
+# 視聴者がいない間もセグメントの生成を継続する。
+# no にすると muxer が停止し、次の視聴開始が 10 秒以上遅れる。
 hlsAlwaysRemux: yes
 
 ###############################################
