@@ -2,16 +2,16 @@
   import { onMount } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
   import Wordmark from '$lib/components/Wordmark.svelte';
-  import OfficialSite from '$lib/components/OfficialSite.svelte';
+  import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
 
-  const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 公式サイト側の更新を拾う
+  const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先の更新を拾う
   const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転のリーク対策（無人運用の保険）
 
   const player = createPlayer();
 
   let clock = $state('--:--');
   let videoEl = $state<HTMLVideoElement | null>(null);
-  let site = $state<ReturnType<typeof OfficialSite> | null>(null);
+  let site = $state<ReturnType<typeof EmbeddedSite> | null>(null);
 
   function tick() {
     const d = new Date();
@@ -83,7 +83,7 @@
   </div>
 
   <aside class="side">
-    <OfficialSite bind:this={site} />
+    <EmbeddedSite bind:this={site} />
   </aside>
 </div>
 

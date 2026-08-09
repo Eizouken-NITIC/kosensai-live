@@ -1,7 +1,3 @@
-/* media-chrome のカスタム要素の読み込みと、LIVE ボタンの挙動の調整。
- *
- * どちらもページの関心事ではなくライブラリ側の事情なので、ここへ寄せる。 */
-
 /** 使用するカスタム要素を定義する。定義には DOM が要るため prerender 時には呼べない。 */
 export function loadMediaChrome(): void {
   Promise.all([

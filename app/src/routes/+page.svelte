@@ -3,7 +3,7 @@
   import { createPlayer } from '$lib/player.svelte.js';
   import { loadMediaChrome, keepLiveButtonEnabled } from '$lib/mediaChrome';
   import Wordmark from '$lib/components/Wordmark.svelte';
-  import OfficialSite from '$lib/components/OfficialSite.svelte';
+  import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import { channels } from '$lib/config';
 
   const DEFAULT_CH = 'ch1';
@@ -142,7 +142,7 @@
   </section>
 
   <aside class="panel">
-    <OfficialSite allowPopups withLink />
+    <EmbeddedSite allowPopups withLink />
   </aside>
 </div>
 

@@ -1,4 +1,4 @@
-/** web/config.json（= static/config.json）の形。 */
+/** リポジトリ直下の config.json の形。 */
 
 export type Channel = {
   /** MediaMTX のパス名と一致させる。HLS の URL に入る。 */
@@ -13,16 +13,12 @@ export type Channel = {
   source: string;
 };
 
-export type OfficialSite = {
-  homeUrl: string;
+/** このリポジトリの外で運用されているサイトの所在。iframe で埋め込み、リンクも出す。 */
+export type ExternalSite = {
   /** iframe に出す URL。/events が公開されたらここを向ける。 */
   embedUrl: string;
-  label?: string;
-};
-
-export type SiteConfig = {
-  channels: Channel[];
-  officialSite: OfficialSite;
+  /** 別タブで開く URL。 */
+  homeUrl: string;
 };
 
 /**

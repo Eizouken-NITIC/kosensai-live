@@ -9,14 +9,15 @@
     "  id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致させること。",
     "  label は来場者に見せる唯一の文字列。id の ChN は運用側の呼称なので出さない。",
     "  Ch2（第二体育館）は開催有無が未確定。無くなったら1要素消すだけでよい。",
-    "officialSite: 視聴ページ・サイネージに iframe で埋め込む公式サイトの URL。",
+    "externalSite: このリポジトリの外で運用されているサイト。視聴ページとサイネージが",
+    "  iframe で埋め込み、別タブへのリンクも出す。高専祭の公式サイト（電算部 HP 部門）。",
+    "  embedUrl は iframe に出す URL、homeUrl は別タブで開く URL。",
     "  2026 の /events（タイムテーブル）と /news（お知らせ）は 2026-08-04 時点で",
     "  まだ 404。公開されたら embedUrl をそこへ向ける。"
   ],
-  "officialSite": {
-    "homeUrl": "https://kosensai.ichinoseki.ac.jp/",
+  "externalSite": {
     "embedUrl": "https://kosensai.ichinoseki.ac.jp/",
-    "label": "タイムテーブル・お知らせ"
+    "homeUrl": "https://kosensai.ichinoseki.ac.jp/"
   },
   "channels": [
     {
