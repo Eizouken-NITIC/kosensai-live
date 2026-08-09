@@ -108,6 +108,9 @@ export function createPlayer() {
     const instance = new H({
       // media-chrome は duration が Infinity のときライブとして描画する
       liveDurationInfinity: true,
+      // 末端から 10 秒手前で再生する（セグメント 2 秒 × 5 本）。
+      // +page.svelte の liveedgeoffset はこの距離より大きくする。
+      liveSyncDurationCount: 5,
       // mediamtx.yml の hlsSegmentCount × セグメント長と同一にする（180 × 2 秒）
       backBufferLength: 360,
     });

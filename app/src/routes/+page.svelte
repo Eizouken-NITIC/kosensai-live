@@ -168,9 +168,9 @@
     <!-- mediastreamtype: MediaMTX は DVR 判定用の非標準タグを出さないため明示する。
          seektoliveoffset: 既定は liveedgeoffset と同値で、LIVE ボタンが通常の再生位置
            よりも後ろへ移動してしまう。0 は末端を指す。
-         liveedgeoffset: 通常の再生位置は末端から 6 秒手前。セグメント 1 本分を余裕と
+         liveedgeoffset: 通常の再生位置は末端から 10 秒手前。セグメント 1 本分を余裕と
            して加える。狭めると再生位置の揺れで LIVE の点灯が変化する。 -->
-    <media-controller mediastreamtype="live" seektoliveoffset="0" liveedgeoffset="8">
+    <media-controller mediastreamtype="live" seektoliveoffset="0" liveedgeoffset="12">
       <!-- svelte-ignore a11y_media_has_caption -->
       <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
@@ -303,11 +303,6 @@
   nav {
     display: flex;
     gap: var(--sp-4);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  nav::-webkit-scrollbar {
-    display: none;
   }
   nav button {
     flex: 0 0 auto;
