@@ -15,7 +15,7 @@
 ## 1. 構成
 
 ```
-現場 (ATEM Mini Pro / iPhone+Moblin)      ← hosts/field/
+現場 (ATEM Mini Pro / iPhone+Moblin)      ← 機材設定は Notion
    │  SRT Caller → :9001-9003
    ▼
 本部メイン PC (OBS)                        ← hosts/obs/
@@ -58,12 +58,9 @@ kosensai-broadcast/
 │  ├─ obs/                    本部メイン PC
 │  │  ├─ README.md            OBS の入力・出力・エンコード・録画
 │  │  └─ srt-urls.sh          OBS に入れる SRT URL を生成（手打ち禁止）
-│  ├─ signage/                校内サイネージ端末 (Raspberry Pi)
-│  │  ├─ setup.sh / signage.service
-│  │  └─ README.md
-│  └─ field/                  現場（ATEM / iPhone）— 機材設定のドキュメントのみ
-│     ├─ README.md            Ch1/Ch2 ATEM・PTZ・音声取り込み
-│     └─ moblin.md            Ch3 遊撃 iPhone
+│  └─ signage/                校内サイネージ端末 (Raspberry Pi)
+│     ├─ setup.sh / signage.service
+│     └─ README.md
 ├─ app/                       配信サイトのソース (SvelteKit + TypeScript)
 │  ├─ src/routes/             視聴ページ (/) とサイネージページ (/signage/)
 │  ├─ src/lib/                プレイヤーの状態機械・ワードマーク・設定の読み込み
@@ -89,7 +86,6 @@ kosensai-broadcast/
 | 配信サーバーを立てる | [hosts/server/README.md](hosts/server/README.md) |
 | 本部 OBS を組む | [hosts/obs/README.md](hosts/obs/README.md) |
 | サイネージ端末を置く | [hosts/signage/README.md](hosts/signage/README.md) |
-| 現場の機材を組む | [hosts/field/README.md](hosts/field/README.md) |
 | 手元で動かして確認する | [rehearsal/README.md](rehearsal/README.md) |
 | 設計の判断を知る | [docs/SPEC.md](docs/SPEC.md) — 決定と、採らなかった案の理由 |
 
@@ -121,32 +117,26 @@ submodule 化する余地はある。現時点では上記の理由で単一リ�
 
 ## 3. はじめかた
 
-```bash
-git clone <このリポジトリ>
-cd kosensai-broadcast
-
-# 配信サーバーを立てる場合
-cd hosts/server
-cp .env.example .env && $EDITOR .env    # パスフレーズ 4 本
-sudo ./scripts/get-cert.sh              # 証明書（前日までに）
-./scripts/preflight.sh                  # 起動前チェック
-docker compose up -d
-./scripts/smoke-test.sh ch1             # 疎通確認
-```
-
-**サーバーを用意せず手元で全部動かす場合**（配信サイトの確認はこちらが早い）:
+配信サイトを触る場合は、手元でリハーサル環境を立ち上げるのが早い。テストパターン
+4 本から視聴ページまでが PC 1 台で揃う。
 
 ```bash
 cd rehearsal
-./scripts/up.sh          # テストパターン4本 → MediaMTX → Caddy → 視聴ページ
-./scripts/down.sh
+./scripts/up.sh          # 起動（http://localhost:8080/）
+./scripts/reload.sh      # app/ をビルドして反映
+./scripts/down.sh        # 停止
 ```
 
-見た目だけなら静的配信でも足りる:
+配信サイトのソースは `app/`（SvelteKit）にある。`pnpm build` の出力先が `web/` で、
+Caddy はそこを配信する。`web/` を直接編集しても次のビルドで消える。
 
 ```bash
-python3 -m http.server 8080 --directory web
+cd app
+pnpm install
+pnpm lint        # Prettier の確認と svelte-check
 ```
+
+配信サーバーを立てる手順は [hosts/server/README.md](hosts/server/README.md) にある。
 
 ---
 

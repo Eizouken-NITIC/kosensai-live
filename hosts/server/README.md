@@ -119,35 +119,12 @@ docker compose restart mediamtx             # mediamtx.yml の変更を反映
 
 ## 5. 設計上の判断
 
-### Notion で既に決まっていること（ここでは実装するだけ）
+各設定値を選んだ理由は、`mediamtx.yml` と `Caddyfile` のコメントに書いてある。
+複数のファイルに跨る決定は [../../docs/SPEC.md](../../docs/SPEC.md) にある。
 
-- **Caddy を唯一の TLS 終端とし、MediaMTX と同一ホストに置く**（インフラ §3-1）
-- **`hlsAddress: 127.0.0.1:8888` / `hlsEncryption: no` / `hlsTrustedProxies: [127.0.0.1]`**（同 §3-1 の表）
-- **Caddy の自動 ACME は無効、DNS-01 で手動取得した証明書を直指定**（同 §3-1）。
-  学内サーバーには外部からの HTTP-01 審査通信が届かないため。
-- **`network_mode: host`**（ソフトウェア構成 §8）。bridge だと SRT の UDP
-  ポートフォワードで問題が出やすい。
-- **通常 HLS を用い、LL-HLS は採用しない**（同 §1）。セグメント長は 2 秒で、
-  OBS のキーフレーム間隔と一致させる制約がある。
+構成そのもの（Caddy を唯一の TLS 終端とし MediaMTX と同一ホストへ置くこと、
+`hlsAddress` を localhost に限ること、自動 ACME を無効化すること）は Notion
+「インフラ・ネットワーク連携要件 §3-1」で決まっている。このリポジトリはそれを
+実装しているだけで、ここで再検討はしていない。
 
-### このリポジトリで判断したこと
-
-- **VM を選択**（§1）。Notion は LXC / VM どちらでもよい書き方だった。
-- **`hlsVariant: mpegts` を明示的に書く。** MediaMTX v1.19 の既定は
-  `lowLatency` であり、明示しないと意図せず LL-HLS になる。
-- **`moq: no`。** v1.19 から MoQ サーバーが既定 on で :8892 を開き、証明書を
-  自動生成する。使わないので落とした。
-- **`all_others` パスを定義しない。** 定義するとワイルドカードとして任意のパスへの
-  publish を許してしまう。ch1〜ch4 以外が `path 'chX' is not configured` で
-  拒否されることは実機確認済み。
-- **パスフレーズを `.env` から `MTX_PATHS_*` で注入。** Notion の例では
-  `mediamtx.yml` に直書きされているが、それだと git に載るため分離した。
-- **Caddy の `/hls` ブロックで CORS / Cache-Control を足さない。** 同一オリジンで
-  CORS チェックが走らないうえ、Caddy の `header` は上書きなので MediaMTX の
-  `private, no-cache` を潰してしまうため。
-
-## 6. 未確定事項
-
-- MediaMTX/Caddy マシンの IP（NW 班待ち。現状は OBS と同一ホスト前提で `127.0.0.1`）
-- TLS 終端の最終担当（2026/07/20 時点で Caddy 終端の見込み）。
-  NW 班側終端に変わる場合は `Caddyfile` の `tls` 行と `:80` ブロックを見直す。
+VM を選んだ理由は §1 にある。

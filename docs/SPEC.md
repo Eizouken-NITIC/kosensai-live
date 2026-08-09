@@ -58,6 +58,31 @@ IDR フレームを含むよう長さを調整するため、キーフレーム�
 
 片方だけを変更した場合、設定値と実際の挙動が一致しなくなる。変更する場合は両方を揃える。
 
+## パスフレーズを設定ファイルから分離する
+
+`hosts/server/mediamtx.yml` に `srtPublishPassphrase` を書かない。
+`hosts/server/docker-compose.yml` が `.env` を読み、`MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE`
+のような環境変数として MediaMTX へ注入する。`.env` は `.gitignore` で追跡対象から
+外してある。
+
+設定ファイルへ直接書く形も採れるが、その場合はパスフレーズが Git の履歴に残る。
+このリポジトリは公開する前提であるため採らない。
+
+`hosts/obs/srt-urls.sh` も同じ `.env` を読む。本部 OBS と配信サーバーで値が一致して
+いなければ publish が拒否されるため、両者が同じファイルを参照する構成にしてある。
+
+## Caddy の /hls ブロックで CORS と Cache-Control を付与しない
+
+`hosts/server/Caddyfile` の `handle_path /hls/*` に `Access-Control-Allow-Origin` と
+`Cache-Control` を書かない。
+
+視聴ページと HLS は単一オリジンであるため、CORS の検査自体が走らない。CORS ヘッダーが
+必要になる場合に備えて `hosts/server/mediamtx.yml` の `hlsAllowOrigins` で付与する。
+
+`Cache-Control` を Caddy 側で書いた場合、MediaMTX が付与している
+`private, no-cache` を上書きしてしまう。プレイリストが中間でキャッシュされると、
+視聴者が古いセグメント一覧を掴んだまま再生できなくなる。
+
 ## ライブの再生位置と LIVE 表示
 
 再生位置は `app/src/lib/player.svelte.ts` の hls.js 設定が決定し、LIVE 表示は
