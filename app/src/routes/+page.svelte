@@ -6,7 +6,13 @@
 
   const DEFAULT_CH = 'ch1';
   const STORE_KEY = 'kosensai.ch';
+  const PANEL_KEY = 'kosensai.panel';
   const OVERLAY_HIDE_MS = 2000;
+
+  // 右カラムの幅。下限は公式サイトが 1 カラムに折り返す幅、
+  // 上限は映像が 16:9 を保てる範囲として画面幅の 6 割とする。
+  const PANEL_MIN = 280;
+  const PANEL_DEFAULT = 360;
 
   const player = createPlayer();
 
@@ -14,6 +20,8 @@
   let overlayVisible = $state(true);
   let videoEl = $state<HTMLVideoElement | null>(null);
   let liveBtn = $state<HTMLElement | null>(null);
+  let panelW = $state(PANEL_DEFAULT);
+  let dragging = $state(false);
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -24,6 +32,42 @@
     overlayVisible = true;
     clearTimeout(hideTimer);
     if (!pinned) hideTimer = setTimeout(() => (overlayVisible = false), OVERLAY_HIDE_MS);
+  }
+
+  function clampPanel(px: number) {
+    return Math.round(Math.min(Math.max(px, PANEL_MIN), window.innerWidth * 0.6));
+  }
+
+  // setPointerCapture により、ポインタが iframe の上へ入っても move が届き続ける
+  function startResize(e: PointerEvent) {
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
+    dragging = true;
+  }
+
+  function moveResize(e: PointerEvent) {
+    if (!dragging) return;
+    panelW = clampPanel(window.innerWidth - e.clientX);
+  }
+
+  function endResize(e: PointerEvent) {
+    if (!dragging) return;
+    dragging = false;
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    try {
+      localStorage.setItem(PANEL_KEY, String(panelW));
+    } catch {
+      /* プライベートブラウズ */
+    }
+  }
+
+  function resetPanel() {
+    panelW = PANEL_DEFAULT;
+    try {
+      localStorage.removeItem(PANEL_KEY);
+    } catch {
+      /* プライベートブラウズ */
+    }
   }
 
   function select(id: string | null, updateUrl = true) {
@@ -81,6 +125,13 @@
     });
     if (btn) ariaFix.observe(btn, { attributes: true, attributeFilter: ['aria-disabled'] });
 
+    try {
+      const saved = Number(localStorage.getItem(PANEL_KEY));
+      if (saved) panelW = clampPanel(saved);
+    } catch {
+      /* プライベートブラウズ */
+    }
+
     const params = new URLSearchParams(location.search);
     let initial = params.get('ch');
     if (!initial) {
@@ -113,7 +164,7 @@
 <!-- section に付けると a11y_no_static_element_interactions が出るので body で受ける -->
 <svelte:body onmousemove={showOverlay} onpointerdown={showOverlay} onfocusin={showOverlay} />
 
-<div class="page">
+<div class="page" class:dragging style="--panel-w: {panelW}px">
   <section class="stage">
     <!-- mediastreamtype: MediaMTX は DVR 判定用の非標準タグを出さないため明示する。
          seektoliveoffset: 既定は liveedgeoffset と同値で、LIVE ボタンが通常の再生位置
@@ -170,6 +221,25 @@
     {/if}
   </section>
 
+  <!-- 幅の調整。1000px 未満では上下に積むレイアウトになるため CSS で隠す。
+       ダブルクリックで既定値に戻す。 -->
+  <button
+    class="resizer"
+    type="button"
+    aria-label="公式サイト枠の幅を変更"
+    onpointerdown={startResize}
+    onpointermove={moveResize}
+    onpointerup={endResize}
+    onpointercancel={endResize}
+    ondblclick={resetPanel}
+    onkeydown={(e) => {
+      if (e.key === 'ArrowLeft') panelW = clampPanel(panelW + 24);
+      else if (e.key === 'ArrowRight') panelW = clampPanel(panelW - 24);
+      else return;
+      e.preventDefault();
+    }}
+  ></button>
+
   <aside class="panel">
     {#if officialSite.embedUrl}
       <iframe
@@ -193,12 +263,49 @@
     height: 100dvh;
     /* 子がはみ出してページ全体がスクロールするのを止める */
     overflow: hidden;
+    position: relative;
   }
   @media (min-width: 1000px) {
     .page {
       grid-template-rows: 1fr;
-      grid-template-columns: minmax(0, 1fr) 360px;
+      grid-template-columns: minmax(0, 1fr) var(--panel-w);
     }
+  }
+
+  /* ---- 右カラムの幅を変えるつまみ ---- */
+  .resizer {
+    display: none;
+  }
+  @media (min-width: 1000px) {
+    .resizer {
+      display: block;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      /* 境界線の上に重ねる。当たり判定は線より広く取る。 */
+      right: calc(var(--panel-w) - 3px);
+      width: 7px;
+      z-index: 2;
+      appearance: none;
+      border: 0;
+      padding: 0;
+      background: none;
+      cursor: col-resize;
+    }
+    .resizer:hover,
+    .resizer:focus-visible {
+      background: var(--accent);
+    }
+    .resizer:focus-visible {
+      outline: none;
+    }
+  }
+  /* ドラッグ中はポインタが iframe へ入っても選択やホバーが起きないようにする */
+  .page.dragging {
+    user-select: none;
+  }
+  .page.dragging .panel iframe {
+    pointer-events: none;
   }
 
   /* ---- 映像（枠は app.css の .stage） ---- */
