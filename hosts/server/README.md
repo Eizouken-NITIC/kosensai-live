@@ -127,14 +127,14 @@ docker compose restart mediamtx             # mediamtx.yml の変更を反映
   学内サーバーには外部からの HTTP-01 審査通信が届かないため。
 - **`network_mode: host`**（ソフトウェア構成 §8）。bridge だと SRT の UDP
   ポートフォワードで問題が出やすい。
-- **通常 HLS（セグメント 6 秒）をデフォルトとし、LL-HLS は必要と判明した場合のみ**（同 §1）
+- **通常 HLS を用い、LL-HLS は採用しない**（同 §1）。セグメント長は 2 秒で、
+  OBS のキーフレーム間隔と一致させる制約がある。
 
 ### このリポジトリで判断したこと
 
 - **VM を選択**（§1）。Notion は LXC / VM どちらでもよい書き方だった。
-- **`hlsVariant: mpegts` を明示的に書く。** Notion には「デフォルト通常 HLS」と
-  あるが、MediaMTX v1.19 の既定は `lowLatency` に変わっている。明示しないと
-  意図せず LL-HLS になる。
+- **`hlsVariant: mpegts` を明示的に書く。** MediaMTX v1.19 の既定は
+  `lowLatency` であり、明示しないと意図せず LL-HLS になる。
 - **`moq: no`。** v1.19 から MoQ サーバーが既定 on で :8892 を開き、証明書を
   自動生成する。使わないので落とした。
 - **`all_others` パスを定義しない。** 定義するとワイルドカードとして任意のパスへの

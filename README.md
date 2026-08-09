@@ -48,6 +48,8 @@ MediaMTX はトランスコード／ABR を行わないので、**エンコー�
 
 ```
 kosensai-broadcast/
+├─ config.json                ★ Ch 定義と公式サイト URL の単一の情報源
+│                               app/ ・srt-urls.sh・preflight.sh が同じものを読む
 ├─ hosts/                     ★ マシンごと。ここがデプロイ単位
 │  ├─ server/                 配信サーバー (Proxmox VM: MediaMTX + Caddy)
 │  │  ├─ docker-compose.yml / mediamtx.yml / Caddyfile / .env.example
@@ -62,18 +64,22 @@ kosensai-broadcast/
 │  └─ field/                  現場（ATEM / iPhone）— 機材設定のドキュメントのみ
 │     ├─ README.md            Ch1/Ch2 ATEM・PTZ・音声取り込み
 │     └─ moblin.md            Ch3 遊撃 iPhone
-├─ web/                       配信サイト（HP 部門と共同。server が配信する）
-│  ├─ index.html / signage/index.html
-│  ├─ config.json           ★ Ch 定義と公式サイト URL の単一の情報源
-│  ├─ assets/                 theme.css(暫定) / viewer.css / signage.css / player.js
-│  └─ _app/immutable/         SvelteKit のビルド成果物（hls.js を含む）
+├─ app/                       配信サイトのソース (SvelteKit + TypeScript)
+│  ├─ src/routes/             視聴ページ (/) とサイネージページ (/signage/)
+│  ├─ src/lib/                プレイヤーの状態機械・ワードマーク・設定の読み込み
+│  └─ static/                 QR とライセンス全文。そのまま配信物へ入る
+├─ web/                       app/ のビルド成果物。Caddy がこれを配信する
+│                               pnpm build のたびに作り直されるので直接編集しない
 ├─ rehearsal/                 ★ ローカルリハーサル環境（PC 1台で全部立ち上がる）
 │  ├─ docker-compose.yml      本番の設定をマウントして使う + テストパターン4本
-│  ├─ scripts/                up / down / check / load-test
+│  ├─ scripts/                up / down / reload / load-test
 │  └─ client/pull.sh          視聴クライアントのシミュレータ
-└─ docs/
-   ├─ test-procedure.md       ★ テスト手順（段階順）
-   └─ checklist.md            本番前チェックリスト（網羅性）
+├─ tools/make-qr.py           視聴ページの QR を生成する（URL 変更時のみ実行）
+├─ docs/
+│  ├─ SPEC.md                 複数ファイルに跨る決定と、採らなかった案の理由
+│  └─ BENCH.md                計測した数値
+├─ LICENSE                    MIT
+└─ THIRD-PARTY.md             同梱している第三者ソフトウェアの内訳
 ```
 
 各ディレクトリの README がそのマシンの手順書。まずそこを読む。
@@ -84,10 +90,10 @@ kosensai-broadcast/
 | 本部 OBS を組む | [hosts/obs/README.md](hosts/obs/README.md) |
 | サイネージ端末を置く | [hosts/signage/README.md](hosts/signage/README.md) |
 | 現場の機材を組む | [hosts/field/README.md](hosts/field/README.md) |
-| 配信サイトを触る | [web/README.md](web/README.md) |
 | 手元で動かして確認する | [rehearsal/README.md](rehearsal/README.md) |
-| **テストを進める** | [docs/test-procedure.md](docs/test-procedure.md) — 段階順の手順 |
-| 本番前の確認 | [docs/checklist.md](docs/checklist.md) — 網羅性チェック |
+| 設計の判断を知る | [docs/SPEC.md](docs/SPEC.md) — 決定と、採らなかった案の理由 |
+
+テストの進め方と本番前チェックリストは Notion にある（部内向け・§6）。
 
 ### なぜモノレポか（submodule を使わない理由）
 
@@ -105,8 +111,8 @@ kosensai-broadcast/
   し忘れによる「古い設定で動いていた」は最も避けたい事故。
 - **リポジトリが小さい。** 全部で数十ファイル。分割の利点（ビルド分離・権限分離）が
   効く規模ではない。
-- **どのマシンにも `git clone` 1 回で全部入る。** 予備機へのコールドスタンバイ
-  （`docs/checklist.md §H`）もディレクトリごとコピーするだけで済む。
+- **どのマシンにも `git clone` 1 回で全部入る。** 予備機へのコールドスタンバイも
+  ディレクトリごとコピーするだけで済む。
 
 将来 HP 部門と `web/` を本格的に共同編集する事態になれば、そこだけ切り出して
 submodule 化する余地はある。現時点では上記の理由で単一リポジトリが優る。
@@ -146,8 +152,8 @@ python3 -m http.server 8080 --directory web
 
 ## 4. 仮値・未確定のまま残っている箇所
 
-NW 班から構成が共有され次第、置換する。一覧と手順は
-[docs/checklist.md §A](docs/checklist.md)。
+NW 班から構成が共有され次第、置換する。待っている情報の一覧は Notion の
+「本番前チェックリスト」にある（§6）。
 
 | 項目 | 現状 |
 | --- | --- |
@@ -156,7 +162,6 @@ NW 班から構成が共有され次第、置換する。一覧と手順は
 | ビットレート | 4.5Mbps 前提。LAG が使えない場合は 3Mbps に落とす |
 | TLS 終端 | Caddy 終端で確定見込み（2026/07/20 時点）。変わる場合は `Caddyfile` を見直す |
 | Ch2 の有無 | 第二体育館の開催が未確定。無くなれば `config.json` と `mediamtx.yml` から削除 |
-| 配信サイトのキーカラー | ライト基調は確定（公式サイトの実測に合わせた）。`--accent` の確定値は HP 部門と要すり合わせ |
 
 ---
 
@@ -167,16 +172,17 @@ ffmpeg のテストパターンを SRT で流して確認した内容。
 
 - **SRT publish → HLS 再生まで疎通。** `streamid=publish:ch1` で送出し、
   Caddy 経由の `/hls/ch1/index.m3u8` からマスタープレイリスト →
-  variant → 6 秒 MPEG-TS セグメント（`video/mp2t`）まで取得できた。
+  variant → 2 秒 MPEG-TS セグメント（`video/mp2t`）まで取得できた。
 - **パスフレーズ不一致は拒否される。** `closed: invalid passphrase`。
 - **`ch1`〜`ch4` 以外への publish は拒否される。** `path 'ch9' is not configured`。
   `all_others` を定義していないため。
 - **publish が無い間 `/hls/chN/index.m3u8` は 404。**
-  → 視聴ページはこれを「配信開始前」と解釈して 10 秒ごとにリトライする。
-- **静的配信・ヘッダーは想定通り。** `/`・`/signage/`・`/config.json`・
-  `/assets/*`・`/healthz` がすべて 200。
+  → 視聴ページはこれを「配信開始前」と解釈して 5 秒ごとにリトライする。
+- **静的配信・ヘッダーは想定通り。** `/`・`/signage/`・`/healthz` がすべて 200。
   `/_app/immutable/*`（SvelteKit のビルド成果物。hls.js を含む）は
   `max-age=604800, immutable`、HTML は `no-cache`。
+- **シークできる幅は 360 秒で一定。** サーバーの `hlsSegmentCount: 180` ×
+  セグメント 2 秒と、hls.js の `backBufferLength` を揃えてある。
 
 ### ⚠️ この検証で見つかって直したもの
 
@@ -197,7 +203,7 @@ header_down Location "^/(.*)$" "/hls/$1"
 
 ### まだ未検証（実機・現地でしか確認できない）
 
-`docs/checklist.md` 参照。特に以下は当日まで残せない。
+網羅した一覧は Notion の「本番前チェックリスト」にある。特に以下は当日まで残せない。
 
 - 実ブラウザ 3 環境（Chrome Android / Safari iOS / Chromium RPi）での再生
 - OBS 1 台での 4Ch 同時エンコード負荷
@@ -207,8 +213,13 @@ header_down Location "^/(.*)$" "/hls/$1"
 
 ## 6. 関連ドキュメント（Notion）
 
+進行状況・段取り・チェックリストは Notion で管理している。このリポジトリには仕様と
+手順書だけを置く。以下は一関高専 映像研究部の部内向け資料であり、部外からは開けない。
+
 - 高専祭ライブ配信（プロジェクト）
 - 配信システム構成
 - インフラ・ネットワーク連携要件
 - ソフトウェア構成・設定例
 - 映像機材・調達リスト
+- 本番前チェックリスト
+- テスト手順

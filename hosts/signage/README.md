@@ -114,6 +114,6 @@ sudo loginctl enable-linger "$USER"   # 未ログインでも起動させる
 - [ ] 有線 LAN 接続（Wi-Fi は避ける）
 - [ ] `https://live.kosensai.ichinoseki.ac.jp/signage/` が証明書エラーなく開く
 - [ ] Ch4 が再生される（本部で Ch4 を送出してもらって確認）
-- [ ] 公式サイトの iframe が表示される（`X-Frame-Options` の確認は docs/checklist.md）
+- [ ] 公式サイトの iframe が表示される（`X-Frame-Options` の確認は Notion の本番前チェックリスト）
 - [ ] 電源断 → 再投入で自動的にページまで復帰する
 - [ ] マウスカーソルが消えている / スクリーンセーバーが働かない
