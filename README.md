@@ -72,9 +72,6 @@ kosensai-broadcast/
 │  ├─ scripts/                up / down / reload / load-test
 │  └─ client/pull.sh          視聴クライアントのシミュレータ
 ├─ tools/make-qr.py           視聴ページの QR を生成する（URL 変更時のみ実行）
-├─ docs/
-│  ├─ SPEC.md                 複数ファイルに跨る決定と、採らなかった案の理由
-│  └─ BENCH.md                計測した数値
 ├─ LICENSE                    MIT
 └─ THIRD-PARTY.md             同梱している第三者ソフトウェアの内訳
 ```
@@ -87,31 +84,8 @@ kosensai-broadcast/
 | 本部 OBS を組む | [hosts/obs/README.md](hosts/obs/README.md) |
 | サイネージ端末を置く | [hosts/signage/README.md](hosts/signage/README.md) |
 | 手元で動かして確認する | [rehearsal/README.md](rehearsal/README.md) |
-| 設計の判断を知る | [docs/SPEC.md](docs/SPEC.md) — 決定と、採らなかった案の理由 |
 
-テストの進め方と本番前チェックリストは Notion にある（部内向け・§6）。
-
-### なぜモノレポか（submodule を使わない理由）
-
-マシンごとにリポジトリを分ける案・submodule 案も検討したが、**モノレポを採用**した。
-
-- **設定が複数マシンに跨って整合している必要がある。** SRT のパスフレーズ、
-  チャンネル名、ポート番号は「配信サーバー・本部 OBS・現場」の 3 箇所で
-  一致していないと映像が出ない。リポジトリを分けると、この整合を人間が
-  目視で保つことになる。同一リポジトリなら `config.json` を単一の情報源にして、
-  OBS 用 URL の生成（`srt-urls.sh`）と起動前チェック（`preflight.sh`）で
-  機械的に突き合わせられる。実際 preflight は `mediamtx.yml` と
-  `config.json` のずれを検出する。
-- **submodule はポインタ更新の一手間が増える。** 実運用が 3 日、作業者 4 人、
-  現地でその場で直す場面がある構成で、`git submodule update` の
-  し忘れによる「古い設定で動いていた」は最も避けたい事故。
-- **リポジトリが小さい。** 全部で数十ファイル。分割の利点（ビルド分離・権限分離）が
-  効く規模ではない。
-- **どのマシンにも `git clone` 1 回で全部入る。** 予備機へのコールドスタンバイも
-  ディレクトリごとコピーするだけで済む。
-
-将来 HP 部門と `web/` を本格的に共同編集する事態になれば、そこだけ切り出して
-submodule 化する余地はある。現時点では上記の理由で単一リポジトリが優る。
+テストの進め方・本番前チェックリスト・設計上の決定と計測結果は Notion にある（§6）。
 
 ---
 
