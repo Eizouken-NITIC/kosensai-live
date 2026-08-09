@@ -64,9 +64,11 @@
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
+    <!-- 無人で設置され、通りすがりの人が読む。配信の状態を断定すると、サーバーや
+         回線の一時的な障害でも「今日は配信が無い」と読まれる。 -->
     {#if !player.isLive}
       <div class="cover idle">
-        <p>現在配信していません</p>
+        <p>映像の受信を待っています</p>
       </div>
     {/if}
   </section>

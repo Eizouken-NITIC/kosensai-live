@@ -125,11 +125,14 @@
       </media-control-bar>
     </media-controller>
 
-    <!-- 接続中は出さない。読み込み表示はプレイヤーに任せる -->
+    <!-- 接続中は出さない。読み込み表示はプレイヤーに任せる。
+         プレイリストを取得できない理由は、配信の開始前・サーバーの停止・端末の
+         通信断のいずれもありうる。アプリはこれらを区別できないため、配信の状態を
+         断定せず、受信できていないという観測だけを書く。 -->
     {#if player.state === 'waiting'}
       <div class="cover" role="status" aria-live="polite">
-        <p>このチャンネルはまだ配信されていません</p>
-        <small>始まると自動で再生されます</small>
+        <p>映像を受信できていません</p>
+        <small>配信の開始前か、通信が届いていない可能性があります</small>
         <!-- 自動リトライは続いているが、待てない人のために手動の出口も出す。 -->
         <button class="retry" type="button" onclick={() => player.load(current)}>
           今すぐ再読み込み
