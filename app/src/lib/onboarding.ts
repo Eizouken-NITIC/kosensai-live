@@ -11,8 +11,8 @@ const STORE_KEY = 'welcomeSeen';
    ここに書く。CSS の --scrim-2 と同じ値である。 */
 const OVERLAY_COLOR = '#000';
 const OVERLAY_OPACITY = 0.7;
-/* 切り抜きの角の丸みは --radius に合わせる。 */
-const STAGE_RADIUS = 6;
+/* 面を角丸で切らない画面なので、切り抜きも角を落とさない。 */
+const STAGE_RADIUS = 0;
 const STAGE_PADDING = 6;
 
 function seen(): boolean {

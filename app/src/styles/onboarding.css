@@ -1,5 +1,9 @@
-/* 初回の案内（driver.js）の外観を、この画面の下地・文字・余白のトークンへ揃える。
-   driver.js は吹き出しを body の直下へ追加するため、.page のネストの中には置けない。 */
+/* 初回の案内（driver.js）の外観を、この画面の作りへ合わせる。
+   driver.js は吹き出しを body の直下へ追加するため、.page のネストの中には置けない。
+
+   合わせる先は次の 4 点である。面は 1px の直線で仕切り、囲みの箱を作らない。
+   アクセントは塗りではなく線として、選択中を示すときだけ使う。押しボタンは素の文字で、
+   下地も枠も持たない。主と従は文字の大きさではなく --fg と --fg-muted で分ける。 */
 
 /* 幅 1000px 以上では操作が無いと上端のバーが消える。案内が上端を指している間は出したままにする。 */
 html.tour .page .topbar {
@@ -12,21 +16,21 @@ html.tour .page .topbar {
   --driver-animation-duration: 200ms;
 }
 
+/* 浮かぶカードではなく、映像の上に重ねたもう 1 枚の面として置く。 */
 .driver-popover.onboarding {
-  max-width: 22em;
+  max-width: 24em;
   padding: var(--sp-4);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 0;
   background: var(--surface);
   color: var(--fg);
   font-size: var(--fs-md);
-  /* 既定の影は白い吹き出しを前提にしており、暗い下地では輪郭が濁る */
   box-shadow: none;
 }
 
 .driver-popover.onboarding .driver-popover-title {
   font-size: var(--fs-md);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.5;
 }
 .driver-popover.onboarding .driver-popover-title[style*='block'] + .driver-popover-description {
@@ -39,7 +43,9 @@ html.tour .page .topbar {
 }
 
 .driver-popover.onboarding .driver-popover-footer {
-  margin-top: var(--sp-4);
+  /* 下線を文字の下にぶら下げる分、上の余白を詰める */
+  margin-top: var(--sp-3);
+  align-items: baseline;
 }
 /* 何番目かを示す数字である。桁が変わっても幅が動かないよう等幅で組む。 */
 .driver-popover.onboarding .driver-popover-progress-text {
@@ -47,28 +53,29 @@ html.tour .page .topbar {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
 }
-.driver-popover.onboarding .driver-popover-navigation-btns button + button {
-  margin-left: var(--sp-2);
-}
 
-/* 押しボタンの形は覆いの中の .retry と揃える。色だけ下地に合わせる。 */
+/* 上端のタブと同じ組み方にする。枠も下地も持たず、下線だけで主従を分ける。 */
 .driver-popover.onboarding .driver-popover-footer-btn {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: var(--sp-2) var(--sp-3);
-  background: transparent;
-  color: var(--fg);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 0 0 var(--sp-2);
+  background: none;
+  color: var(--fg-muted);
   font-size: var(--fs-sm);
   font-weight: 600;
 }
-.driver-popover.onboarding .driver-popover-footer-btn:hover,
-.driver-popover.onboarding .driver-popover-footer-btn:focus {
-  background: var(--line);
+.driver-popover.onboarding .driver-popover-navigation-btns button + button {
+  margin-left: var(--sp-4);
 }
-/* 先へ進む操作が主である。タブの下線と同じアクセントで示す。 */
+/* 先へ進む操作が主である。選択中のタブと同じく、アクセントの下線で示す。 */
 .driver-popover.onboarding .driver-popover-navigation-btns button:last-child {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-bottom-color: var(--accent);
+  color: var(--fg);
+}
+/* 既定の輪郭は下線と重なるので、その分だけ外側へずらす */
+.driver-popover.onboarding .driver-popover-footer-btn:focus-visible {
+  outline-offset: 3px;
 }
 
 .driver-popover.onboarding .driver-popover-close-btn {
