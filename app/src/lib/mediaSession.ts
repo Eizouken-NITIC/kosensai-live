@@ -1,4 +1,4 @@
-/** OS の再生通知（ロック画面・通知領域）に出す情報を設定する。
+/** OS の再生通知（ロック画面・通知領域）に表示する情報を設定する。
  *
  * 設定しない場合、表題にはページの URL が出る。 */
 export function setNowPlaying(title: string, artist: string): void {

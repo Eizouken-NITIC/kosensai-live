@@ -34,7 +34,14 @@ media-volume-range[mediamuted] {
   --media-range-thumb-background: var(--live);
 }
 
-/* ピクチャインピクチャに対応しない環境ではボタンを出さない。media-chrome は
+/* media-chrome は hover と focus-visible のときだけ吹き出しを表示する。読み込み直後に
+   ミュートであることを伝えるため、その間だけ外から part 経由で表示を上書きする。 */
+media-mute-button.hint::part(tooltip) {
+  max-width: 100vw;
+  opacity: 1;
+}
+
+/* ピクチャインピクチャに対応しない環境ではボタンを表示しない。media-chrome は
    属性を付けるだけで、押せないボタンを消す処理は持たない。 */
 media-pip-button[mediapipunavailable] {
   display: none;

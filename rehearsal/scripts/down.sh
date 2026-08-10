@@ -25,4 +25,4 @@ if [[ "${1:-}" == "--clean" ]]; then
   rm -rf certs out
 fi
 
-echo "完了"
+echo "完了しました"

@@ -1,5 +1,5 @@
 /* 視聴ページ（app/src/routes/+page.svelte）
-   手元で 30cm ほどの距離から見る画面。基準を --fs-md に置き、px のトークンを使う。 */
+   手元で 30cm ほどの距離から見る画面である。基準を --fs-md に置き、px のトークンを使う。 */
 
 .page {
   font-size: var(--fs-md);
@@ -42,7 +42,7 @@
     color: var(--on-video);
     border-bottom-color: var(--accent);
   }
-  /* 既定の輪郭は下線と重なるので、その分だけ外へ出す */
+  /* 既定の輪郭は下線と重なるので、その分だけ外側へずらす */
   nav button:focus-visible {
     outline-offset: 3px;
   }
@@ -70,7 +70,7 @@
     border-top-width: 1px;
   }
 
-  /* 幅を変えられるのは横並びのときだけなので、つまみは出さない */
+  /* 幅を変えられるのは横並びのときだけなので、つまみは表示しない */
   .grip {
     display: none;
   }

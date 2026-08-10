@@ -1,8 +1,8 @@
 # hosts/signage — サイネージ端末（Raspberry Pi + Chromium Kiosk）
 
-サイネージページを全画面で表示し続ける端末。ページは `https://<domain>/signage/` で、
+サイネージページを全画面で表示し続ける端末である。ページは `https://<domain>/signage/` で、
 ソースは `app/src/routes/signage/+page.svelte` にある。映すチャンネルの既定は
-`config.json` の `signage.defaultChannel`。
+`config.json` の `signage.defaultChannel` である。
 
 ## 0. まとめてセットアップする
 
@@ -13,7 +13,7 @@
 SIGNAGE_CH=ch1 ./hosts/signage/setup.sh   # 別の Ch を映す端末
 ```
 
-以下は手作業でやる場合の内訳。
+以下は手作業でやる場合の内訳である。
 
 ## 1. Raspberry Pi 側の設定
 
@@ -43,7 +43,7 @@ xset s noblank
 フラグのうち 2 つは、外すと動かなくなる。
 
 - `--autoplay-policy=no-user-gesture-required` … **必須。** サイネージページの
-  `<video>` は音声を出すため `muted` を付けていない。ブラウザは音声のある自動再生を
+  `<video>` は音声を再生するため `muted` を付けていない。ブラウザは音声のある自動再生を
   ユーザー操作なしでは許可しないため、この指定が無いと再生が始まらない。
 - `--check-for-update-interval` … 運転中に更新ダイアログが出るのを防ぐ。
 
@@ -62,14 +62,14 @@ sudo loginctl enable-linger "$USER"   # 未ログインでも起動させる
 
 ## 3. ページ側の挙動
 
-`app/src/routes/signage/+page.svelte` に実装済み。
+`app/src/routes/signage/+page.svelte` に実装している。
 
 | 挙動 | 内容 |
 | --- | --- |
 | その Ch が配信されていない | 「このチャンネルは配信されていません」を表示し、5 秒ごとに自動リトライする |
 | 配信サーバーへ届かない | 「接続できません」を表示する。復帰したら自動で再生を再開する |
 | 音声 | 常に音声ありで再生する。端末側で音量を調整する（§4） |
-| 埋め込み枠 | 5 分ごとに iframe を再読み込みし、更新を拾う |
+| 埋め込み枠 | 5 分ごとに iframe を再読み込みし、更新を取得する |
 | 長時間運転 | 6 時間ごとに、再生していなければページをリロードする。配信中はリロードしない |
 | 時計 | 右上に端末の時刻を表示する |
 

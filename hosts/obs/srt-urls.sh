@@ -42,12 +42,12 @@ print(" 1. OBS メディアソース（SRT Listener）… 現場からの受け�
 print("=" * 72)
 for c in chans:
     if not c.get("obsListenPort"):
-        print(f"\n[{c['label']}] {c['source']} … OBS 内で合成するため入力なし")
+        print(f"\n[{c['label']}] {c['source']} … OBS 内で合成するため入力はありません")
         continue
     print(f"\n[{c['label']}] {c['source']}")
     print(f"  srt://0.0.0.0:{c['obsListenPort']}?mode=listener"
           f"&passphrase={passphrase(c['id'])}&latency={c['srtLatencyUs']}")
-    print(f"  → 現場側(Caller)には次を渡す:")
+    print(f"  → 現場側(Caller)には次を渡してください:")
     print(f"    srt://{obs_host}:{c['obsListenPort']}"
           f"?passphrase={passphrase(c['id'])}&latency={c['srtLatencyUs']}")
 

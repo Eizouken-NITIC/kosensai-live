@@ -1,4 +1,4 @@
-# テストパターン送出用の ffmpeg。
+# テストパターンの送出に使う ffmpeg のイメージを作る。
 #
 # mediamtx の ffmpeg 同梱イメージは libfreetype 付きでビルドされており drawtext を
 # 使えるが、Alpine ベースでフォントが 1 つも入っていない。フォントを足すだけで

@@ -1,4 +1,4 @@
-# プレビュー用の入口（リハーサル専用・本番には存在しない）
+# プレビュー用の入口。リハーサル専用であり、本番には存在しない。
 #
 # 本番の Caddyfile はホスト名 live.kosensai.ichinoseki.ac.jp で site を
 # マッチするので、素直にやると /etc/hosts への追記が要る。消し忘れると
@@ -11,7 +11,8 @@
 #   MediaMTX が張る Secure 属性付きの Cookie もそのまま通る）。
 #
 # ⚠️ ここを通すとホスト名マッチと TLS 自体は検証できない。
-#    そちらは scripts/check.sh が --resolve で実際の名前を使って見ている。
+#    それらを確かめるには /etc/hosts に一時的に本番のホスト名を足して直接開く
+#    （README の「本番と同じホスト名・TLS で開きたい場合」を参照）。
 
 {
 	auto_https off

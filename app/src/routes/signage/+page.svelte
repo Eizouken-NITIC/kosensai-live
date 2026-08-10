@@ -6,8 +6,8 @@
   import { setNowPlaying } from '$lib/mediaSession';
   import { channels, signage, site } from '$lib/config';
 
-  const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先の更新を拾う
-  const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間動かしたときのリーク対策
+  const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先の更新を取得する
+  const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間動かしたときのリークに備える
 
   const player = createPlayer();
 
@@ -15,7 +15,7 @@
     player.state === 'idle'
       ? 'このチャンネルは配信されていません'
       : player.state === 'waiting'
-        ? '接続できません'
+        ? '接続中です'
         : '読み込み中…',
   );
 
@@ -68,7 +68,7 @@
   </header>
 
   <section class="stage">
-    <!-- muted を付けない。音声を出すため。ブラウザは音声のある自動再生を
+    <!-- 音声を出すため muted を付けない。ブラウザは音声のある自動再生を
          ユーザー操作なしでは許可しないため、再生はブラウザ側の許可に依存する。 -->
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={videoEl} playsinline autoplay preload="none"></video>
@@ -81,10 +81,6 @@
   </section>
 
   <div class="invite">
-    <!-- QR は白地に黒で置く。読み取り機は「暗いモジュール／明るい下地」を
-         前提にしているので、反転させると読み取り率が落ちる。
-         なお <img> で読み込んだ SVG は独立した文書として扱われるため、
-         SVG 内の currentColor は親の色を継承しない（黒のまま出る）。 -->
     <span class="qr">
       <img src="/assets/qr-viewer.svg" alt="視聴ページの QR コード" />
     </span>

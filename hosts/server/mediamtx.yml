@@ -1,5 +1,5 @@
 ###############################################
-# 高専祭ライブ配信 / MediaMTX 設定
+# MediaMTX 設定
 #
 # パスフレーズはこのファイルに書かない。
 # docker-compose の env_file (.env) から
@@ -25,7 +25,7 @@ srtAddress: :8890
 hls: yes
 hlsAddress: 127.0.0.1:8888
 hlsEncryption: no                  # TLS 終端は Caddy に集約
-# 視聴ページと HLS は同一オリジンのため実際には検査されない。Caddy 側では付与しない。
+# 視聴ページと HLS は同一オリジンのため実際には検査されない。Caddy 側では CORS ヘッダーを付与しない。
 hlsAllowOrigins: ["*"]
 hlsTrustedProxies: [127.0.0.1]     # 前段は Caddy
 hlsVariant: mpegts
@@ -60,7 +60,7 @@ paths:
   ch1:
     source: publisher
 
-  # Ch2: 第二体育館（開催有無は未確定 / 2026-07 時点）
+  # Ch2: 第二体育館（ATEM Mini Pro → 本部OBS → ここ）
   ch2:
     source: publisher
 

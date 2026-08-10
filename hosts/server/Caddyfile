@@ -1,4 +1,4 @@
-# 高専祭ライブ配信 / Caddy（唯一の TLS 終端）
+# Caddy（唯一の TLS 終端）
 #
 # 学内サーバーには外部からの HTTP-01 審査通信が届かないため、
 # Caddy の自動 ACME は使わず、certbot（DNS-01・手動）で取得した
@@ -31,7 +31,7 @@ live.kosensai.ichinoseki.ac.jp {
 		}
 	}
 
-	# --- ヘルスチェック（本番前チェック・監視用） ---
+	# --- ヘルスチェック（疎通確認・監視用） ---
 	handle /healthz {
 		respond "ok" 200
 	}
@@ -46,7 +46,7 @@ live.kosensai.ichinoseki.ac.jp {
 		@immutable path /_app/immutable/*
 		header @immutable Cache-Control "public, max-age=604800, immutable"
 
-		# HTML は都度取り直す（当日の差し替えを即反映させる）
+		# HTML は都度取り直す（差し替えを即座に反映させるため）
 		@html path *.html /
 		header @html Cache-Control "no-cache"
 

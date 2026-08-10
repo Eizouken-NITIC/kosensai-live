@@ -21,7 +21,7 @@ import sys
 try:
     import segno
 except ImportError:
-    sys.exit("segno が要る: pip install segno")
+    sys.exit("segno が必要です: pip install segno")
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 URL = "https://" + json.loads((REPO / "config.json").read_text(encoding="utf-8"))["site"]["domain"] + "/"
@@ -33,13 +33,13 @@ qr = segno.make(URL, error="m")
 qr.save(
     OUT,
     kind="svg",
-    scale=1,        # サイズは CSS 側で決めるので等倍で出す
+    scale=1,        # サイズは CSS 側で決めるので等倍で出力する
     border=2,       # 静音域。規格の推奨は 4 だが画面表示なら 2 で読める
     dark="#000000",
     light=None,     # 背景は透明
     svgclass=None,
     lineclass=None,
-    omitsize=True,  # width/height を出さず viewBox だけにする
+    omitsize=True,  # width/height を出力せず viewBox だけにする
 )
 
 # segno は currentColor を受け付けないため、生成後に差し替える。

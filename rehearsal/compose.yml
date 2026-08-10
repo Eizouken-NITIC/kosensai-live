@@ -21,7 +21,7 @@ x-passphrases: &passphrases
 # 送出の内容は publish.sh にある。チャンネルごとに異なるのは名前とパスフレーズだけ
 # なので、compose 側には引数だけを置く。
 #
-# 既定は 640x360@15 の ultrafast。UI の確認にはこれで足りる。
+# 既定は 640x360@15 の ultrafast である。UI の確認にはこれで足りる。
 # ビットレートや画質を実測したいときだけ本番相当に上げる:
 #   REH_SIZE=1280x720 REH_FPS=30 REH_BITRATE=2500k REH_PRESET=veryfast \
 #     docker compose --profile publish up -d

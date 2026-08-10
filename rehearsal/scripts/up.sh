@@ -15,7 +15,7 @@ PREVIEW_PORT=8080
 WITH_PUBLISHERS=1
 [[ "${1:-}" == "--idle" ]] && WITH_PUBLISHERS=0
 
-command -v docker >/dev/null || { echo "docker が必要" >&2; exit 1; }
+command -v docker >/dev/null || { echo "docker が必要です" >&2; exit 1; }
 
 # --- 自己署名証明書（本番は certbot の DNS-01。ここでは検証用） -------------
 if [[ ! -f certs/fullchain.pem ]]; then
@@ -26,7 +26,7 @@ if [[ ! -f certs/fullchain.pem ]]; then
     -days 30 -subj "/CN=${DOMAIN}" \
     -addext "subjectAltName=DNS:${DOMAIN}" 2>/dev/null
   chmod 644 certs/fullchain.pem; chmod 640 certs/privkey.pem
-  echo "  certs/ に生成した（30日有効・ブラウザは警告を出す）"
+  echo "  certs/ に生成しました（30日有効・ブラウザは警告を出します）"
 fi
 
 # --- 起動 ------------------------------------------------------------------
@@ -62,7 +62,7 @@ cat <<EOS
  停止         ./scripts/down.sh
 ============================================================
 
- 本番と同じホスト名・TLS で開きたい場合のみ /etc/hosts に
- 「127.0.0.1 ${DOMAIN}」を足して https://${DOMAIN}:${PORT}/ 。
- 見た目の確認だけなら上の localhost で足りる。
+ 本番と同じホスト名・TLS で開きたい場合は、/etc/hosts に
+ 「127.0.0.1 ${DOMAIN}」を追記して https://${DOMAIN}:${PORT}/ を開いてください。
+ 見た目の確認だけなら上の localhost で足ります。
 EOS

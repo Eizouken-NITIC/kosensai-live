@@ -2,10 +2,8 @@
 # Let's Encrypt 証明書を DNS-01（手動）で取得し、certs/ に配置する。
 #
 # 学内プライベート IP のため HTTP-01 は使えない。
-# certbot が出す TXT レコード値を総合情報センターに登録依頼する運用のため、
-# 途中で必ず「待ち」が入る。本番前日に余裕を持って実行すること。
-#
-# 実運用が3日のため自動更新は不要（LE 証明書は 90 日有効）。
+# certbot が表示する TXT レコード値を DNS 管理者に登録依頼し、伝播を待つ必要があるため、
+# 途中で必ず「待ち」が入る。
 #
 #   sudo ./scripts/get-cert.sh
 
@@ -32,7 +30,7 @@ cat <<EOS
      _acme-challenge.${DOMAIN}
  に登録すべき TXT レコード値を表示します。
 
- その値を総合情報センターへ登録依頼し、
+ その値を DNS 管理者へ登録依頼し、
 
      dig TXT _acme-challenge.${DOMAIN} +short
 

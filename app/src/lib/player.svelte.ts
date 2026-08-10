@@ -6,7 +6,7 @@ type HlsInstance = InstanceType<HlsConstructor>;
 type HlsErrorData = import('hls.js').ErrorData;
 
 // hls.js の retryForHttpStatus() が 4xx を再試行しないため、未配信の 404 は
-// ここで拾う。5xx とタイムアウトは hls.js が受け持つ。
+// ここで検出する。5xx とタイムアウトは hls.js が処理する。
 const RETRY_MS = 5000;
 
 let hlsJsPromise: Promise<HlsConstructor> | null = null;
@@ -47,7 +47,7 @@ export function createPlayer() {
     retryTimer = setTimeout(() => load(channel, true), RETRY_MS);
   }
 
-  /* 応答コードが手元に無い経路のための判定。<video> の error は理由を持たないため、
+  /* 応答コードが手元に無い経路については、ここで判定する。<video> の error は理由を持たないため、
    * プレイリストを取り直して 404 かどうかを見る。 */
   async function failByProbe() {
     let reason: 'idle' | 'waiting' = 'waiting';
@@ -151,7 +151,7 @@ export function createPlayer() {
     instance.attachMedia(el);
   }
 
-  /** <video> を渡して初期化する。戻り値は後片付け用。 */
+  /** <video> を渡して初期化する。戻り値は後片付けに使う。 */
   function attach(el: HTMLVideoElement) {
     video = el;
     const v = el;

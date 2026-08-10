@@ -1,7 +1,7 @@
 # hosts/server — 配信サーバー
 
 MediaMTX（SRT 受信 → HLS 生成）と Caddy（TLS 終端・静的配信・リバースプロキシ）を
-Docker Compose で動かすマシン。
+Docker Compose で動かすマシンである。
 
 このディレクトリの中身だけがこのマシンにデプロイされる。配信サイト本体はリポジトリ
 直下の `web/` にあり、`compose.yml` から `../../web` としてマウントしている。

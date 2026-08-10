@@ -45,13 +45,13 @@ echo "== GPU メモリの確認 =="
 CONFIG=/boot/firmware/config.txt
 [[ -f "${CONFIG}" ]] || CONFIG=/boot/config.txt
 if grep -q '^gpu_mem=256' "${CONFIG}" 2>/dev/null; then
-  echo "  gpu_mem=256 設定済み"
+  echo "  gpu_mem=256 は設定済みです"
 else
-  echo "  ⚠️ ${CONFIG} に gpu_mem=256 を追記して再起動すること"
+  echo "  ⚠️ ${CONFIG} に gpu_mem=256 を追記して再起動してください"
   echo "     echo 'gpu_mem=256' | sudo tee -a ${CONFIG}"
 fi
 
 echo
-echo "完了。表示 URL: ${URL}"
+echo "完了しました。表示 URL: ${URL}"
 echo "  状態: systemctl --user status signage"
 echo "  再起動: systemctl --user restart signage"

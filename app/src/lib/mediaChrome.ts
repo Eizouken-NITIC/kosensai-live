@@ -16,11 +16,11 @@ export function loadMediaChrome(): void {
 }
 
 /**
- * LIVE ボタンが先端の判定中もクリックを受け付けるようにする。戻り値は後片付け用。
+ * LIVE ボタンが先端の判定中もクリックを受け付けるようにする。戻り値は後片付けに使う。
  *
  * media-chrome は再生中かつ先端と判定している間、クリックを無視し aria-disabled を
  * 付与する。先端の判定には liveedgeoffset の幅があるため、その範囲内で数秒遅れて
- * いても操作できない状態になる。無視される条件のときだけ、こちらから要求を出す。
+ * いても操作できない状態になる。無視される条件のときだけ、こちらから要求を送出する。
  */
 export function keepLiveButtonEnabled(btn: HTMLElement | null): () => void {
   if (!btn) return () => {};

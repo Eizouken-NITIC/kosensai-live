@@ -7,9 +7,9 @@
 #
 # 出るもの: 合計スループット、1人あたりの実効ビットレート、エラー数。
 #
-# ⚠️ ここで測れるのは「MediaMTX が N セッションを捌けるか」と
-#    「1人あたり何 Mbps 流れるか」まで。当日の律速は Wi-Fi の AP エアタイムで、
-#    それは同一ホスト内のループバックでは再現できない。
+# ⚠️ ここで測れるのは「MediaMTX が N セッションを処理できるか」と
+#    「1人あたり何 Mbps 流れるか」まで。無線区間の律速は Wi-Fi の AP エアタイムであり、
+#    同一ホスト内のループバックでは再現できない。
 
 set -euo pipefail
 
@@ -21,7 +21,7 @@ CH="${2:-ch1}"
 DURATION="${3:-30}"
 
 docker inspect rehearsal-mediamtx >/dev/null 2>&1 \
-  || { echo "リハーサル環境が起動していない。先に ./scripts/up.sh" >&2; exit 1; }
+  || { echo "リハーサル環境が起動していません。先に ./scripts/up.sh を実行してください" >&2; exit 1; }
 
 if [[ "${CH}" == "all" ]]; then
   CHANNELS=$(python3 -c "
@@ -87,12 +87,12 @@ tm = tot_bytes * 8 / dur / 1e6 if dur else 0
 print(f"  {'合計':<6} {'':>6} {tot_bytes/1e6:>9.1f}MB {tm:>9.1f}Mbps {'':>12} {tot_segs:>6} {tot_errs:>6}")
 print()
 if tot_errs:
-    print(f"  ⚠️ エラー {tot_errs} 件。docker compose logs mediamtx を確認")
+    print(f"  ⚠️ エラーが {tot_errs} 件あります。docker compose logs mediamtx で確認してください")
 if tot_segs == 0:
-    print("  ⚠️ セグメントを1つも取得できていない。publisher が動いているか確認")
+    print("  ⚠️ セグメントを1つも取得できていません。publisher が動いているか確認してください")
     print("     docker compose --profile publish ps")
 PY
 
 echo
-echo "  ※ 当日の律速は Wi-Fi の AP エアタイム。ここでは再現できない。"
-echo "     本番のビットレート判断は NW 班の LAG 可否と合わせて行うこと。"
+echo "  ※ 無線区間の律速は Wi-Fi の AP エアタイムです。ここでは再現できません。"
+echo "     本番のビットレート判断は、実際に使う無線 AP の収容能力と合わせて行ってください。"

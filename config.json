@@ -6,13 +6,13 @@
     "  OS の再生通知に出る。",
     "  Caddyfile だけは JSON を読めないためホスト名を直接書いており、preflight.sh が",
     "  このファイルと突き合わせる。",
-    "signage: ?ch= が付かない場合に映す Ch と、QR の脇に出す文言。",
+    "signage: ?ch= が付かない場合に映す Ch と、QR の脇に表示する文言。",
     "channels:",
     "  id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致する必要がある。",
-    "  label は来場者に見せる唯一の文字列。id の ChN は運用側の呼称なので出さない。",
+    "  label は来場者に表示する唯一の文字列。id の ChN は運用側の呼称であるため表示しない。",
     "externalSite: このリポジトリの外で運用されているサイト。視聴ページとサイネージが",
-    "  iframe で埋め込み、別タブへのリンクも出す。",
-    "  embedUrl は iframe に出す URL、homeUrl は別タブで開く URL、title は表示名。"
+    "  iframe で埋め込み、別タブへのリンクも表示する。",
+    "  embedUrl は iframe に表示する URL、homeUrl は別タブで開く URL、title は表示名である。"
   ],
   "site": {
     "name": "KOSENSAI-LIVE",
@@ -43,7 +43,7 @@
       "obsListenPort": 9002,
       "srtLatencyUs": 200000,
       "bitrateKbps": 4500,
-      "source": "第二体育館 ATEM Mini Pro（開催有無 未確定）"
+      "source": "第二体育館 ATEM Mini Pro"
     },
     {
       "id": "ch3",
