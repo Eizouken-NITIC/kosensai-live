@@ -1,12 +1,10 @@
 # hosts/server — 配信サーバー
 
-**設置場所:** 総合情報センター / Proxmox 上の VM
-**担当:** 映像研（ハードウェアと NW は NW 班）
-**役割:** MediaMTX（SRT 受信 → HLS 生成）+ Caddy（TLS 終端・静的配信・リバースプロキシ）
+MediaMTX（SRT 受信 → HLS 生成）と Caddy（TLS 終端・静的配信・リバースプロキシ）を
+Docker Compose で動かすマシン。
 
-このディレクトリの中身だけがこのマシンにデプロイされる。
-配信サイト本体は共同成果物なのでリポジトリ直下の `web/` にあり、
-`docker-compose.yml` から `../../web` としてマウントしている。
+このディレクトリの中身だけがこのマシンにデプロイされる。配信サイト本体はリポジトリ
+直下の `web/` にあり、`docker-compose.yml` から `../../web` としてマウントしている。
 
 ```
                    SRT :8890                    HLS 127.0.0.1:8888
@@ -20,8 +18,6 @@
 
 ## 1. マシン要件
 
-**Proxmox の VM 1 台に、MediaMTX と Caddy を Docker Compose で同居させる。**
-
 | 項目 | 値 |
 | --- | --- |
 | 形態 | **VM**（LXC ではなく。理由は下記） |
@@ -32,8 +28,8 @@
 | ネットワーク | ブリッジ接続・配信用 VLAN・**固定 IP** |
 
 LXC ではなく VM を使う。SRT の再送バッファのために `net.core.rmem_max` を上げるが、
-LXC ではカーネルを Proxmox ホストと共有するため、ホスト側の設定変更が必要になる場合が
-ある。LXC で構築する場合は、設定後に読み戻して効いていることを必ず確認する。
+LXC ではカーネルをホストと共有するため、ホスト側の設定変更が必要になる場合がある。
+LXC で構築する場合は、設定後に読み戻して効いていることを確認する。
 
 ```bash
 sysctl -n net.core.rmem_max        # 26214400 が返らなければホスト側の設定が必要
@@ -54,7 +50,7 @@ cp .env.example .env
 for i in 1 2 3 4; do echo "ch$i: $(openssl rand -base64 24)"; done
 $EDITOR .env
 
-# 証明書（TXT レコード登録依頼を挟むので前日までに）
+# 証明書。DNS-01 のため TXT レコードの登録を挟み、途中で待ちが入る
 sudo ./scripts/get-cert.sh
 
 ./scripts/preflight.sh      # 起動前チェック
@@ -62,8 +58,8 @@ docker compose up -d
 ./scripts/smoke-test.sh ch1 # 疎通確認
 ```
 
-`.env` の値は **本部 OBS 側の passphrase と一致させる**こと。
-本部に渡す SRT URL は `hosts/obs/srt-urls.sh` で生成できる。
+`.env` の値は **送出側の passphrase と一致している必要がある。**
+送出側へ渡す SRT URL は `hosts/obs/srt-urls.sh` が生成する。
 
 ## 3. 運用コマンド
 
@@ -87,7 +83,7 @@ docker compose restart mediamtx             # mediamtx.yml の変更を反映
 | `Caddyfile` | TLS 終端、`/hls/*` のリバースプロキシ、`web/` の静的配信 |
 | `.env.example` | パスフレーズのテンプレート。`.env` は git 管理外 |
 | `certs/` | certbot で取得した証明書の置き場。git 管理外 |
-| `scripts/preflight.sh` | 起動前チェック（設定・パスフレーズ・証明書・sysctl・Ch 定義の突き合わせ） |
+| `scripts/preflight.sh` | 起動前チェック（設定・パスフレーズ・証明書・sysctl・`config.json` との突き合わせ） |
 | `scripts/get-cert.sh` | Let's Encrypt を DNS-01（手動）で取得し `certs/` に配置 |
 | `scripts/smoke-test.sh` | テストパターンを SRT 送出 → HLS 取得まで確認 |
 

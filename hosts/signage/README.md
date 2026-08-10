@@ -1,12 +1,8 @@
-# hosts/signage — 校内サイネージ端末（Raspberry Pi + Chromium Kiosk）
+# hosts/signage — サイネージ端末（Raspberry Pi + Chromium Kiosk）
 
-**設置場所:** 校内各所
-**担当:** 映像研
-**役割:** Ch4（本部 OBS が合成したサイネージ専用映像）を全画面表示し、
-右カラムに公式サイトを `<iframe>` で常時表示する
-
-ページ: `https://live.kosensai.ichinoseki.ac.jp/signage/`
-（ソースは `app/src/routes/signage/+page.svelte`。ビルド成果物を配信サーバーが配信する）
+サイネージページを全画面で表示し続ける端末。ページは `https://<domain>/signage/` で、
+ソースは `app/src/routes/signage/+page.svelte` にある。映すチャンネルの既定は
+`config.json` の `signage.defaultChannel`。
 
 > private → private のアクセスなので Chrome の LNA（Local Network Access）の
 > 対象外。Chromium 側のポリシー配布など特殊設定は不要。
@@ -16,8 +12,8 @@
 端末上でリポジトリを clone し、次を実行すれば §1〜§2 は自動で入る。
 
 ```bash
-./hosts/signage/setup.sh                  # 既定 (Ch4)
-SIGNAGE_CH=ch1 ./hosts/signage/setup.sh   # 別 Ch を映す端末
+./hosts/signage/setup.sh                  # config.json の signage.defaultChannel
+SIGNAGE_CH=ch1 ./hosts/signage/setup.sh   # 別の Ch を映す端末
 ```
 
 以下は手作業でやる場合の内訳。
@@ -52,7 +48,7 @@ xset s noblank
 - `--autoplay-policy=no-user-gesture-required` … **必須。** サイネージページの
   `<video>` は音声を出すため `muted` を付けていない。ブラウザは音声のある自動再生を
   ユーザー操作なしでは許可しないため、この指定が無いと再生が始まらない。
-- `--check-for-update-interval` … 会期中に更新ダイアログが出るのを防ぐ。
+- `--check-for-update-interval` … 運転中に更新ダイアログが出るのを防ぐ。
 
 ### 自動起動（systemd user service）
 
@@ -73,20 +69,20 @@ sudo loginctl enable-linger "$USER"   # 未ログインでも起動させる
 
 | 挙動 | 内容 |
 | --- | --- |
-| 配信開始前 | 「読み込み中…」を表示し、5 秒ごとに自動リトライする。開場前に端末だけ先に起動しておける |
-| 切断時 | 同上。復帰したら自動で再生を再開する |
+| その Ch が配信されていない | 「このチャンネルは配信されていません」を表示し、5 秒ごとに自動リトライする |
+| 配信サーバーへ届かない | 「接続できません」を表示する。復帰したら自動で再生を再開する |
 | 音声 | 常に音声ありで再生する。端末側で音量を調整する（§4） |
-| 公式サイト枠 | 5 分ごとに iframe を再読み込みし、お知らせの更新を拾う |
+| 埋め込み枠 | 5 分ごとに iframe を再読み込みし、更新を拾う |
 | 長時間運転 | 6 時間ごとに、再生していなければページをリロードする。配信中はリロードしない |
-| 時計 | 右上に時刻を表示する。端末の NTP が合っていることを確認しておくこと |
+| 時計 | 右上に端末の時刻を表示する |
 
 ## 4. 調整ポイント
 
-- 別 Ch を映したい端末には `?ch=ch1` を付ける（`/signage/?ch=ch1`）。
+- 別の Ch を映したい端末には `?ch=ch1` を付ける（`/signage/?ch=ch1`）。
   `setup.sh` は `SIGNAGE_CH` で指定できる。
-- 右カラムの幅と文字サイズは `app/src/routes/signage/+page.svelte` の `<style>` にある。
-  縦長ディスプレイや小さいパネルで見づらい場合はここを変更してビルドし直す。
-- 音量は端末側で調整する（`alsamixer` など）。設置場所によって音を出したくない
-  場合は端末を消音する。ページ側は常に音声ありで再生する。
+- 文字と余白の大きさは `app/src/styles/signage.css` の `.signage { font-size }` の 1 行が
+  決める。パネルの幅に対する比で書いてあるので、この値だけを変えれば全体が拡縮する。
+- 音量は端末側で調整する（`alsamixer` など）。ページ側に音量の設定は無く、常に音声
+  ありで再生する。
 
-設置前のチェック項目は Notion の「本番前チェックリスト §H」にある。
+設置前のチェック項目は Notion「本番前チェックリスト §H」にある。
