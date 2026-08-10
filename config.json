@@ -1,23 +1,25 @@
 {
   "_comment": [
     "配信の定義。複数のマシンに跨って一致している必要がある値をここに集約する。",
-    "読む側は次の 3 つで、いずれもこのファイルを直接参照する。",
-    "  app/     ビルド時に import され、視聴ページのタブとサイネージに埋め込まれる",
-    "  hosts/obs/srt-urls.sh          OBS に入力する SRT URL を生成する",
-    "  hosts/server/scripts/preflight.sh  mediamtx.yml の paths と突き合わせる",
+    "app とシェルスクリプトと tools が、いずれもこのファイルを直接参照する。",
+    "domain: 配信サイトのホスト名。",
+    "  Caddyfile だけは JSON を読めないため値を直接書いており、preflight.sh が",
+    "  このファイルと突き合わせる。",
+    "signage: ?ch= が付かない場合に映す Ch。",
     "channels:",
-    "  id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致させること。",
+    "  id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致する必要がある。",
     "  label は来場者に見せる唯一の文字列。id の ChN は運用側の呼称なので出さない。",
-    "  Ch2（第二体育館）は開催有無が未確定。無くなったら1要素消すだけでよい。",
     "externalSite: このリポジトリの外で運用されているサイト。視聴ページとサイネージが",
     "  iframe で埋め込み、別タブへのリンクも出す。高専祭の公式サイト（電算部 HP 部門）。",
-    "  embedUrl は iframe に出す URL、homeUrl は別タブで開く URL。",
-    "  2026 の /events（タイムテーブル）と /news（お知らせ）は 2026-08-04 時点で",
-    "  まだ 404。公開されたら embedUrl をそこへ向ける。"
+    "  embedUrl は iframe に出す URL、homeUrl は別タブで開く URL。"
   ],
+  "domain": "live.kosensai.ichinoseki.ac.jp",
   "externalSite": {
     "embedUrl": "https://kosensai.ichinoseki.ac.jp/",
     "homeUrl": "https://kosensai.ichinoseki.ac.jp/"
+  },
+  "signage": {
+    "defaultChannel": "ch4"
   },
   "channels": [
     {

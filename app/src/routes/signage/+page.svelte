@@ -4,10 +4,10 @@
   import Logo from '$lib/components/Logo.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import { setNowPlaying } from '$lib/mediaSession';
-  import { channels } from '$lib/config';
+  import { channels, domain, signage } from '$lib/config';
 
   const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先の更新を拾う
-  const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転のリーク対策（無人運用の保険）
+  const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間動かしたときのリーク対策
 
   const player = createPlayer();
 
@@ -25,7 +25,7 @@
 
     if (!videoEl) return;
     const detach = player.attach(videoEl);
-    const ch = new URLSearchParams(location.search).get('ch') ?? 'ch4';
+    const ch = new URLSearchParams(location.search).get('ch') ?? signage.defaultChannel;
     player.load(ch);
     setNowPlaying(channels.find((c) => c.id === ch)?.label ?? ch);
 
@@ -45,8 +45,7 @@
     };
   });
 
-  // 無人で運用するため、自動再生がブロックされても操作する人がいない。
-  // Kiosk は --autoplay-policy=no-user-gesture-required で起動すること。
+  // ブロックされても押す人がいないため、こちらから再開を試みる。
   $effect(() => {
     if (player.state === 'blocked') player.resume();
   });
@@ -61,10 +60,8 @@
   </header>
 
   <section class="stage">
-    <!-- muted を付けない。音声を出して設置するため。ユーザー操作の無い環境で
-         音ありの自動再生を通すには、Chromium を
-         --autoplay-policy=no-user-gesture-required で起動する必要がある。
-         signage.service に指定してある。 -->
+    <!-- muted を付けない。音声を出すため。ブラウザは音声のある自動再生を
+         ユーザー操作なしでは許可しないため、再生はブラウザ側の許可に依存する。 -->
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={videoEl} playsinline autoplay preload="none"></video>
 
@@ -87,7 +84,7 @@
     </span>
     <div class="invite-text">
       <strong>スマホでも視聴できます</strong>
-      <span>学内Wi-Fi限定 &nbsp;/&nbsp; <code>live.kosensai.ichinoseki.ac.jp</code></span>
+      <span>学内Wi-Fi限定 &nbsp;/&nbsp; <code>{domain}</code></span>
     </div>
   </div>
 

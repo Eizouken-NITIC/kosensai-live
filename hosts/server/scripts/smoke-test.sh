@@ -15,11 +15,12 @@ set -uo pipefail
 CH="${1:-ch1}"
 SECS="${2:-30}"
 HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
 cd "${HOST_DIR}"
 
 SRT_HOST="${SRT_HOST:-127.0.0.1}"
 SRT_PORT="${SRT_PORT:-8890}"
-DOMAIN="${DOMAIN:-live.kosensai.ichinoseki.ac.jp}"
+DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["domain"])' "${REPO_DIR}/config.json")}"
 JAR="$(mktemp)"
 
 # ⚠️ MediaMTX は最初のプレイリスト要求を ?cookieCheck=1 付き URL へ 302 し、

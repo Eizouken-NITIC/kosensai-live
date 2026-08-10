@@ -14,7 +14,7 @@ ExecStart=/usr/bin/chromium-browser \
   --disable-features=Translate \
   --check-for-update-interval=31536000 \
   --autoplay-policy=no-user-gesture-required \
-  https://live.kosensai.ichinoseki.ac.jp/signage/
+  @@SIGNAGE_URL@@
 Restart=always
 RestartSec=5
 

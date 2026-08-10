@@ -55,24 +55,42 @@ else
 fi
 
 echo
-echo "== mediamtx.yml と config.json のチャンネル定義が一致しているか =="
+echo "== config.json と他の設定が一致しているか =="
 if command -v python3 >/dev/null; then
   if python3 - "${REPO_DIR}" <<'PY'
 import json, re, sys, pathlib
 repo = pathlib.Path(sys.argv[1])
+conf = json.loads((repo / "config.json").read_text(encoding="utf-8"))
+ok = True
+
+def line(status, color, text):
+    print("  \033[%sm%s\033[0m   %s" % (color, status, text))
+
 yml  = (repo / "hosts/server/mediamtx.yml").read_text(encoding="utf-8")
 body = yml.split("\npaths:", 1)[1] if "\npaths:" in yml else ""
 mtx  = set(re.findall(r"^  ([A-Za-z0-9_-]+):\s*$", body, re.M))
-web  = {c["id"] for c in json.loads((repo / "config.json").read_text(encoding="utf-8"))["channels"]}
+web  = {c["id"] for c in conf["channels"]}
 if mtx == web:
-    print("  \033[32mOK\033[0m   %s" % sorted(mtx))
+    line("OK", "32", "チャンネル定義 %s" % sorted(mtx))
 else:
-    print("  \033[31mNG\033[0m   mediamtx.yml=%s / config.json=%s" % (sorted(mtx), sorted(web)))
-    sys.exit(1)
+    line("NG", "31", "mediamtx.yml=%s / config.json=%s" % (sorted(mtx), sorted(web)))
+    ok = False
+
+# Caddyfile は JSON を読めないためホスト名を直接書いている。ずれると証明書と
+# site が一致せず、ページが出ない。
+caddy = (repo / "hosts/server/Caddyfile").read_text(encoding="utf-8")
+hosts = set(re.findall(r"^([A-Za-z0-9.-]+\.[A-Za-z]{2,})\s*\{", caddy, re.M))
+if hosts == {conf["domain"]}:
+    line("OK", "32", "ホスト名 %s" % conf["domain"])
+else:
+    line("NG", "31", "Caddyfile=%s / config.json=%s" % (sorted(hosts), conf["domain"]))
+    ok = False
+
+sys.exit(0 if ok else 1)
 PY
   then :; else FAIL=1; fi
 else
-  warn "python3 が無いためチャンネル定義の突き合わせをスキップ"
+  warn "python3 が無いため config.json の突き合わせをスキップ"
 fi
 
 echo

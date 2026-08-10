@@ -14,6 +14,7 @@ JS ライブラリは使わず、静的な SVG を配置する方針を採って
     /tmp/qrenv/bin/python tools/make-qr.py
 """
 
+import json
 import pathlib
 import sys
 
@@ -22,8 +23,9 @@ try:
 except ImportError:
     sys.exit("segno が要る: pip install segno")
 
-URL = "https://live.kosensai.ichinoseki.ac.jp/"
-OUT = pathlib.Path(__file__).resolve().parent.parent / "app/static/assets/qr-viewer.svg"
+REPO = pathlib.Path(__file__).resolve().parent.parent
+URL = "https://" + json.loads((REPO / "config.json").read_text(encoding="utf-8"))["domain"] + "/"
+OUT = REPO / "app/static/assets/qr-viewer.svg"
 
 # error='m' … 15% の誤り訂正。サイネージは離れて読むので少し余裕を持たせる。
 # border=2   … 静音域。規格の推奨は 4 だが、画面表示なら 2 で十分読める。

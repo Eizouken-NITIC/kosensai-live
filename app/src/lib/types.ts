@@ -21,6 +21,11 @@ export type ExternalSite = {
   homeUrl: string;
 };
 
+export type Signage = {
+  /** ?ch= が付かない場合に映す Ch。 */
+  defaultChannel: string;
+};
+
 /**
  * 再生の状態。
  *

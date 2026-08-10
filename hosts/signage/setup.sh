@@ -2,13 +2,14 @@
 # サイネージ端末（Raspberry Pi + Chromium Kiosk）のセットアップ。
 # 端末上で実行する。
 #
-#   ./setup.sh                 # 既定 (Ch4)
+#   ./setup.sh                 # config.json の signage.defaultChannel
 #   SIGNAGE_CH=ch1 ./setup.sh  # 別 Ch を映す端末
 
 set -euo pipefail
 
 HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOMAIN="${DOMAIN:-live.kosensai.ichinoseki.ac.jp}"
+REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
+DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["domain"])' "${REPO_DIR}/config.json")}"
 SIGNAGE_CH="${SIGNAGE_CH:-}"
 
 URL="https://${DOMAIN}/signage/"
@@ -32,7 +33,7 @@ EOF
 echo
 echo "== systemd user service =="
 mkdir -p "${HOME}/.config/systemd/user"
-sed "s|https://live.kosensai.ichinoseki.ac.jp/signage/|${URL}|" \
+sed "s|@@SIGNAGE_URL@@|${URL}|" \
   "${HOST_DIR}/signage.service" > "${HOME}/.config/systemd/user/signage.service"
 
 systemctl --user daemon-reload

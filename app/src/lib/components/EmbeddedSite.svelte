@@ -1,8 +1,7 @@
 <script lang="ts">
   import { externalSite } from '$lib/config';
 
-  /* allowPopups: 埋め込んだページ内のリンクを新しいタブで開けるようにする。
-     開いたタブを閉じる人がいない無人の設置では false のままにする。 */
+  /* allowPopups: 埋め込んだページ内のリンクを新しいタブで開けるようにする。 */
   let { allowPopups = false, withLink = false }: { allowPopups?: boolean; withLink?: boolean } =
     $props();
 

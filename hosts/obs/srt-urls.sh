@@ -6,8 +6,6 @@
 #
 #   ./srt-urls.sh                       # MediaMTX と OBS が同一ホスト
 #   MTX_HOST=10.1.2.3 ./srt-urls.sh     # 別ホストの場合
-#
-# ⚠️ 出力にはパスフレーズがそのまま含まれる。画面共有・Slack 貼り付けに注意。
 
 set -euo pipefail
 
@@ -32,7 +30,9 @@ python3 - "${CHANNELS}" "${MTX_HOST}" "${MTX_PORT}" "${OBS_HOST}" "${OUT_LATENCY
 import json, os, sys
 
 path, mtx_host, mtx_port, obs_host, out_latency = sys.argv[1:6]
-chans = json.load(open(path, encoding="utf-8"))["channels"]
+conf = json.load(open(path, encoding="utf-8"))
+chans = conf["channels"]
+domain = conf["domain"]
 
 def passphrase(cid):
     return os.environ.get(f"MTX_PATHS_{cid.upper()}_SRTPUBLISHPASSPHRASE", "<未設定>")
@@ -65,8 +65,6 @@ print("=" * 72)
 print(" 3. 視聴 URL")
 print("=" * 72)
 for c in chans:
-    print(f"  {c['label']:<18} https://live.kosensai.ichinoseki.ac.jp/?ch={c['id']}")
-print(f"  {'サイネージ':<16} https://live.kosensai.ichinoseki.ac.jp/signage/")
-print()
-print("⚠️ この出力にはパスフレーズが含まれます。取り扱い注意。")
+    print(f"  {c['label']:<18} https://{domain}/?ch={c['id']}")
+print(f"  {'サイネージ':<16} https://{domain}/signage/")
 PY

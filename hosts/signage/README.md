@@ -43,17 +43,11 @@ xset s noblank
 
 ## 2. Chromium の起動
 
-```bash
-chromium-browser \
-  --kiosk \
-  --noerrdialogs \
-  --disable-infobars \
-  --disable-session-crashed-bubble \
-  --disable-features=Translate \
-  --check-for-update-interval=31536000 \
-  --autoplay-policy=no-user-gesture-required \
-  "https://live.kosensai.ichinoseki.ac.jp/signage/"
-```
+起動フラグと URL は [signage.service](signage.service) にある。URL は
+`@@SIGNAGE_URL@@` のままで、`setup.sh` がリポジトリ直下の `config.json` の `domain`
+と `SIGNAGE_CH` から組み立てて埋める。
+
+フラグのうち 2 つは、外すと動かなくなる。
 
 - `--autoplay-policy=no-user-gesture-required` … **必須。** サイネージページの
   `<video>` は音声を出すため `muted` を付けていない。ブラウザは音声のある自動再生を
@@ -62,27 +56,12 @@ chromium-browser \
 
 ### 自動起動（systemd user service）
 
-`~/.config/systemd/user/signage.service`:
-
-```ini
-[Unit]
-Description=Kosensai signage kiosk
-After=graphical-session.target
-
-[Service]
-Environment=DISPLAY=:0
-ExecStart=/usr/bin/chromium-browser --kiosk --noerrdialogs --disable-infobars \
-  --disable-session-crashed-bubble --check-for-update-interval=31536000 \
-  --autoplay-policy=no-user-gesture-required \
-  https://live.kosensai.ichinoseki.ac.jp/signage/
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=default.target
-```
+`setup.sh` が `~/.config/systemd/user/signage.service` を生成して有効化する。
+手作業で行う場合は次を実行する。
 
 ```bash
+sed "s|@@SIGNAGE_URL@@|https://<domain>/signage/|" signage.service \
+  > ~/.config/systemd/user/signage.service
 systemctl --user daemon-reload
 systemctl --user enable --now signage
 sudo loginctl enable-linger "$USER"   # 未ログインでも起動させる
