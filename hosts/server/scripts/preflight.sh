@@ -15,7 +15,7 @@ warn() { printf '  \033[33mWARN\033[0m %s\n' "$1"; }
 ng()   { printf '  \033[31mNG\033[0m   %s\n' "$1"; FAIL=1; }
 
 echo "== 配信サーバー設定 (hosts/server/) =="
-for f in mediamtx.yml Caddyfile docker-compose.yml; do
+for f in mediamtx.yml Caddyfile compose.yml; do
   [[ -f "$f" ]] && ok "$f" || ng "$f が無い"
 done
 

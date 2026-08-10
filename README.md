@@ -42,7 +42,7 @@ kosensai-broadcast/
 ├─ config.json                ★ 複数のマシンに跨って一致が必要な値の唯一の情報源
 ├─ hosts/                     ★ マシンごと。ここがデプロイ単位
 │  ├─ server/                 配信サーバー（MediaMTX + Caddy）
-│  │  ├─ docker-compose.yml / mediamtx.yml / Caddyfile / .env.example
+│  │  ├─ compose.yml / mediamtx.yml / Caddyfile / .env.example
 │  │  ├─ certs/               証明書置き場（git 管理外）
 │  │  └─ scripts/             preflight / get-cert / smoke-test
 │  ├─ obs/                    本部の PC
@@ -100,10 +100,10 @@ pnpm build
 
 | キー | 内容 |
 | --- | --- |
-| `domain` | 配信サイトのホスト名 |
+| `site` | 配信サイトの名前とホスト名 |
 | `channels` | Ch の id・表示名・OBS の待受ポート・SRT の latency・ビットレート |
-| `externalSite` | 視聴ページとサイネージが iframe で埋め込む外部サイトの URL |
-| `signage` | サイネージページの既定チャンネル |
+| `externalSite` | 視聴ページとサイネージが iframe で埋め込む外部サイトの表示名と URL |
+| `signage` | サイネージページの既定チャンネルと、QR の脇に出す文言 |
 
 `app/` はビルド時に import し、`hosts/` のスクリプトと `tools/make-qr.py` は実行時に
 読む。**`Caddyfile` だけは Caddy の設定であり JSON を読めないためホスト名を直接持って

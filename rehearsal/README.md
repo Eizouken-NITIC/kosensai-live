@@ -118,7 +118,7 @@ sudo sed -i '' "/${DOMAIN//./\\.}/d" /etc/hosts
 
 | ファイル | 内容 |
 | --- | --- |
-| `docker-compose.yml` | MediaMTX + Caddy + プレビュー入口 + テストパターン送出 4 本 |
+| `compose.yml` | MediaMTX + Caddy + プレビュー入口 + テストパターン送出 4 本 |
 | `publisher.Dockerfile` | テストパターン送出用の ffmpeg。フォントを追加して `drawtext` を使えるようにする |
 | `publish.sh` | 1 チャンネル分の送出。カラーバー・基準音・チャンネル名・経過時刻を組み立てる |
 | `preview.Caddyfile` | `localhost:8080` 用の入口。Host を付け替えて本番 Caddy に渡す |

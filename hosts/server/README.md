@@ -4,7 +4,7 @@ MediaMTX（SRT 受信 → HLS 生成）と Caddy（TLS 終端・静的配信・�
 Docker Compose で動かすマシン。
 
 このディレクトリの中身だけがこのマシンにデプロイされる。配信サイト本体はリポジトリ
-直下の `web/` にあり、`docker-compose.yml` から `../../web` としてマウントしている。
+直下の `web/` にあり、`compose.yml` から `../../web` としてマウントしている。
 
 ```
                    SRT :8890                    HLS 127.0.0.1:8888
@@ -78,7 +78,7 @@ docker compose restart mediamtx             # mediamtx.yml の変更を反映
 
 | ファイル | 内容 |
 | --- | --- |
-| `docker-compose.yml` | MediaMTX + Caddy。どちらも `network_mode: host` |
+| `compose.yml` | MediaMTX + Caddy。どちらも `network_mode: host` |
 | `mediamtx.yml` | SRT 受信・HLS 生成。**パスフレーズは含まない**（`.env` から注入） |
 | `Caddyfile` | TLS 終端、`/hls/*` のリバースプロキシ、`web/` の静的配信 |
 | `.env.example` | パスフレーズのテンプレート。`.env` は git 管理外 |
