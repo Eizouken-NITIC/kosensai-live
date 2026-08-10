@@ -9,8 +9,6 @@ export type Channel = {
   obsListenPort: number | null;
   srtLatencyUs: number | null;
   bitrateKbps: number;
-  /** 映像の出どころを表す。srt-urls.sh の出力に使う。 */
-  source: string;
 };
 
 export type Site = {

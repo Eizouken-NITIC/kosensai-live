@@ -69,8 +69,7 @@ export async function startOnboarding(): Promise<void> {
         element: '.topbar nav',
         popover: {
           title: '会場の切り替え',
-          description:
-            '画面の上部に、配信している会場がタブで並んでいます。見たい会場を選ぶと、その場所の映像へ切り替わります。何度でも行き来できます。',
+          description: '見たい会場を選ぶと、その場所の映像を見ることができます。',
           side: 'bottom',
           align: 'start',
         },
@@ -80,7 +79,7 @@ export async function startOnboarding(): Promise<void> {
         popover: {
           title: '音声',
           description:
-            '音声を消した状態で再生を始めています。このボタンを押すと音が出ます。となりのつまみで音量を調整できますので、周りのご迷惑にならない大きさでお楽しみください。',
+            '音声の調整はこちらで行なってください。最初はミュートになっているので、解除をお忘れなく。',
           side: 'top',
           align: 'start',
         },
