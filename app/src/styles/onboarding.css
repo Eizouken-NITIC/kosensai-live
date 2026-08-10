@@ -19,9 +19,9 @@ html.tour .page .topbar {
 /* 浮かぶカードではなく、映像の上に重ねたもう 1 枚の面として置く。 */
 .driver-popover.onboarding {
   max-width: 24em;
-  /* driver.js は吹き出しの高さを見ないため、本文が長いと画面の外へ出る。中で送らせる。 */
+  /* 段落の多い文でも画面から出ないようにし、収まらない分は中で送る */
   max-height: calc(100dvh - 2 * var(--sp-4));
-  overflow-y: auto;
+  overflow: auto;
   padding: var(--sp-4);
   border: 1px solid var(--line);
   border-radius: 0;
@@ -39,10 +39,13 @@ html.tour .page .topbar {
 .driver-popover.onboarding .driver-popover-title[style*='block'] + .driver-popover-description {
   margin-top: var(--sp-2);
 }
+/* 文言は config.json が持ち、段落は改行文字で分かれている。driver.js は文言を innerHTML
+   へ入れるため、文言側にタグを置かずにここで改行を出す。 */
 .driver-popover.onboarding .driver-popover-description {
   color: var(--fg-muted);
   font-size: var(--fs-sm);
   line-height: 1.7;
+  white-space: pre-line;
 }
 
 .driver-popover.onboarding .driver-popover-footer {
