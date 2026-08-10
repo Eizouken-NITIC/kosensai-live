@@ -37,15 +37,6 @@
   const panelMax = $derived(Math.round(winWidth * PANEL_MAX_RATIO));
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
-  let hintTimer: ReturnType<typeof setTimeout> | undefined;
-
-  /* 初回の案内を読み終えた時点から数える。案内を出している間に消えると、初めての来場者
-     にだけ吹き出しが届かない。案内を出さない場合は読み込み直後に呼ばれる。 */
-  function startMuteHint() {
-    muteHint = videoEl?.muted ?? true;
-    clearTimeout(hintTimer);
-    hintTimer = setTimeout(() => (muteHint = false), MUTE_HINT_MS);
-  }
 
   // 映像未配信時にUIを固定表示するためのフラグ
   const pinned = $derived(!player.isLive);
@@ -125,6 +116,9 @@
       if (!v.muted) muteHint = false;
     };
     v.addEventListener('volumechange', onVolumeChange);
+
+    muteHint = v.muted;
+    const hintTimer = setTimeout(() => (muteHint = false), MUTE_HINT_MS);
 
     let initial = new URLSearchParams(location.search).get('ch');
     if (!initial) {
@@ -249,5 +243,5 @@
     <EmbeddedSite allowPopups withLink />
   </aside>
 
-  <Welcome onDone={startMuteHint} />
+  <Welcome />
 </div>

@@ -3,10 +3,6 @@
   import Logo from './Logo.svelte';
   import { welcome } from '$lib/config';
 
-  /* onDone: 案内を読み終えた時点で呼ぶ。案内を出さない場合は読み込み直後に呼ぶ。
-     呼び出し側はこれを合図にミュートの吹き出しを出す。 */
-  let { onDone }: { onDone: () => void } = $props();
-
   const STORE_KEY = 'welcomeSeen';
 
   let el = $state<HTMLDialogElement | null>(null);
@@ -21,10 +17,7 @@
   }
 
   onMount(() => {
-    if (seen()) {
-      onDone();
-      return;
-    }
+    if (seen()) return;
     // top layer へ上げるため showModal を使う。開いている間は背後の操作を受け付けない。
     el?.showModal();
   });
@@ -36,7 +29,6 @@
     } catch {
       /* ローカルストレージ無効時 */
     }
-    onDone();
   }
 </script>
 
@@ -51,7 +43,7 @@
 
     <dt>音声</dt>
     <dd>
-      音声は消音の状態で再生を始めます。映像の下にあるスピーカーのボタンを押すと消音が解除され、隣のつまみで音量を調整できます。
+      音声は消音の状態で始まります。映像の下にあるスピーカーのボタンを押して、消音を解除してください。隣のつまみで音量を調整できます。
     </dd>
 
     <dt>視聴の条件</dt>
