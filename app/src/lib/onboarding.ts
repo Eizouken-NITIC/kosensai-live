@@ -70,7 +70,7 @@ export async function startOnboarding(): Promise<void> {
         popover: {
           title: '会場の切り替え',
           description:
-            '上部のタブを選択すると、配信する会場を切り替えられます。見たいステージや全体の様子など、お好きなチャンネルをお選びください。',
+            'タブを選んで、各会場のライブ映像を切り替えられます。気になるステージや企画の様子をここから自由に巡ってみてください。',
           side: 'bottom',
           align: 'start',
         },
@@ -78,9 +78,9 @@ export async function startOnboarding(): Promise<void> {
       {
         element: 'media-mute-button',
         popover: {
-          title: '音声を出すにはここを押す',
+          title: '音声の再生と音量調節',
           description:
-            'ブラウザの仕様により、最初は消音（ミュート）で再生が始まります。このボタンを押して消音を解除し、隣のつまみで音量を調整してください。',
+            'ブラウザの仕様により最初は消音（ミュート）で再生されます。このボタンを押すと音声が流れ、隣のつまみで音量を調整できます。',
           side: 'top',
           align: 'start',
         },
