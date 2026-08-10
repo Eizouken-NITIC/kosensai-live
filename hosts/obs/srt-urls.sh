@@ -19,9 +19,9 @@ MTX_PORT="${MTX_PORT:-8890}"
 OBS_HOST="${OBS_HOST:-<OBSマシンのIP>}"
 OUT_LATENCY="${OUT_LATENCY:-120000}"
 
-[[ -f "${ENV_FILE}"  ]] || { echo "パスフレーズが読めない: ${ENV_FILE}" >&2; exit 1; }
-[[ -f "${CHANNELS}"  ]] || { echo "チャンネル定義が無い: ${CHANNELS}" >&2; exit 1; }
-command -v python3 >/dev/null || { echo "python3 が必要" >&2; exit 1; }
+[[ -f "${ENV_FILE}"  ]] || { echo "パスフレーズを読めません: ${ENV_FILE}" >&2; exit 1; }
+[[ -f "${CHANNELS}"  ]] || { echo "チャンネル定義がありません: ${CHANNELS}" >&2; exit 1; }
+command -v python3 >/dev/null || { echo "python3 が必要です" >&2; exit 1; }
 
 # shellcheck disable=SC1090
 set -a; source "${ENV_FILE}"; set +a

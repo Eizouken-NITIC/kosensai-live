@@ -224,7 +224,7 @@
     {:else if player.state === 'unsupported'}
       <div class="cover" role="status">
         <p>このブラウザでは再生できません</p>
-        <small>Safari / Chrome の最新版でお試しください</small>
+        <small>ブラウザの最新版でお試しください</small>
       </div>
     {/if}
   </section>
