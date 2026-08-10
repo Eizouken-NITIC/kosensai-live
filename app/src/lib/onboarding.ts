@@ -1,7 +1,7 @@
 /* 初めて視聴ページを開いた人へ、実際の要素を指しながら画面の読み方を伝える。
  *
- * どのステップも実在する要素を指す。driver.js は要素を指定しないステップに対して
- * 画面の中央へ大きさの無い切り抜きを作るため、何も無い場所が照らされることになる。 */
+ * 最初のステップだけは指す先を持たず、画面の中央に置く。driver.js は要素を指定しない
+ * ステップに対して 0×0 の要素を画面の中央へ作り、それを基準に吹き出しを置く。 */
 
 import { externalSite, welcome } from './config';
 
@@ -13,7 +13,9 @@ const OVERLAY_COLOR = '#000';
 const OVERLAY_OPACITY = 0.7;
 /* 面を角丸で切らない画面なので、切り抜きも角を落とさない。 */
 const STAGE_RADIUS = 0;
-const STAGE_PADDING = 6;
+/* 切り抜きを要素の箱ちょうどに合わせる。余白を持たせると、指す先を持たないステップで
+   中央の 0×0 の要素がその余白の分だけ明るく抜ける。 */
+const STAGE_PADDING = 0;
 
 function seen(): boolean {
   try {
@@ -57,12 +59,9 @@ export async function startOnboarding(): Promise<void> {
     },
     steps: [
       {
-        element: '.topbar .logo',
         popover: {
           title: 'はじめてご覧になる方へ',
           description: welcome.description,
-          side: 'bottom',
-          align: 'start',
         },
       },
       {
