@@ -34,7 +34,9 @@ export type ExternalSite = {
 
 /** 視聴ページを初めて開いた人へ出す案内のうち、運用ごとに変わる部分を表す。 */
 export type Welcome = {
-  /** 案内の最初に読ませる文である。 */
+  /** 案内の最初に読ませる見出しである。 */
+  title: string;
+  /** その下に置く文である。 */
   description: string;
 };
 

@@ -59,7 +59,7 @@ export async function startOnboarding(): Promise<void> {
       {
         element: '.topbar .logo',
         popover: {
-          title: 'はじめてご覧になる方へ',
+          title: welcome.title,
           description: welcome.description,
           side: 'bottom',
           align: 'start',
@@ -70,7 +70,7 @@ export async function startOnboarding(): Promise<void> {
         popover: {
           title: '会場の切り替え',
           description:
-            '画面の上部に、配信している会場がタブで並んでいます。見たい会場を選ぶと、その場所の映像へ切り替わります。何度でも行き来できます。',
+            '上部のタブを選択すると、配信する会場を切り替えられます。見たいステージや全体の様子など、お好きなチャンネルをお選びください。',
           side: 'bottom',
           align: 'start',
         },
@@ -78,9 +78,9 @@ export async function startOnboarding(): Promise<void> {
       {
         element: 'media-mute-button',
         popover: {
-          title: '音声',
+          title: '音声を出すにはここを押す',
           description:
-            '音声を消した状態で再生を始めています。このボタンを押すと音が出ます。となりのつまみで音量を調整できますので、周りのご迷惑にならない大きさでお楽しみください。',
+            'ブラウザの仕様により、最初は消音（ミュート）で再生が始まります。このボタンを押して消音を解除し、隣のつまみで音量を調整してください。',
           side: 'top',
           align: 'start',
         },
