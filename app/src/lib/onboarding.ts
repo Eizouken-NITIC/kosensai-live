@@ -60,7 +60,7 @@ export async function startOnboarding(): Promise<void> {
         element: '.topbar .logo',
         popover: {
           title: 'はじめてご覧になる方へ',
-          description: `会場の映像を配信しています。${welcome.note}`,
+          description: welcome.description,
           side: 'bottom',
           align: 'start',
         },
@@ -69,7 +69,8 @@ export async function startOnboarding(): Promise<void> {
         element: '.topbar nav',
         popover: {
           title: '会場の切り替え',
-          description: 'タブを選ぶと、その会場の映像へ切り替わります。',
+          description:
+            '画面の上部に、配信している会場がタブで並んでいます。見たい会場を選ぶと、その場所の映像へ切り替わります。何度でも行き来できます。',
           side: 'bottom',
           align: 'start',
         },
@@ -79,7 +80,7 @@ export async function startOnboarding(): Promise<void> {
         popover: {
           title: '音声',
           description:
-            '音声は消音の状態で始まります。このボタンを押すと音が出ます。隣のつまみで音量を調整できます。',
+            '音声を消した状態で再生を始めています。このボタンを押すと音が出ます。となりのつまみで音量を調整できますので、周りのご迷惑にならない大きさでお楽しみください。',
           side: 'top',
           align: 'start',
         },
