@@ -19,6 +19,9 @@ html.tour .page .topbar {
 /* 浮かぶカードではなく、映像の上に重ねたもう 1 枚の面として置く。 */
 .driver-popover.onboarding {
   max-width: 24em;
+  /* driver.js は吹き出しの高さを見ないため、本文が長いと画面の外へ出る。中で送らせる。 */
+  max-height: calc(100dvh - 2 * var(--sp-4));
+  overflow-y: auto;
   padding: var(--sp-4);
   border: 1px solid var(--line);
   border-radius: 0;
