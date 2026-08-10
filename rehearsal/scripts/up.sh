@@ -64,5 +64,4 @@ cat <<EOS
 
  本番と同じホスト名・TLS で開きたい場合は、/etc/hosts に
  「127.0.0.1 ${DOMAIN}」を追記して https://${DOMAIN}:${PORT}/ を開いてください。
- 見た目の確認だけなら上の localhost で足ります。
 EOS
