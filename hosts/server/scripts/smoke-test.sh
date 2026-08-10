@@ -20,7 +20,7 @@ cd "${HOST_DIR}"
 
 SRT_HOST="${SRT_HOST:-127.0.0.1}"
 SRT_PORT="${SRT_PORT:-8890}"
-DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["domain"])' "${REPO_DIR}/config.json")}"
+DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["site"]["domain"])' "${REPO_DIR}/config.json")}"
 JAR="$(mktemp)"
 
 # ⚠️ MediaMTX は最初のプレイリスト要求を ?cookieCheck=1 付き URL へ 302 し、

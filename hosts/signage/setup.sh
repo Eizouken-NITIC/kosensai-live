@@ -9,7 +9,7 @@ set -euo pipefail
 
 HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
-DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["domain"])' "${REPO_DIR}/config.json")}"
+DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["site"]["domain"])' "${REPO_DIR}/config.json")}"
 SIGNAGE_CH="${SIGNAGE_CH:-}"
 
 URL="https://${DOMAIN}/signage/"

@@ -1,12 +1,12 @@
 /** OS の再生通知（ロック画面・通知領域）に出す情報を設定する。
  *
  * 設定しない場合、表題にはページの URL が出る。 */
-export function setNowPlaying(title: string): void {
+export function setNowPlaying(title: string, artist: string): void {
   if (!('mediaSession' in navigator)) return;
 
   navigator.mediaSession.metadata = new MediaMetadata({
     title,
-    artist: 'KOSENSAI-LIVE',
+    artist,
   });
 
   // ライブ配信であり、先頭からの経過時間と全体の長さに意味がない。

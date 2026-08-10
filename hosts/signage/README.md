@@ -4,9 +4,6 @@
 ソースは `app/src/routes/signage/+page.svelte` にある。映すチャンネルの既定は
 `config.json` の `signage.defaultChannel`。
 
-> private → private のアクセスなので Chrome の LNA（Local Network Access）の
-> 対象外。Chromium 側のポリシー配布など特殊設定は不要。
-
 ## 0. まとめてセットアップする
 
 端末上でリポジトリを clone し、次を実行すれば §1〜§2 は自動で入る。

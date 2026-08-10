@@ -44,18 +44,15 @@ docker compose logs -f mediamtx    # 受信状況・publish 拒否の理由
 
 ### ブラウザで開く
 
-**`/etc/hosts` の変更も証明書の警告も要らない。**
-
 | | URL |
 | --- | --- |
 | 視聴ページ | `http://localhost:8080/` |
 | サイネージ | `http://localhost:8080/signage/` |
 | Ch 直接開き | `http://localhost:8080/?ch=ch3` |
 
-本番の `Caddyfile` はホスト名 `live.kosensai.ichinoseki.ac.jp` で site を
-マッチするので、素直にやると `/etc/hosts` への追記が要る。だが**消し忘れると
-本番の DNS が引けなくなって事故る**ので、Host ヘッダを付け替えるだけの入口
-（`preview.Caddyfile`）を別に立ててある。
+本番の `Caddyfile` はホスト名で site をマッチするため、そのまま開くには `/etc/hosts`
+への追記が要る。消し忘れると本番のホスト名が引けなくなるので、Host ヘッダを付け替える
+だけの入口（`preview.Caddyfile`）を別に立ててある。
 
 ```
 http://localhost:8080/  →  Host を付け替え  →  https://127.0.0.1:443（本番の Caddy）
@@ -70,11 +67,12 @@ MediaMTX が張る `Secure` 属性付きの Cookie もそのまま通る。
 ホスト名マッチと TLS 自体を目で見たいときだけ使う。
 
 ```bash
-echo '127.0.0.1 live.kosensai.ichinoseki.ac.jp' | sudo tee -a /etc/hosts
-# → https://live.kosensai.ichinoseki.ac.jp:8443/ （証明書警告は「詳細」→「アクセスする」）
+DOMAIN=$(python3 -c 'import json;print(json.load(open("../config.json"))["site"]["domain"])')
+echo "127.0.0.1 ${DOMAIN}" | sudo tee -a /etc/hosts
+# → https://${DOMAIN}:8443/ （証明書警告は「詳細」→「アクセスする」）
 
 # 終わったら必ず消す
-sudo sed -i '' '/live\.kosensai\.ichinoseki\.ac\.jp/d' /etc/hosts
+sudo sed -i '' "/${DOMAIN//./\\.}/d" /etc/hosts
 ```
 
 </details>

@@ -3,14 +3,14 @@
  * 名前付き import にすると、参照していない _comment がバンドルへ入らない。 */
 
 import {
-  domain as rawDomain,
+  site as rawSite,
   channels as rawChannels,
   externalSite as rawExternalSite,
   signage as rawSignage,
 } from '../../../config.json';
-import type { Channel, ExternalSite, Signage } from './types';
+import type { Channel, ExternalSite, Signage, Site } from './types';
 
-export const domain: string = rawDomain;
+export const site: Site = rawSite;
 export const channels: Channel[] = rawChannels;
 export const externalSite: ExternalSite = rawExternalSite;
 export const signage: Signage = rawSignage;

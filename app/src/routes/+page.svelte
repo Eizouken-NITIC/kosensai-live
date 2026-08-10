@@ -5,10 +5,10 @@
   import { setNowPlaying } from '$lib/mediaSession';
   import Logo from '$lib/components/Logo.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
-  import { channels } from '$lib/config';
+  import { channels, site } from '$lib/config';
 
   const DEFAULT_CH = 'ch1';
-  const STORE_KEY = 'kosensai.ch';
+  const STORE_KEY = 'selectedChannel';
   const OVERLAY_HIDE_MS = 2000;
 
   const PANEL_INITIAL = 360;
@@ -46,8 +46,8 @@
     const ch = channels.find((c) => c.id === id) ?? channels[0];
     if (!ch) return;
     current = ch.id;
-    document.title = `${ch.label} | KOSENSAI-LIVE`;
-    setNowPlaying(ch.label);
+    document.title = `${ch.label} | ${site.name}`;
+    setNowPlaying(ch.label, site.name);
     if (updateUrl) history.replaceState(null, '', `?ch=${ch.id}`);
     try {
       localStorage.setItem(STORE_KEY, ch.id);
@@ -136,7 +136,7 @@
   });
 </script>
 
-<svelte:head><title>KOSENSAI-LIVE</title></svelte:head>
+<svelte:head><title>{site.name}</title></svelte:head>
 
 <!-- section に付けると a11y_no_static_element_interactions が出るので body で受ける -->
 <svelte:body onmousemove={showOverlay} onpointerdown={showOverlay} onfocusin={showOverlay} />

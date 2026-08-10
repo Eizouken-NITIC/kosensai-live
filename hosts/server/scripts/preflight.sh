@@ -80,10 +80,10 @@ else:
 # site が一致せず、ページが出ない。
 caddy = (repo / "hosts/server/Caddyfile").read_text(encoding="utf-8")
 hosts = set(re.findall(r"^([A-Za-z0-9.-]+\.[A-Za-z]{2,})\s*\{", caddy, re.M))
-if hosts == {conf["domain"]}:
-    line("OK", "32", "ホスト名 %s" % conf["domain"])
+if hosts == {conf["site"]["domain"]}:
+    line("OK", "32", "ホスト名 %s" % conf["site"]["domain"])
 else:
-    line("NG", "31", "Caddyfile=%s / config.json=%s" % (sorted(hosts), conf["domain"]))
+    line("NG", "31", "Caddyfile=%s / config.json=%s" % (sorted(hosts), conf["site"]["domain"]))
     ok = False
 
 sys.exit(0 if ok else 1)

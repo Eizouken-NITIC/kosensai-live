@@ -4,7 +4,7 @@
   import Logo from '$lib/components/Logo.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import { setNowPlaying } from '$lib/mediaSession';
-  import { channels, domain, signage } from '$lib/config';
+  import { channels, signage, site } from '$lib/config';
 
   const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先の更新を拾う
   const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間動かしたときのリーク対策
@@ -21,7 +21,7 @@
 
   let clock = $state('--:--');
   let videoEl = $state<HTMLVideoElement | null>(null);
-  let site = $state<ReturnType<typeof EmbeddedSite> | null>(null);
+  let embed = $state<ReturnType<typeof EmbeddedSite> | null>(null);
 
   function tick() {
     const d = new Date();
@@ -35,12 +35,12 @@
     const detach = player.attach(videoEl);
     const ch = new URLSearchParams(location.search).get('ch') ?? signage.defaultChannel;
     player.load(ch);
-    setNowPlaying(channels.find((c) => c.id === ch)?.label ?? ch);
+    setNowPlaying(channels.find((c) => c.id === ch)?.label ?? ch, site.name);
 
     tick();
     const timers = [
       setInterval(tick, 5000),
-      setInterval(() => site?.reload(), IFRAME_RELOAD_MS),
+      setInterval(() => embed?.reload(), IFRAME_RELOAD_MS),
       // 再生中はリロードしない
       setInterval(() => {
         if (videoEl?.paused || (videoEl?.readyState ?? 0) < 3) location.reload();
@@ -59,7 +59,7 @@
   });
 </script>
 
-<svelte:head><title>KOSENSAI-LIVE サイネージ</title></svelte:head>
+<svelte:head><title>{site.name} サイネージ</title></svelte:head>
 
 <div class="signage screen">
   <header class="bar">
@@ -89,12 +89,12 @@
       <img src="/assets/qr-viewer.svg" alt="視聴ページの QR コード" />
     </span>
     <div class="invite-text">
-      <strong>スマホでも視聴できます</strong>
-      <span>学内Wi-Fi限定 &nbsp;/&nbsp; <code>{domain}</code></span>
+      <strong>{signage.inviteHeading}</strong>
+      <span>{signage.inviteNote} &nbsp;/&nbsp; <code>{site.domain}</code></span>
     </div>
   </div>
 
   <aside class="panel">
-    <EmbeddedSite bind:this={site} />
+    <EmbeddedSite bind:this={embed} />
   </aside>
 </div>

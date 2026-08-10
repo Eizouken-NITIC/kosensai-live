@@ -14,7 +14,7 @@ set -euo pipefail
 HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
 DEST="${HOST_DIR}/certs"
-DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["domain"])' "${REPO_DIR}/config.json")}"
+DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["site"]["domain"])' "${REPO_DIR}/config.json")}"
 
 if [[ $EUID -ne 0 ]]; then
   echo "certbot と /etc/letsencrypt へのアクセスに root 権限が必要です。sudo で実行してください。" >&2

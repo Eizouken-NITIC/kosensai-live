@@ -13,9 +13,18 @@ export type Channel = {
   source: string;
 };
 
+export type Site = {
+  /** 各ページの title・ロゴの代替テキスト・OS の再生通知に出る名前。 */
+  name: string;
+  /** 配信サイトのホスト名。 */
+  domain: string;
+};
+
 /** このリポジトリの外で運用されているサイトの所在。iframe で埋め込み、リンクも出す。 */
 export type ExternalSite = {
-  /** iframe に出す URL。/events が公開されたらここを向ける。 */
+  /** 画面に出す表示名。 */
+  title: string;
+  /** iframe に出す URL。 */
   embedUrl: string;
   /** 別タブで開く URL。 */
   homeUrl: string;
@@ -24,6 +33,9 @@ export type ExternalSite = {
 export type Signage = {
   /** ?ch= が付かない場合に映す Ch。 */
   defaultChannel: string;
+  /** QR の脇に出す見出しと、その下の補足。 */
+  inviteHeading: string;
+  inviteNote: string;
 };
 
 /**

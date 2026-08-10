@@ -32,7 +32,7 @@ import json, os, sys
 path, mtx_host, mtx_port, obs_host, out_latency = sys.argv[1:6]
 conf = json.load(open(path, encoding="utf-8"))
 chans = conf["channels"]
-domain = conf["domain"]
+domain = conf["site"]["domain"]
 
 def passphrase(cid):
     return os.environ.get(f"MTX_PATHS_{cid.upper()}_SRTPUBLISHPASSPHRASE", "<未設定>")

@@ -18,7 +18,7 @@
     class="embed"
     bind:this={frameEl}
     src={externalSite.embedUrl}
-    title="高専祭公式サイト"
+    title={externalSite.title}
     referrerpolicy="no-referrer"
     sandbox={allowPopups
       ? 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox'
@@ -28,6 +28,6 @@
 
 {#if withLink && externalSite.homeUrl}
   <a class="embed-link" href={externalSite.homeUrl} target="_blank" rel="noopener">
-    公式サイトを開く ↗
+    {externalSite.title}を開く ↗
   </a>
 {/if}
