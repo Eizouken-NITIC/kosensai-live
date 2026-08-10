@@ -30,6 +30,12 @@ export type ExternalSite = {
   homeUrl: string;
 };
 
+/** 視聴ページを初めて開いた人へ出す案内のうち、運用ごとに変わる部分を表す。 */
+export type Welcome = {
+  /** 視聴の条件として案内する注記である。 */
+  note: string;
+};
+
 export type Signage = {
   /** ?ch= が付かない場合に映す Ch である。 */
   defaultChannel: string;

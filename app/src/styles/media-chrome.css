@@ -39,6 +39,9 @@ media-volume-range[mediamuted] {
 media-mute-button.hint::part(tooltip) {
   max-width: 100vw;
   opacity: 1;
+  /* 既定の transition は max-width の変化を 9 秒遅らせる。overflow-x: clip と重なって
+     その間は幅 0 に切られるため、hover 時と同じ遅延の無い指定へ差し替える。 */
+  transition: opacity 0.3s;
 }
 
 /* ピクチャインピクチャに対応しない環境ではボタンを表示しない。media-chrome は

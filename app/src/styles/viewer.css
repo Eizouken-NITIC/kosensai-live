@@ -54,13 +54,74 @@
     aspect-ratio: 16 / 9;
   }
 
-  .retry {
-    border: 1px solid var(--on-video-3);
+  /* 覆いの中と案内の中に置く押しボタンである。形は同じで、色だけ置かれた下地に合わせる。 */
+  .retry,
+  .welcome button {
+    border-width: 1px;
+    border-style: solid;
     border-radius: var(--radius);
     padding: var(--sp-2) var(--sp-4);
-    color: var(--on-video);
     font-size: var(--fs-sm);
     font-weight: 600;
+  }
+  .retry {
+    border-color: var(--on-video-3);
+    color: var(--on-video);
+  }
+
+  /* ---- 初回の案内 ----
+     showModal で top layer へ上がるため、映像にも操作の列にも隠れない。
+     display をここで指定すると閉じている間の dialog:not([open]) を上書きしてしまうので、
+     閉じている状態を明示的に書き戻す。 */
+  .welcome {
+    display: grid;
+    gap: var(--sp-4);
+    width: min(30em, calc(100vw - 2 * var(--sp-4)));
+    margin: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    /* 横向きの端末では案内が画面より高くなるため、中で送れるようにしてノッチを避ける */
+    padding: calc(var(--sp-6) + var(--safe-t)) var(--sp-4) calc(var(--sp-6) + var(--safe-b));
+    overflow: auto;
+    background: var(--surface);
+    color: var(--fg);
+  }
+  .welcome:not([open]) {
+    display: none;
+  }
+  .welcome::backdrop {
+    background: var(--scrim-2);
+  }
+  /* 帯の中と違って伸ばす相手がいないので、文字幅に合わせて左へ寄せる */
+  .welcome .logo {
+    justify-self: start;
+  }
+  .welcome h1 {
+    margin: 0;
+    font-size: var(--fs-md);
+    font-weight: 700;
+  }
+  .welcome dl {
+    display: grid;
+    gap: var(--sp-1);
+    margin: 0;
+  }
+  .welcome dt {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  .welcome dt:not(:first-of-type) {
+    margin-top: var(--sp-4);
+  }
+  .welcome dd {
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: var(--fs-sm);
+    line-height: 1.7;
+  }
+  .welcome button {
+    border-color: var(--line);
+    color: var(--fg);
   }
 
   /* ---- 右カラム ---- */

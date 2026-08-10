@@ -7,10 +7,12 @@ import {
   channels as rawChannels,
   externalSite as rawExternalSite,
   signage as rawSignage,
+  welcome as rawWelcome,
 } from '../../../config.json';
-import type { Channel, ExternalSite, Signage, Site } from './types';
+import type { Channel, ExternalSite, Signage, Site, Welcome } from './types';
 
 export const site: Site = rawSite;
 export const channels: Channel[] = rawChannels;
 export const externalSite: ExternalSite = rawExternalSite;
 export const signage: Signage = rawSignage;
+export const welcome: Welcome = rawWelcome;

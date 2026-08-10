@@ -7,6 +7,8 @@
     "  Caddyfile だけは JSON を読めないためホスト名を直接書いており、preflight.sh が",
     "  このファイルと突き合わせる。",
     "signage: ?ch= が付かない場合に映す Ch と、QR の脇に表示する文言。",
+    "welcome: 視聴ページを初めて開いた人へ出す案内のうち、運用ごとに変わる注記。",
+    "  画面の読み方そのものの説明は運用によらないため app 側が持つ。",
     "channels:",
     "  id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致する必要がある。",
     "  label は来場者に表示する唯一の文字列。id の ChN は運用側の呼称であるため表示しない。",
@@ -27,6 +29,9 @@
     "defaultChannel": "ch4",
     "inviteHeading": "スマホでも視聴できます",
     "inviteNote": "学内Wi-Fi限定"
+  },
+  "welcome": {
+    "note": "学内 Wi-Fi に接続した端末からのみ視聴できます。"
   },
   "channels": [
     {
