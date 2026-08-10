@@ -3,7 +3,7 @@
   import { createPlayer } from '$lib/player.svelte.js';
   import { loadMediaChrome, keepLiveButtonEnabled } from '$lib/mediaChrome';
   import { setNowPlaying } from '$lib/mediaSession';
-  import Wordmark from '$lib/components/Wordmark.svelte';
+  import Logo from '$lib/components/Logo.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import { channels } from '$lib/config';
 
@@ -148,7 +148,7 @@
        映像の大部分が隠れる。タッチにはホバーが無く、消すこともできない。 -->
   <div class="topbar" class:visible={overlayVisible || pinned}>
     <div class="bar">
-      <Wordmark live={player.isLive} />
+      <Logo live={player.isLive} />
 
       <nav aria-label="チャンネル">
         {#each channels as ch (ch.id)}
@@ -231,164 +231,3 @@
     <EmbeddedSite allowPopups withLink />
   </aside>
 </div>
-
-<style>
-  .page {
-    /* バー・映像・パネルを縦に積む */
-    grid-template-rows: auto auto 1fr;
-  }
-  @media (min-width: 1000px) {
-    .page {
-      grid-template-rows: 1fr;
-      /* 2 列目の幅は .panel の width が決める */
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-  }
-
-  /* ---- 映像（枠は app.css の .stage、コントロールの外観も app.css） ---- */
-  .stage {
-    grid-row: 2;
-  }
-  @media (max-width: 999px) {
-    /* 縦画面では映像を 16:9 に留め、残りをパネルに渡す */
-    .stage {
-      aspect-ratio: 16 / 9;
-    }
-  }
-  @media (min-width: 1000px) {
-    .stage {
-      grid-area: 1 / 1;
-    }
-  }
-
-  /* ---- 上端のバー ---- */
-  /* 下の余白も区切り線も置かず、タブのインジケータでバーを終わらせる。
-     ベースライン揃えのため、インジケータの分だけ下へ伸びた高さの中心に
-     ロゴの中心が一致する。 */
-  .topbar {
-    grid-row: 1;
-    padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) 0;
-    background: var(--surface);
-  }
-  /* 幅が足りなければタブの列を次の行へ送る */
-  .bar {
-    flex-wrap: wrap;
-  }
-
-  /* 幅 1000px 以上では映像と同じセルに置いて重ねる。暗がりを敷いて文字を読ませ、
-     操作が無ければ消す。 */
-  @media (min-width: 1000px) {
-    .topbar {
-      grid-area: 1 / 1;
-      align-self: start;
-      z-index: 1;
-      padding-bottom: var(--sp-6);
-      background: linear-gradient(
-        to bottom,
-        rgb(0 0 0 / 0.85) 0%,
-        rgb(0 0 0 / 0.7) 45%,
-        rgb(0 0 0 / 0.35) 75%,
-        transparent 100%
-      );
-      opacity: 0;
-      transition: opacity 200ms ease;
-      pointer-events: none;
-    }
-    .topbar.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-  }
-
-  nav {
-    display: flex;
-    gap: var(--sp-4);
-  }
-  nav button {
-    flex: 0 0 auto;
-    appearance: none;
-    background: none;
-    border: 0;
-    /* 下線は文字の下にぶら下げる。box の高さでロゴと揃えない。 */
-    border-bottom: 2px solid transparent;
-    padding: 0 0 var(--sp-2);
-    color: rgb(255 255 255 / 0.65);
-    font: inherit;
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    cursor: pointer;
-  }
-  nav button[aria-current='true'] {
-    color: #fff;
-    border-bottom-color: var(--accent);
-  }
-  nav button:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-  }
-
-  .retry {
-    pointer-events: auto;
-    appearance: none;
-    border: 1px solid rgb(255 255 255 / 0.35);
-    border-radius: var(--radius);
-    padding: var(--sp-2) var(--sp-4);
-    background: none;
-    color: #fff;
-    font: inherit;
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .retry:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  /* ---- 右カラム（枠は app.css の .panel） ---- */
-  /* 縦画面では映像の下に付くので上辺、横並びでは左辺が映像と接する */
-  .panel {
-    grid-row: 3;
-    border-top-width: 1px;
-  }
-  @media (min-width: 1000px) {
-    .panel {
-      grid-area: 1 / 2;
-      border-top-width: 0;
-      border-left-width: 1px;
-      /* JS が外れても最小・最大は保たれる */
-      width: clamp(280px, var(--panel-w), 60vw);
-    }
-  }
-
-  /* ---- 境界のつまみ ---- */
-  .grip {
-    display: none;
-  }
-  @media (min-width: 1000px) {
-    .grip {
-      display: block;
-      grid-area: 1 / 2;
-      justify-self: start;
-      /* 境界線の上に、指とマウスのどちらでも狙える幅で重ねる */
-      width: 11px;
-      margin-left: -5px;
-      cursor: col-resize;
-      /* 上端のバーより手前に置く */
-      z-index: 2;
-      /* ドラッグ中にブラウザのパンが割り込むのを止める */
-      touch-action: none;
-    }
-    .grip:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: -2px;
-    }
-    /* つまみから外れてもカーソルの形を保つ */
-    .page.dragging {
-      cursor: col-resize;
-    }
-    .page.dragging .panel {
-      pointer-events: none;
-    }
-  }
-</style>

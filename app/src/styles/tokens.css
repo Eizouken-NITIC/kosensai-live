@@ -1,0 +1,100 @@
+/* デザイントークンとリセット */
+
+:root {
+  color-scheme: dark;
+
+  /* --- 面 --- */
+  --bg: #0a0c0f;
+  --surface: #14181d;
+  --line: #262d35;
+
+  /* --- 文字 --- */
+  --fg: #f2f5f8;
+  --fg-muted: #97a2ae;
+
+  /* --- 状態 --- */
+  --live: #ff3b30;
+
+  /* --- アクセント --- */
+  --accent: #4db8ff;
+
+  /* --- 映像の上に重ねる色 ---
+     映像は明るさが定まらないため、面の色とは別の系統として持つ。暗がりを敷いてから
+     その上に文字と操作を置く。 */
+  --scrim-1: rgb(0 0 0 / 0.35);
+  --scrim-2: rgb(0 0 0 / 0.7);
+  --scrim-3: rgb(0 0 0 / 0.85);
+  --on-video: #fff;
+  --on-video-2: rgb(255 255 255 / 0.65);
+  --on-video-3: rgb(255 255 255 / 0.35);
+
+  /* --- かたち --- */
+  --radius: 6px;
+  --radius-round: 999px;
+
+  /* --- 余白（4px 刻み。手元で見る画面の尺度） --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 32px;
+
+  /* --- 文字サイズ（手元で見る画面の尺度） --- */
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+
+  /* --- 書体 --- */
+  --font: 'Noto Sans JP Variable', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* --- 端末のノッチ回避 --- */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+/* ページに置くボタンは、既定の見た目を捨てて置かれた場所に合わせる。 */
+button {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* フォーカスの輪郭は全要素で同じものを使う。位置をずらしたい箇所だけ
+   outline-offset を上書きする。 */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 上端バーのフェードを無効化する。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

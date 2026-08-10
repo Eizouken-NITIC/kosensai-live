@@ -16,6 +16,7 @@
 
 {#if externalSite.embedUrl}
   <iframe
+    class="embed"
     bind:this={frameEl}
     src={externalSite.embedUrl}
     title="高専祭公式サイト"
@@ -27,36 +28,7 @@
 {/if}
 
 {#if withLink && externalSite.homeUrl}
-  <a class="open" href={externalSite.homeUrl} target="_blank" rel="noopener">
+  <a class="embed-link" href={externalSite.homeUrl} target="_blank" rel="noopener">
     公式サイトを開く ↗
   </a>
 {/if}
-
-<style>
-  /* .panel は縦の flex なので、残りの高さをこれが取る */
-  iframe {
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
-    border: 0;
-    background: #fff;
-  }
-
-  .open {
-    position: absolute;
-    right: var(--sp-3);
-    bottom: calc(var(--sp-3) + var(--safe-b));
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--radius-round);
-    background: rgb(0 0 0 / 0.72);
-    color: #fff;
-    font-size: var(--fs-xs);
-    font-weight: 600;
-    text-decoration: none;
-    backdrop-filter: blur(6px);
-  }
-  .open:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-</style>

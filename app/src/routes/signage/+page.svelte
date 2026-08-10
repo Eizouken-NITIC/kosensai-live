@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
-  import Wordmark from '$lib/components/Wordmark.svelte';
+  import Logo from '$lib/components/Logo.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import { setNowPlaying } from '$lib/mediaSession';
   import { channels } from '$lib/config';
@@ -56,7 +56,7 @@
 
 <div class="signage screen">
   <header class="bar">
-    <Wordmark live={player.isLive} />
+    <Logo live={player.isLive} />
     <time class="clock">{clock}</time>
   </header>
 
@@ -71,7 +71,7 @@
     <!-- 配信を行わない時間帯は OBS がテロップを送るため、その旨は映像に映る。
          ここでは配信の状態を断定しない。 -->
     {#if !player.isLive}
-      <div class="cover idle">
+      <div class="cover">
         <p>読み込み中…</p>
       </div>
     {/if}
@@ -95,91 +95,3 @@
     <EmbeddedSite bind:this={site} />
   </aside>
 </div>
-
-<style>
-  .signage {
-    grid-template-columns: minmax(0, 1fr) 460px;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      'header panel'
-      'stage  panel'
-      'invite panel';
-    cursor: none;
-    user-select: none;
-  }
-
-  header {
-    grid-area: header;
-    justify-content: space-between;
-    padding: var(--sp-3) var(--sp-5);
-  }
-  .clock {
-    font-size: var(--fs-lg);
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-
-  .stage {
-    grid-area: stage;
-  }
-  .stage video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: #000;
-  }
-  /* 配信していない間は映像が無いので、透過ではなく完全に黒で塗る。 */
-  .idle {
-    background: #000;
-  }
-  .idle p {
-    font-size: 1.4vw;
-    color: var(--fg-muted);
-  }
-
-  .invite {
-    grid-area: invite;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 16px 24px calc(16px + var(--safe-b));
-  }
-  .qr {
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    padding: 8px;
-    background: #fff;
-    border-radius: var(--radius);
-  }
-  .qr img {
-    width: 96px;
-    height: 96px;
-    display: block;
-    /* 拡大時にモジュールの縁がぼけると読み取り率が落ちる */
-    image-rendering: pixelated;
-  }
-  .invite-text {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-  }
-  .invite-text strong {
-    font-size: 22px;
-  }
-  .invite-text span {
-    font-size: 15px;
-    color: var(--fg-muted);
-  }
-  .invite-text code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
-
-  /* 枠は app.css の .panel。左辺が映像と接する。 */
-  .panel {
-    grid-area: panel;
-    border-left-width: 1px;
-  }
-</style>

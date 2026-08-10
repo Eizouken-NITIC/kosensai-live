@@ -1,0 +1,116 @@
+/* 視聴ページとサイネージページで共有する枠と部品。
+   どちらの面にも置かれるため、寸法は置かれた面の基準に対する相対値で書く。 */
+
+/* ページ全体。どちらも 1 画面に収め、外へはみ出させない。 */
+.screen {
+  display: grid;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ロゴを左端に置く帯。右に並ぶものはページごとに違う。 */
+.bar {
+  display: flex;
+  /* center だと下線や数字を含んだ箱がロゴに揃い、文字がずれる */
+  align-items: baseline;
+  gap: 0.8em 1.6em;
+}
+
+/* 映像の隣に置く枠。映像と接する辺にだけ境界線を引くので、
+   線の幅は辺が決まるページ側で指定する。 */
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface);
+  border: 0 solid var(--line);
+}
+
+/* 映像の枠 */
+.stage {
+  position: relative;
+  background: #000;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 映像を全面でふさぐ表示（配信前の案内など）。 */
+.cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.8em;
+  text-align: center;
+  padding: 1.6em;
+  background: var(--scrim-2);
+  pointer-events: none;
+}
+.cover p {
+  margin: 0;
+  font-size: 1em;
+}
+.cover small {
+  color: var(--fg-muted);
+  font-size: 0.87em;
+}
+/* 覆いは操作を透過させるが、その中のボタンは押せる必要がある。 */
+.cover button {
+  pointer-events: auto;
+}
+
+/* ---- ロゴ ---- */
+/* 点灯と消灯の 2 枚を重ね、不透明度で入れ替える。SVG は独立した文書として
+   読まれるため、親の色は継承しない。色は SVG 側が持つ。 */
+.logo {
+  display: grid;
+  place-items: center;
+  /* SVG の箱は大文字の高さちょうどで切ってある。0.75em はその高さを周囲の文字の
+     大文字と揃える比で、並べたときに同じ大きさに見える。 */
+  height: 0.75em;
+}
+.logo img {
+  grid-area: 1 / 1;
+  height: 100%;
+  width: auto;
+  transition: opacity 220ms ease;
+}
+.logo .off {
+  opacity: 1;
+}
+.logo .on {
+  opacity: 0;
+}
+.logo.live .off {
+  opacity: 0;
+}
+.logo.live .on {
+  opacity: 1;
+}
+
+/* ---- 埋め込んだ外部サイト ---- */
+.embed {
+  /* .panel は縦の flex なので、残りの高さをこれが取る */
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 0;
+  background: #fff;
+}
+.embed-link {
+  position: absolute;
+  right: var(--sp-3);
+  bottom: calc(var(--sp-3) + var(--safe-b));
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-round);
+  background: var(--scrim-2);
+  color: var(--on-video);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-decoration: none;
+  backdrop-filter: blur(6px);
+}

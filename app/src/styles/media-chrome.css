@@ -1,0 +1,41 @@
+/* media-chrome のカスタム要素は shadow DOM を持ち、外観はカスタムプロパティで
+   指定する。要素の内側へセレクタが届かないため、指定はここに集める。 */
+
+media-controller {
+  width: 100%;
+  height: 100%;
+  --media-primary-color: var(--on-video);
+  /* 次の 2 つは media-chrome 側の意味を持つ値で、文字の階調とは別系統になる。
+     シークバーの溝とボタンのホバーの下地であり、文字色に合わせると明るすぎる。 */
+  --media-secondary-color: rgb(255 255 255 / 0.2);
+  --media-control-hover-background: rgb(255 255 255 / 0.15);
+  --media-control-background: transparent;
+  --media-font-family: var(--font);
+  --media-live-button-indicator-color: var(--live);
+}
+
+media-control-bar {
+  background: linear-gradient(to top, var(--scrim-2), transparent);
+  padding: var(--sp-2) var(--sp-2) var(--sp-1);
+}
+
+/* media-chrome は先端と判定している間 --media-cursor を not-allowed にする。
+   こちらで押せるようにしてあるので、押せる見た目に戻す。 */
+media-live-button {
+  --media-cursor: pointer;
+}
+
+/* 消音中は、音を出す操作がここにあることを示す */
+media-mute-button[mediavolumelevel='off'],
+media-volume-range[mediamuted] {
+  --media-icon-color: var(--live);
+  --media-primary-color: var(--live);
+  --media-range-bar-color: var(--live);
+  --media-range-thumb-background: var(--live);
+}
+
+/* ピクチャインピクチャに対応しない環境ではボタンを出さない。media-chrome は
+   属性を付けるだけで、押せないボタンを消す処理は持たない。 */
+media-pip-button[mediapipunavailable] {
+  display: none;
+}

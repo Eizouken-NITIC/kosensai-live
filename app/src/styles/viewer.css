@@ -1,0 +1,150 @@
+/* 視聴ページ（app/src/routes/+page.svelte）
+   手元で 30cm ほどの距離から見る画面。基準を --fs-md に置き、px のトークンを使う。 */
+
+.page {
+  font-size: var(--fs-md);
+
+  /* バー・映像・パネルを縦に積む */
+  grid-template-areas:
+    'bar'
+    'stage'
+    'panel';
+  grid-template-rows: auto auto 1fr;
+
+  /* ---- 上端のバー ---- */
+  /* 下の余白も区切り線も置かず、タブのインジケータでバーを終わらせる。
+     ベースライン揃えのため、インジケータの分だけ下へ伸びた高さの中心に
+     ロゴの中心が一致する。 */
+  .topbar {
+    grid-area: bar;
+    padding: calc(var(--sp-3) + var(--safe-t)) var(--sp-4) 0;
+    background: var(--surface);
+  }
+  /* 幅が足りなければタブの列を次の行へ送る */
+  .bar {
+    flex-wrap: wrap;
+  }
+
+  nav {
+    display: flex;
+    gap: var(--sp-4);
+  }
+  nav button {
+    flex: 0 0 auto;
+    /* 下線は文字の下にぶら下げる。box の高さでロゴと揃えない。 */
+    border-bottom: 2px solid transparent;
+    padding-bottom: var(--sp-2);
+    color: var(--on-video-2);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  nav button[aria-current='true'] {
+    color: var(--on-video);
+    border-bottom-color: var(--accent);
+  }
+  /* 既定の輪郭は下線と重なるので、その分だけ外へ出す */
+  nav button:focus-visible {
+    outline-offset: 3px;
+  }
+
+  /* ---- 映像 ---- */
+  /* 縦画面では映像を 16:9 に留め、残りをパネルに渡す */
+  .stage {
+    grid-area: stage;
+    aspect-ratio: 16 / 9;
+  }
+
+  .retry {
+    border: 1px solid var(--on-video-3);
+    border-radius: var(--radius);
+    padding: var(--sp-2) var(--sp-4);
+    color: var(--on-video);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+
+  /* ---- 右カラム ---- */
+  /* 縦画面では映像の下に付くので上辺が映像と接する */
+  .panel {
+    grid-area: panel;
+    border-top-width: 1px;
+  }
+
+  /* 幅を変えられるのは横並びのときだけなので、つまみは出さない */
+  .grip {
+    display: none;
+  }
+}
+
+/* 幅 1000px 以上では映像とパネルを横に並べ、バーは映像へ重ねる。 */
+@media (min-width: 1000px) {
+  .page {
+    grid-template-areas: 'stage panel';
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 1fr;
+
+    /* 暗がりを敷いて文字を読ませ、操作が無ければ消す。 */
+    .topbar {
+      grid-area: stage;
+      align-self: start;
+      z-index: 1;
+      padding-bottom: var(--sp-6);
+      background: linear-gradient(
+        to bottom,
+        var(--scrim-3) 0%,
+        var(--scrim-2) 45%,
+        var(--scrim-1) 75%,
+        transparent 100%
+      );
+      opacity: 0;
+      transition: opacity 200ms ease;
+      pointer-events: none;
+    }
+    .topbar.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .stage {
+      aspect-ratio: auto;
+    }
+
+    /* 幅は JS が決める。JS が動かない場合はこの既定値で固定される。 */
+    .panel {
+      border-top-width: 0;
+      border-left-width: 1px;
+      width: var(--panel-w, 360px);
+    }
+
+    /* ---- 境界のつまみ ----
+       CSS の resize は隅の正方形しか作れないため、辺で掴ませるにはこれを置くほかにない。 */
+    .grip {
+      display: block;
+      grid-area: panel;
+      justify-self: start;
+      /* 境界線の上に、指とマウスのどちらでも狙える幅で重ねる */
+      width: 11px;
+      margin-left: -5px;
+      cursor: col-resize;
+      /* 上端のバーより手前に置く */
+      z-index: 2;
+      /* ドラッグ中にブラウザのパンが割り込むのを止める */
+      touch-action: none;
+    }
+    /* 幅が 11px しかないので、輪郭は内側へ寄せる */
+    .grip:focus-visible {
+      outline-offset: -2px;
+    }
+
+    /* つまみから外れてもカーソルの形を保つ */
+    &.dragging {
+      cursor: col-resize;
+
+      /* 別プロセスで描かれる iframe の上にポインタが入ると、捕捉していても
+         そちらへ配送されて捕捉が解ける。ドラッグの間だけ当たり判定を外す。 */
+      .panel {
+        pointer-events: none;
+      }
+    }
+  }
+}
