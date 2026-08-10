@@ -1,36 +1,35 @@
-# hosts/obs — 本部の PC（OBS）
+# hosts/obs — 本部配信PC（OBS設定・ユーティリティ）
 
-現場からの SRT を受け、合成し、Ch ごとに MediaMTX へ送出する PC である。このディレクトリに
-あるのは `srt-urls.sh` だけで、デプロイするファイルは無い。
+本ディレクトリは、現場から送信されたSRTストリームを受信・合成し、チャンネルごとに配信サーバー（MediaMTX）へ向けて送信する本部PC（OBS）に関する設定とユーティリティを管理しています。
 
-OBS 自体の入力・出力・エンコード設定は Notion「ソフトウェア構成・設定例 §3」にある。
+このディレクトリ内にあるのは、SRTの接続用URLを一括生成する `srt-urls.sh` スクリプトのみです。配信サーバーへ直接デプロイするファイルはありません。
 
-## キーフレーム間隔
+---
 
-OBS のキーフレーム間隔は、`hosts/server/mediamtx.yml` の `hlsSegmentDuration` と
-同一にする。いずれも 2 秒である。
+## 1. キーフレーム間隔の設定
 
-HLS のセグメントはキーフレームでのみ分割されるため、片方だけを変更すると、実際の
-セグメント長は長い方に引き伸ばされる。セグメント長は再生の遅延と視聴開始までの
-待ち時間の双方を決める。
+OBS側の**キーフレーム間隔**の設定値は、配信サーバー側の設定ファイル `hosts/server/mediamtx.yml` 内の `hlsSegmentDuration` の値（デフォルトは **2秒**）と同一に設定してください。
 
-## srt-urls.sh
+---
 
-**入力・出力の URL は手打ちしない。** パスフレーズが 1 文字違うと publish が拒否され、
-理由は「invalid passphrase」としか出ない。
+## 2. srt-urls.sh（URL生成スクリプト）
+
+各種入力・出力用のURLは手動で入力せず、本スクリプトで生成したURLをコピー＆ペーストして使用してください。
+
+### スクリプトの実行方法
 
 ```bash
-# 配信サーバー側の .env が読める場所で実行する
-./hosts/obs/srt-urls.sh                    # MediaMTX が同一ホスト
+# 配信サーバー側の .env が参照できるディレクトリで実行します
+./hosts/obs/srt-urls.sh                    # MediaMTXが同一ホストにある場合
+
+# 配信サーバー（MediaMTX）とOBSが異なるマシンにある場合
 MTX_HOST=10.1.2.3 OBS_HOST=10.1.2.4 ./hosts/obs/srt-urls.sh
 ```
 
-出力は 3 つに分かれる。
+### 出力されるURL
+1. **OBSメディアソース用URL**: OBSのメディアソース（SRT Listener）に入力するURL、および現場の送信端末（Caller）に渡す接続用URL
+2. **OBS送出用URL**: OBSからMediaMTXへストリームを送信するURL
+3. **視聴用URL**: 視聴テスト用の動作確認用URL
 
-1. OBS のメディアソース（SRT Listener）に入れる URL と、現場側へ渡す Caller の URL
-2. obs-multi-rtmp から MediaMTX へ送出する URL
-3. 視聴 URL
-
-チャンネル定義（ポート・latency・ビットレート）と視聴 URL のホスト名は、いずれも
-リポジトリ直下の `config.json` から読む。Ch を増減させる場合はそこだけを変えれば、
-このスクリプトの出力も視聴ページも追従する。パスフレーズは `hosts/server/.env` から読む。
+各チャンネルの定義（待受ポート、レイテンシ、ビットレート等）および視聴URLのホスト名は、すべてリポジトリ直下の `config.json` から自動的に読み込まれます。
+SRT接続用のパスフレーズは `hosts/server/.env` の設定を読み込みます。

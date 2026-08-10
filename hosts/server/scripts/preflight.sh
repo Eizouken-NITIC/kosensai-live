@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 配信サーバーの起動前チェック。
+# 配信サーバーの起動前の環境整合性チェックを行います。
 #
 #   ./scripts/preflight.sh
 
@@ -21,13 +21,13 @@ done
 
 echo
 echo "== 配信サイト (web/) =="
-# web/ は app/ のビルド成果物である。ここに無い場合は cd app && pnpm build を実行する。
+# web/ は app/ のビルド成果物です。存在しない場合は、cd app && pnpm build を実行してください。
 for f in index.html signage/index.html; do
   [[ -f "${REPO_DIR}/web/${f}" ]] && ok "web/${f}" || ng "web/${f} がありません（cd app && pnpm build を実行してください）"
 done
 [[ -d "${REPO_DIR}/web/_app/immutable" ]] && ok "web/_app/immutable/" \
   || ng "web/_app/immutable/ がありません（cd app && pnpm build を実行してください）"
-# OFL-1.1 は配布物にライセンス本文を伴うことを求めるため、欠けたまま配信しない。
+# 配布物に必要なライセンス本文の有無を確認します。
 for f in hls.js-Apache-2.0.txt media-chrome-MIT.txt noto-sans-jp-OFL-1.1.txt; do
   [[ -f "${REPO_DIR}/web/licenses/${f}" ]] && ok "web/licenses/${f}" || ng "web/licenses/${f} がありません"
 done
@@ -76,8 +76,7 @@ else:
     line("NG", "31", "mediamtx.yml=%s / config.json=%s" % (sorted(mtx), sorted(web)))
     ok = False
 
-# Caddyfile は JSON を読めないためホスト名を直接書いている。ずれると証明書と
-# site が一致せず、ページが出ない。
+	# Caddyfileの記述内容とconfig.jsonのドメイン整合性を検証します。
 caddy = (repo / "hosts/server/Caddyfile").read_text(encoding="utf-8")
 hosts = set(re.findall(r"^([A-Za-z0-9.-]+\.[A-Za-z]{2,})\s*\{", caddy, re.M))
 if hosts == {conf["site"]["domain"]}:
@@ -112,7 +111,7 @@ echo "== ホスト設定 =="
 if [[ "$(uname -s)" == "Linux" ]]; then
   rmem=$(sysctl -n net.core.rmem_max 2>/dev/null || echo 0)
   (( rmem >= 26214400 )) && ok "net.core.rmem_max=${rmem}" \
-    || warn "net.core.rmem_max=${rmem}（SRT 再送バッファが不足するおそれがあります。sysctl -w net.core.rmem_max=26214400 を実行してください）"
+    || warn "net.core.rmem_max=${rmem}（SRT 再送バッファを確保するため、sysctl -w net.core.rmem_max=26214400 の実行を推奨します）"
 else
   warn "Linux 以外のため、この確認をスキップします（$(uname -s)）"
 fi

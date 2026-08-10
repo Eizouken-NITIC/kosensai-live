@@ -2,8 +2,9 @@
 # 本部 OBS に入力する SRT URL 一覧を生成する。
 #
 # チャンネル定義（リポジトリ直下の config.json）とパスフレーズ
-# （hosts/server/.env）から組み立てるので、手打ちミスが起きない。
+# （hosts/server/.env）から組み立てる。
 #
+# 実行例:
 #   ./srt-urls.sh                       # MediaMTX と OBS が同一ホスト
 #   MTX_HOST=10.1.2.3 ./srt-urls.sh     # 別ホストの場合
 

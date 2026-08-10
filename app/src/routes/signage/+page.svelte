@@ -6,8 +6,8 @@
   import { setNowPlaying } from '$lib/mediaSession';
   import { channels, signage, site } from '$lib/config';
 
-  const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先の更新を取得する
-  const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間動かしたときのリークに備える
+  const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先iframeの自動リロード間隔
+  const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転時のリーク対策（ページリロード間隔）
 
   const player = createPlayer();
 
@@ -41,7 +41,7 @@
     const timers = [
       setInterval(tick, 5000),
       setInterval(() => embed?.reload(), IFRAME_RELOAD_MS),
-      // 再生中はリロードしない
+      // ライブ再生中でない場合はページをリロード（メモリ解放）
       setInterval(() => {
         if (videoEl?.paused || (videoEl?.readyState ?? 0) < 3) location.reload();
       }, PAGE_RELOAD_MS),
@@ -53,7 +53,7 @@
     };
   });
 
-  // ブロックされても押す人がいないため、こちらから再開を試みる。
+  // 自動再生ブロック時は自動で再開を試行
   $effect(() => {
     if (player.state === 'blocked') player.resume();
   });
@@ -68,8 +68,7 @@
   </header>
 
   <section class="stage">
-    <!-- 音声を出すため muted を付けない。ブラウザは音声のある自動再生を
-         ユーザー操作なしでは許可しないため、再生はブラウザ側の許可に依存する。 -->
+    <!-- 音声付き自動再生のためmutedは付与せず、ブラウザ起動引数による制御に依存 -->
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={videoEl} playsinline autoplay preload="none"></video>
 

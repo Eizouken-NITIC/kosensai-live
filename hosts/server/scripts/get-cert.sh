@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
-# Let's Encrypt 証明書を DNS-01（手動）で取得し、certs/ に配置する。
-#
-# 学内プライベート IP のため HTTP-01 は使えない。
-# certbot が表示する TXT レコード値を DNS 管理者に登録依頼し、伝播を待つ必要があるため、
-# 途中で必ず「待ち」が入る。
+# Let's Encrypt証明書をDNS-01チャレンジ（手動）で取得し、certs/に配置するスクリプト
+# ※学内プライベートIPのためHTTP-01は使用不可
 #
 #   sudo ./scripts/get-cert.sh
 
@@ -15,11 +12,11 @@ DEST="${HOST_DIR}/certs"
 DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["site"]["domain"])' "${REPO_DIR}/config.json")}"
 
 if [[ $EUID -ne 0 ]]; then
-  echo "certbot と /etc/letsencrypt へのアクセスに root 権限が必要です。sudo で実行してください。" >&2
+  echo "root権限が必要です。sudoで実行してください。" >&2
   exit 1
 fi
 
-command -v certbot >/dev/null || { echo "certbot が見つかりません: apt install certbot" >&2; exit 1; }
+command -v certbot >/dev/null || { echo "certbotが見つかりません（apt install certbotを実行してください）" >&2; exit 1; }
 
 cat <<EOS
 

@@ -11,13 +11,13 @@
   const DEFAULT_CH = 'ch1';
   const STORE_KEY = 'selectedChannel';
   const OVERLAY_HIDE_MS = 2000;
-  // 読み込み直後、ミュートであることを示す吹き出しをこの時間だけ表示しておく。
+  // 初回起動時のミュート吹き出しの表示時間
   const MUTE_HINT_MS = 10000;
 
   const PANEL_INITIAL = 360;
   const PANEL_MIN = 280;
   const PANEL_MAX_RATIO = 0.6;
-  // 矢印キー 1 打あたりの変化量である。Shift を押している間は大きく動かす。
+  // キーボード操作時のパネル幅の変化幅
   const PANEL_STEP = 16;
   const PANEL_STEP_LARGE = 64;
 
@@ -37,7 +37,7 @@
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
-  // 映像が無い画面で UI まで消えると黒い板になる
+  // 映像未配信時にUIを固定表示するためのフラグ
   const pinned = $derived(!player.isLive);
 
   function showOverlay() {
@@ -56,7 +56,7 @@
     try {
       localStorage.setItem(STORE_KEY, ch.id);
     } catch {
-      /* プライベートブラウズ */
+      /* ローカルストレージ無効時 */
     }
     player.load(ch.id);
     showOverlay();
@@ -73,8 +73,7 @@
     const startWidth = panelWidth;
 
     grip.setPointerCapture(event.pointerId);
-    // 別プロセスで描かれる iframe の上にポインタが入ると、捕捉していても
-    // そちらへ配送されて捕捉が解ける。ドラッグの間だけ当たり判定を外す。
+    // ドラッグ中にiframeへのポインター干渉を防ぐフラグ
     dragging = true;
 
     const onMove = (e: PointerEvent) =>
@@ -90,7 +89,7 @@
     grip.addEventListener('pointermove', onMove);
     grip.addEventListener('pointerup', onUp);
     grip.addEventListener('pointercancel', onUp);
-    // ドラッグ中に映像やパネルの文字が選択されるのを止める。
+    // ドラッグ中の選択などのデフォルト挙動を防止
     event.preventDefault();
   }
 
@@ -125,7 +124,7 @@
       try {
         initial = localStorage.getItem(STORE_KEY);
       } catch {
-        /* プライベートブラウズ */
+        /* ローカルストレージ無効時 */
       }
     }
     select(initial ?? DEFAULT_CH, false);
@@ -139,7 +138,7 @@
     };
   });
 
-  // ブラウザの UI の色を再生の状態に合わせる。
+  // 再生状態に応じてテーマカラーを変更
   $effect(() => {
     setThemeColor(player.isLive ? '--live' : '--surface');
   });
@@ -154,14 +153,12 @@
 
 <svelte:head><title>{site.name}</title></svelte:head>
 
-<!-- section に付けると a11y_no_static_element_interactions が出るので body で受ける -->
+<!-- a11yエラー防止のためbody要素でイベントを受信 -->
 <svelte:body onmousemove={showOverlay} onpointerdown={showOverlay} onfocusin={showOverlay} />
 <svelte:window bind:innerWidth={winWidth} />
 
 <div class="page screen" class:dragging>
-  <!-- 幅 1000px 以上では映像と同じグリッドのセルに置いて重ね、それ未満では
-       映像の上の行に積む。縦画面では映像が 16:9 に収まるため、重ねると
-       映像の大部分が隠れる。タッチにはホバーが無く、消すこともできない。 -->
+  <!-- レスポンシブレイアウト（幅1000px基準）の配置 -->
   <div class="topbar" class:visible={overlayVisible || pinned}>
     <div class="bar">
       <Logo live={player.isLive} />
@@ -181,17 +178,12 @@
   </div>
 
   <section class="stage">
-    <!-- mediastreamtype: MediaMTX は DVR 判定用の非標準タグを含めないため明示する。
-         seektoliveoffset: 既定は liveedgeoffset と同値で、LIVE ボタンが通常の再生位置
-           よりも後ろへ移動してしまう。0 は末端を指す。
-         liveedgeoffset: 通常の再生位置は末端から 10 秒手前である。セグメント 1 本分を余裕と
-           して加える。狭めると再生位置の揺れで LIVE の点灯が変化する。 -->
+    <!-- ライブ配信用のコントローラー制御 -->
     <media-controller mediastreamtype="live" seektoliveoffset="0" liveedgeoffset="12">
       <!-- svelte-ignore a11y_media_has_caption -->
       <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
-      <!-- 自動再生の制約でミュート起動するため、音を出すには操作が要る。
-           消えてしまうとミュートボタンに気づけないので、解除するまで消さない。 -->
+      <!-- 自動再生制約への対応（ミュート解除まで非表示にしない） -->
       <media-control-bar noautohide={muted || undefined}>
         <media-play-button></media-play-button>
         <media-mute-button class:hint={muteHint}>
@@ -216,7 +208,7 @@
     {:else if player.state === 'waiting'}
       <div class="cover" role="status" aria-live="polite">
         <p>接続中です...</p>
-        <!-- 自動リトライは続いているが、待てない人のために手動の出口も表示する。 -->
+        <!-- 手動の再読み込みボタン -->
         <button class="retry" type="button" onclick={() => player.load(current)}>
           今すぐ再読み込み
         </button>
@@ -229,14 +221,10 @@
     {/if}
   </section>
 
-  <!-- 幅 1000px 以上でのみ出る。映像とパネルの境界そのものを掴ませる。
-       CSS の resize は隅の正方形しか作れないため、辺で掴ませるには
-       role="separator" のスプリッターを置くほかにない。 -->
+  <!-- 幅調整用のスプリッター -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <!-- ARIA は separator を、値を持つもの（window splitter）と持たないものに
-       分けている。前者はフォーカスを受けて矢印キーで動かす操作要素であり、
-       aria-valuenow を持つこの要素はそちらに当たる。 -->
+  <!-- キーボード操作（Aria）対応セパレーター -->
   <div
     class="grip"
     role="separator"

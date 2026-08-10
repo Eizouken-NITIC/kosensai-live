@@ -18,11 +18,8 @@ live.kosensai.ichinoseki.ac.jp {
 	handle_path /hls/* {
 		reverse_proxy 127.0.0.1:8888 {
 			# MediaMTX は最初のプレイリスト要求を、セッション Cookie を張るために
-			#    Location: /ch1/index.m3u8?cookieCheck=1 へ 302 する。
-			#    handle_path が /hls を剥がしている都合上、この Location をそのまま
-			#    返すとクライアントは /hls 抜きの URL を叩き、静的ファイル配信側へ
-			#    落ちて 404 になる（＝映像が永久に始まらない）。
-			#    プレフィックスを付け直してから返す。
+			# Location: /ch1/index.m3u8?cookieCheck=1 へ 302 する。
+			# handle_path が /hls を剥がしている都合上、プレフィックスを付け直して返す。
 			header_down Location "^/(.*)$" "/hls/$1"
 		}
 
@@ -41,8 +38,7 @@ live.kosensai.ichinoseki.ac.jp {
 		root * /srv/live
 		encode zstd gzip
 
-		# SvelteKit のビルド成果物はファイル名にコンテンツハッシュを含み、
-		# 内容が変われば別パスになるため長期キャッシュしてよい。
+		# SvelteKit のビルド成果物はファイル名にコンテンツハッシュを含み、長期キャッシュ可能
 		@immutable path /_app/immutable/*
 		header @immutable Cache-Control "public, max-age=604800, immutable"
 

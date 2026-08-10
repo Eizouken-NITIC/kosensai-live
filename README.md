@@ -1,24 +1,27 @@
-# kosensai-broadcast
+# kosensai-broadcast（高専祭ライブ配信システム）
 
-高専祭ライブ配信の配信基盤と配信サイトである。SRT で受け取った映像を HLS へ変換して配信し、
-視聴ページとサイネージページを同じサーバーから静的配信する。
+本プロジェクトは、高専祭ライブ配信の配信基盤および配信サイト用のリポジトリです。
+SRTプロトコルで受信した映像をHLS形式に変換して配信し、視聴用のWebページとサイネージ用ページを同一サーバーから静的コンテンツとして配信します。
 
-- 視聴ページ: `https://<domain>/`
-- サイネージ: `https://<domain>/signage/`
-- HLS: `https://<domain>/hls/<ch>/index.m3u8`
+## 1. 配信URL・エンドポイント
 
-`<domain>` はリポジトリ直下の `config.json` で決まる。
+- **視聴用Webページ**: `https://<domain>/`
+- **サイネージ用ページ**: `https://<domain>/signage/`
+- **HLSストリーミング**: `https://<domain>/hls/<ch>/index.m3u8`
+
+> [!NOTE]
+> `<domain>` の値は、リポジトリ直下にある `config.json` の設定に基づいて決定されます。
 
 ---
 
-## 1. 構成
+## 2. システム構成
 
 ```
 現場のカメラ・スイッチャー
    │  SRT Caller
    ▼
 本部の PC (OBS)                             ← hosts/obs/
-   │  Ch ごとにエンコードし、SRT Caller で送出
+   │  チャンネルごとにエンコードし、SRT Caller で送信
    │  streamid=publish:chN
    ▼
 配信サーバー (MediaMTX + Caddy)             ← hosts/server/
@@ -27,99 +30,85 @@
    └───────────────► サイネージ端末          ← hosts/signage/
 ```
 
-伝送は全区間で SRT に統一している。MediaMTX が RIST に対応しないためである。
+- **プロトコル**: 伝送方式は、全区間でSRTに統一しています。
+- **仕様**: MediaMTXはトランスコードおよびABR（最高ビットレート自動選択）を行いません。そのため、「エンコーダー側のビットレート × 同時視聴者数」が、そのまま配信サーバーの下り必要帯域となります。
 
-MediaMTX はトランスコードも ABR も行わない。**エンコーダ側のビットレート × 同時視聴者数
-がそのまま下り帯域になる。**
+---
 
-## 2. ディレクトリ構成
+## 3. ディレクトリ構成
 
-**マシン 1 台に `hosts/` 下の 1 ディレクトリが対応する。** どのファイルがどのマシンに乗るのかを、
-ディレクトリだけで判断できるようにしてある。
+各マシンに対して、`hosts/` ディレクトリ配下の1つのフォルダが対応しています。どのファイルがどのマシンに配置されるかを、ディレクトリ構成だけで容易に判断できるように設計しています。
 
 ```
 kosensai-broadcast/
-├─ config.json                ★ 複数のマシンに跨って一致が必要な値の唯一の情報源
-├─ hosts/                     ★ マシンごと。ここがデプロイ単位
+├─ config.json                ★ 複数のマシン間で共通して使用する設定値の唯一の情報源
+├─ hosts/                     ★ マシンごとのデプロイ単位
 │  ├─ server/                 配信サーバー（MediaMTX + Caddy）
 │  │  ├─ compose.yml / mediamtx.yml / Caddyfile / .env.example
-│  │  ├─ certs/               証明書置き場（git 管理外）
+│  │  ├─ certs/               証明書格納ディレクトリ（Git管理対象外）
 │  │  └─ scripts/             preflight / get-cert / smoke-test
-│  ├─ obs/                    本部の PC
-│  │  └─ srt-urls.sh          OBS に入れる SRT URL を生成する
+│  ├─ obs/                    本部配信用PC
+│  │  └─ srt-urls.sh          OBSに入力するSRTのURLを自動生成するスクリプト
 │  └─ signage/                サイネージ端末（Raspberry Pi + Chromium Kiosk）
 │     └─ setup.sh / signage.service
-├─ app/                       配信サイトのソース（SvelteKit + TypeScript）
+├─ app/                       配信サイトのソースコード（SvelteKit + TypeScript）
 │  ├─ src/routes/             視聴ページ (/) とサイネージページ (/signage/)
-│  ├─ src/lib/                プレイヤーの状態機械・ロゴ・設定の読み込み
-│  ├─ src/styles/             CSS。コンポーネントに <style> は置かない
-│  └─ static/                 QR・ロゴ・ライセンス全文。そのまま配信物へ入る
-├─ web/                       app/ のビルド成果物。Caddy がこれを配信する
-│                               pnpm build のたびに作り直されるので直接編集しない
-├─ rehearsal/                 ★ ローカル検証環境（PC 1 台で全部立ち上がる）
-├─ tools/make-qr.py           視聴ページの QR を生成する（domain 変更時のみ実行）
-├─ LICENSE                    MIT
-└─ THIRD-PARTY.md             同梱している第三者ソフトウェアの内訳
+│  ├─ src/lib/                プレイヤーの状態管理・ロゴ・設定の読み込み
+│  ├─ src/styles/             共通CSS（コンポーネント内には <style> を配置しない設計）
+│  └─ static/                 QRコード・ロゴ・ライセンス全文
+├─ web/                       app/ のビルド成果物（Caddyがこのディレクトリを配信します）
+│                               ※pnpm build の実行ごとに自動生成されるため、直接編集はしないでください
+├─ rehearsal/                 ★ ローカル検証環境（PC1台で全システムをモック起動可能）
+├─ tools/make-qr.py           視聴ページ用のQRコードを生成するスクリプト（domain変更時のみ実行）
+├─ LICENSE                    MITライセンス
+└─ THIRD-PARTY.md             同梱しているサードパーティ製ソフトウェアのライセンス一覧
 ```
 
-各ディレクトリの README がそのマシンの手順書になっている。
+### 各マシンの手順書
 
-| 触るもの | 読むファイル |
+| 対象マシン・用途 | 参照ドキュメント |
 | --- | --- |
-| 配信サーバー | [hosts/server/README.md](hosts/server/README.md) |
-| 本部の OBS | [hosts/obs/README.md](hosts/obs/README.md) |
-| サイネージ端末 | [hosts/signage/README.md](hosts/signage/README.md) |
-| 手元で動かす | [rehearsal/README.md](rehearsal/README.md) |
+| **配信サーバーの構築・管理** | [hosts/server/README.md](hosts/server/README.md) |
+| **本部PC（OBS）の設定** | [hosts/obs/README.md](hosts/obs/README.md) |
+| **サイネージ端末のセットアップ** | [hosts/signage/README.md](hosts/signage/README.md) |
+| **ローカル検証環境の動作確認** | [rehearsal/README.md](rehearsal/README.md) |
 
-## 3. はじめかた
+---
 
-配信サイトを触る場合は、手元で検証環境を立ち上げるのが早い。テストパターン 4 本から
-視聴ページまでが PC 1 台で揃う。
+## 4. クイックスタート（はじめかた）
+
+配信サイトの開発や動作確認を行う場合は、ローカルで検証環境を立ち上げて動作確認を行います。
+
+### 検証環境の起動と停止
 
 ```bash
 cd rehearsal
-./scripts/up.sh          # 起動（http://localhost:8080/）
-./scripts/reload.sh      # app/ をビルドして反映
-./scripts/down.sh        # 停止
+./scripts/up.sh          # システムの起動（ブラウザで http://localhost:8080/ を開きます）
+./scripts/reload.sh      # app/ の変更をビルドして検証環境に反映
+./scripts/down.sh        # システムの停止
 ```
 
-配信サイトのソースは `app/`（SvelteKit）にある。`pnpm build` の出力先が `web/` で、
-Caddy はそこを配信する。`web/` を直接編集しても次のビルドで消える。
+### 配信サイトのビルド手順
 
 ```bash
 cd app
 pnpm install
-pnpm lint        # Prettier の確認と svelte-check
-pnpm build
+pnpm lint        # Prettierによるコード整形確認および svelte-check
+pnpm build       # 本番用ビルドの実行
 ```
 
-## 4. 設定
+---
 
-複数のマシンに跨って一致している必要がある値は、すべてリポジトリ直下の `config.json`
-にある。
+## 5. 設定の管理について
 
-| キー | 内容 |
+複数のマシン間で共通して使用する設定値は、すべてリポジトリ直下の `config.json` に集約されています。
+
+| 設定キー | 設定内容 |
 | --- | --- |
-| `site` | 配信サイトの名前とホスト名 |
-| `channels` | Ch の id・表示名・OBS の待受ポート・SRT の latency・ビットレート・映像の出どころ |
-| `externalSite` | 視聴ページとサイネージが iframe で埋め込む外部サイトの表示名と URL |
-| `signage` | サイネージページの既定チャンネルと、QR の脇に表示する文言 |
+| `site` | 配信サイトの名称およびホスト名 |
+| `channels` | チャンネルID、表示名、OBS待受ポート、SRTのレイテンシ、ビットレート、映像ソース情報 |
+| `externalSite` | 視聴ページとサイネージに iframe で埋め込む外部サイトの表示名およびURL |
+| `signage` | サイネージページのデフォルトチャンネル、およびQRコード横に表示するテキスト |
 
-`app/` はビルド時に import し、`hosts/` のスクリプトと `tools/make-qr.py` は実行時に
-読む。**`Caddyfile` だけは Caddy の設定であり JSON を読めないためホスト名を直接持って
-いる。** ずれると証明書と site が一致せずページが出ないので、`preflight.sh` が
-`config.json` と突き合わせる。
-
-## 5. ドキュメント
-
-設計上の決定と計測結果、検証の手順、本番前のチェックリストは Notion にある。非公開の
-資料であり、外部からは開けない。
-
-- 高専祭ライブ配信（プロジェクト）
-- 配信システム構成
-- インフラ・ネットワーク連携要件
-- ソフトウェア構成・設定例
-- 映像機材・調達リスト
-- 設計上の決定と計測
-- テスト手順
-- 本番前チェックリスト
+- **適用のタイミング**: `app/` はビルド時にこの設定をインポートし、`hosts/` 内の各種スクリプトと `tools/make-qr.py` は実行時に直接読み込みます。
+- **注意点**: `Caddyfile` はホスト名を直接保持しています。不整合を防ぐため、`preflight.sh` スクリプトが `config.json` との整合性をチェックします。

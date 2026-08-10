@@ -1,33 +1,31 @@
-# サードパーティのソフトウェア
+# サードパーティ製ソフトウェアのライセンスについて
 
-`LICENSE` に記載のMIT Licenseが適用される範囲は、本リポジトリのオリジナルコードに
-限られる。本リポジトリには第三者が著作権を有するソフトウェアが含まれており、それらには
-以下のライセンスが適用される。
+本プロジェクトの `LICENSE` ファイルに記載されている「MIT License」が適用される範囲は、本リポジトリ向けに新規作成されたオリジナルのソースコードのみに限定されます。本リポジトリには第三者が著作権を有するソフトウェアが含まれており、それぞれ以下のライセンス条件が適用されます。
 
-ライセンスの全文は `app/static/licenses/` に収録している。このディレクトリはビルド時に
-配信物へ含まれるため、配信サイトの `/licenses/` からも取得できる。
+各ライセンスの全文は `app/static/licenses/` ディレクトリに格納しています。このディレクトリはビルド時に静的ファイルとして同梱されるため、公開後の配信サイトの `/licenses/` パスからも直接取得できます。
 
-## 配布物へ同梱しているもの
+---
 
-`web/` はビルド成果物であり、Git の追跡対象として本リポジトリに含まれる。配信サーバー
-上の Caddy はこのディレクトリをそのまま配信するため、以下は視聴者の端末へ配布される。
+## 1. 配布物に同梱しているソフトウェア
 
-| ソフトウェア | バージョン | ライセンス | 著作権者 | 全文 |
+`web/` ディレクトリはビルド成果物の出力先であり、Gitの追跡対象として本リポジトリに含まれています。配信サーバー上のCaddyがこのディレクトリをそのまま静的配信するため、以下のソフトウェアは視聴者のブラウザ端末へ配布されます。
+
+| ソフトウェア | バージョン | ライセンス | 著作権者 | ライセンス全文へのリンク |
 | --- | --- | --- | --- | --- |
 | [hls.js](https://github.com/video-dev/hls.js) | 1.6.16 | Apache-2.0 | Dailymotion | [app/static/licenses/hls.js-Apache-2.0.txt](app/static/licenses/hls.js-Apache-2.0.txt) |
 | [Media Chrome](https://github.com/muxinc/media-chrome) | 4.19.2 | MIT | Mux, Inc. | [app/static/licenses/media-chrome-MIT.txt](app/static/licenses/media-chrome-MIT.txt) |
 | [Noto Sans JP](https://github.com/notofonts/noto-cjk) | Fontsource 5.3 経由 | OFL-1.1 | Google Inc. | [app/static/licenses/noto-sans-jp-OFL-1.1.txt](app/static/licenses/noto-sans-jp-OFL-1.1.txt) |
 
-## 実行時に取得するもの
+---
 
-次のソフトウェアは配信サーバー上で Docker がイメージとして取得するものであり、本リポジトリ
-には含まれない。本リポジトリが持つのは、これらへ与える設定ファイルのみである。
+## 2. 実行時に取得するソフトウェア
 
-| ソフトウェア | バージョン | ライセンス |
-| --- | --- | --- |
-| [MediaMTX](https://github.com/bluenviron/mediamtx) | 1.19.3 | MIT |
-| [Caddy](https://github.com/caddyserver/caddy) | 2.11.4 | Apache-2.0 |
+以下のソフトウェアは、配信サーバー起動時にDockerがコンテナイメージとして自動的に取得するため、本リポジトリのソースコード自体には含まれません。本リポジトリで管理しているのは、これらのソフトウェアを動作させるための設定ファイル群です。
 
-`rehearsal/` のテスト配信では、MediaMTX の ffmpeg 同梱イメージに含まれる
-[FFmpeg](https://ffmpeg.org/) を使用する。これも同様にイメージとして取得するものであり、
-本リポジトリには含まれない。
+| ソフトウェア | バージョン | ライセンス | 備考 |
+| --- | --- | --- | --- |
+| [MediaMTX](https://github.com/bluenviron/mediamtx) | 1.19.3 | MIT | SRT受信・HLS生成サーバー |
+| [Caddy](https://github.com/caddyserver/caddy) | 2.11.4 | Apache-2.0 | TLS終端・静的配信・リバースプロキシサーバー |
+
+> [!NOTE]
+> `rehearsal/` ディレクトリ内のローカル検証環境でテスト配信を行う際は、MediaMTXのffmpeg同梱イメージに含まれている [FFmpeg](https://ffmpeg.org/) を使用します。こちらも同様に起動時にコンテナイメージとして取得されるため、本リポジトリには含まれません。

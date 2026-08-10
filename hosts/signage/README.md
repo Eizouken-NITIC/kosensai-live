@@ -1,31 +1,39 @@
-# hosts/signage — サイネージ端末（Raspberry Pi + Chromium Kiosk）
+# hosts/signage — サイネージ端末セットアップ手順書（Raspberry Pi + Chromium Kiosk）
 
-サイネージページを全画面で表示し続ける端末である。ページは `https://<domain>/signage/` で、
-ソースは `app/src/routes/signage/+page.svelte` にある。映すチャンネルの既定は
-`config.json` の `signage.defaultChannel` である。
+本ディレクトリは、高専祭のライブ配信を会場内のディスプレイなどで常時全画面表示し続ける「サイネージ端末」の初期設定および導入手順を管理しています。
 
-## 0. まとめてセットアップする
+サイネージ表示サイトのURLは `https://<domain>/signage/` であり、そのソースコードは `app/src/routes/signage/+page.svelte` に実装されています。表示するチャンネルのデフォルト設定値は、リポジトリ直下の `config.json` 内にある `signage.defaultChannel` に定義されています。
 
-端末上でリポジトリを clone し、次を実行すれば §1〜§2 は自動で入る。
+---
+
+## 1. 自動一括セットアップ
+
+サイネージ端末（Raspberry Pi）の実機上で本リポジトリをクローンし、以下のセットアップスクリプトを実行することで、OSの基本設定および自動起動設定（§2および§3の内容）をすべて自動的に適用できます。
 
 ```bash
-./hosts/signage/setup.sh                  # config.json の signage.defaultChannel
-SIGNAGE_CH=ch1 ./hosts/signage/setup.sh   # 別の Ch を映す端末
+# デフォルトで定義されたチャンネルを表示する場合
+./hosts/signage/setup.sh
+
+# 特定のチャンネル（例: ch1）を指定する場合
+SIGNAGE_CH=ch1 ./hosts/signage/setup.sh
 ```
 
-以下は手作業でやる場合の内訳である。
+---
 
-## 1. Raspberry Pi 側の設定
+## 2. Raspberry Pi 端末本体の手動設定
 
-`/boot/config.txt`（Bookworm 以降は `/boot/firmware/config.txt`）:
+手動でRaspberry Piの設定を行う場合は、以下の通り設定を適用してください。
 
-```
+### ディスプレイ表示とGPUメモリの設定
+`/boot/config.txt`（Bookworm以降では `/boot/firmware/config.txt`）を編集し、以下のパラメーターを設定・確認します。
+
+```ini
 gpu_mem=256
 hdmi_force_hotplug=1
 disable_overscan=1
 ```
 
-スクリーンセーバー・ブランキングを止める:
+### スクリーンセーバーおよび省電力スリープの無効化
 
 ```bash
 sudo apt install -y unclutter x11-xserver-utils
@@ -34,52 +42,55 @@ xset -dpms
 xset s noblank
 ```
 
-## 2. Chromium の起動
+---
 
-起動フラグと URL は [signage.service](signage.service) にある。URL は
-`@@SIGNAGE_URL@@` のままで、`setup.sh` がリポジトリ直下の `config.json` の `domain`
-と `SIGNAGE_CH` から組み立てて埋める。
+## 3. Chromiumブラウザの起動設定
 
-フラグのうち 2 つは、外すと動かなくなる。
+Chromiumをキオスクモードで起動するための詳細なフラグオプションおよび初期表示URLは、[signage.service](signage.service) に定義されています。
 
-- `--autoplay-policy=no-user-gesture-required` … **必須。** サイネージページの
-  `<video>` は音声を再生するため `muted` を付けていない。ブラウザは音声のある自動再生を
-  ユーザー操作なしでは許可しないため、この指定が無いと再生が始まらない。
-- `--check-for-update-interval` … 運転中に更新ダイアログが出るのを防ぐ。
+一括セットアップスクリプト `setup.sh` を実行すると、テンプレート内の `@@SIGNAGE_URL@@` を書き換えた状態でサービスに適用します。
 
-### 自動起動（systemd user service）
+### 代表的なChromium起動フラグ
+- `--autoplay-policy=no-user-gesture-required`: 音声付き自動再生を許可します。
+- `--check-for-update-interval=...`: アップデート通知ダイアログの表示を抑制します。
 
-`setup.sh` が `~/.config/systemd/user/signage.service` を生成して有効化する。
-手作業で行う場合は次を実行する。
+### systemdによる自動起動設定
 
 ```bash
+# テンプレートからサービス定義ファイルを生成し、表示URLを反映させます
 sed "s|@@SIGNAGE_URL@@|https://<domain>/signage/|" signage.service \
   > ~/.config/systemd/user/signage.service
+
+# ユーザー用systemdデーモンをリロードして有効化
 systemctl --user daemon-reload
 systemctl --user enable --now signage
-sudo loginctl enable-linger "$USER"   # 未ログインでも起動させる
+
+# ユーザーがログアウトした後もサービスを持続稼働させる設定
+sudo loginctl enable-linger "$USER"
 ```
 
-## 3. ページ側の挙動
+---
 
-`app/src/routes/signage/+page.svelte` に実装している。
+## 4. サイネージ用Webページ側の制御機能
 
-| 挙動 | 内容 |
+サイネージ用のWebアプリケーションには、自動復旧のための各種ロジックが実装されています。
+
+| 状態・現象 | ページの自律挙動 |
 | --- | --- |
-| その Ch が配信されていない | 「このチャンネルは配信されていません」を表示し、5 秒ごとに自動リトライする |
-| 配信サーバーへ届かない | 「接続できません」を表示する。復帰したら自動で再生を再開する |
-| 音声 | 常に音声ありで再生する。端末側で音量を調整する（§4） |
-| 埋め込み枠 | 5 分ごとに iframe を再読み込みし、更新を取得する |
-| 長時間運転 | 6 時間ごとに、再生していなければページをリロードする。配信中はリロードしない |
-| 時計 | 右上に端末の時刻を表示する |
+| **対象チャンネルが配信されていない場合** | 「このチャンネルは配信されていません」という案内を表示し、5秒周期で自動再試行します。 |
+| **配信サーバーとの通信が一時切断された場合** | 「接続できません」という案内を表示し、疎通が回復した段階で、自動的に再生を再開します。 |
+| **音声出力** | 常に音声を有効にした状態で起動します。 |
+| **埋め込みエリア（iframe）** | 5分ごとに埋め込み用iframeパーツの自動リロードを行います。 |
+| **長時間の連続稼働対策** | 6時間周期で、配信されていないタイミングに限りページ自体を自動リロード（メモリ解放）します。 |
+| **時計表示** | 画面の右上に、現在のシステム時刻をベースにした時計をオーバーレイ表示します。 |
 
-## 4. 調整ポイント
+---
 
-- 別の Ch を映したい端末には `?ch=ch1` を付ける（`/signage/?ch=ch1`）。
-  `setup.sh` は `SIGNAGE_CH` で指定できる。
-- 文字と余白の大きさは `app/src/styles/signage.css` の `.signage { font-size }` の 1 行が
-  決める。パネルの幅に対する比で書いてあるので、この値だけを変えれば全体が拡縮する。
-- 音量は端末側で調整する（`alsamixer` など）。ページ側に音量の設定は無く、常に音声
-  ありで再生する。
+## 5. カスタマイズ・調整項目
 
-設置前のチェック項目は Notion「本番前チェックリスト §H」にある。
+- **表示チャンネルの個別変更**:
+  特定のチャンネル専用のサイネージとして固定表示させたい場合は、URLの末尾にクエリパラメータ `?ch=ch1` などを追加します（例: `/signage/?ch=ch1`）。
+- **レイアウトサイズおよび文字サイズの微調整**:
+  全体の余白バランスは、`app/src/styles/signage.css` の中にある `.signage { font-size: ... }` の1行で定義されています。この値を変更することで全体が比例拡大・縮小します。
+- **スピーカー音量の調整**:
+  音量の調節は端末（Raspberry Pi）側（`alsamixer` 等）で行ってください。

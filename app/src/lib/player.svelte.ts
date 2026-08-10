@@ -1,12 +1,11 @@
 import type { PlayerState } from './types';
 
-// hls.js は動的 import で読むため、型は dist/hls.d.ts から導出する。
+// hls.jsは動的インポートするため、型はhls.jsから参照
 type HlsConstructor = typeof import('hls.js').default;
 type HlsInstance = InstanceType<HlsConstructor>;
 type HlsErrorData = import('hls.js').ErrorData;
 
-// hls.js の retryForHttpStatus() が 4xx を再試行しないため、未配信の 404 は
-// ここで検出する。5xx とタイムアウトは hls.js が処理する。
+// 未配信（404）はここで検出する（5xxやタイムアウトはhls.jsが処理）
 const RETRY_MS = 5000;
 
 let hlsJsPromise: Promise<HlsConstructor> | null = null;
@@ -25,7 +24,7 @@ function loadHlsJs(): Promise<HlsConstructor> {
 export function createPlayer() {
   let state = $state<PlayerState>('connecting');
   let channel = $state<string | null>(null);
-  // state から導出すると Ch 切替のたびに false を経由し、LIVE が明滅する
+  // 切替時の明滅防止用の独立フラグ
   let live = $state(false);
 
   let video: HTMLVideoElement | null = null;
@@ -47,8 +46,7 @@ export function createPlayer() {
     retryTimer = setTimeout(() => load(channel, true), RETRY_MS);
   }
 
-  /* 応答コードが手元に無い経路については、ここで判定する。<video> の error は理由を持たないため、
-   * プレイリストを取り直して 404 かどうかを見る。 */
+  /* <video>のエラーは詳細を判別できないため、プレイリストの404を確認 */
   async function failByProbe() {
     let reason: 'idle' | 'waiting' = 'waiting';
     if (channel) {
@@ -56,7 +54,7 @@ export function createPlayer() {
         const res = await fetch(playlistUrl(channel), { cache: 'no-store' });
         if (res.status === 404) reason = 'idle';
       } catch {
-        /* 取りに行けない。端末の通信が切れている */
+        /* ネットワークオフライン */
       }
     }
     fail(reason);
@@ -82,7 +80,7 @@ export function createPlayer() {
     const p = video?.play();
     if (p && p.catch) {
       p.catch(() => {
-        // resumeFn は操作する人がいないサイネージのためにある
+        // サイネージなどの自動再生ブロックからの回復用
         resumeFn = () => video?.play().catch(() => {});
         state = 'blocked';
         live = false;
@@ -106,11 +104,11 @@ export function createPlayer() {
     try {
       Hls = await loadHlsJs();
     } catch {
-      /* 読めなかった場合は下のネイティブ HLS の分岐へ進む */
+      /* インポート失敗時はネイティブ再生を試行 */
     }
     const canHlsJs = !!(Hls && Hls.isSupported());
 
-    // Safari はここへ入る。hls.js を使わずネイティブの HLS で再生する。
+    // Safari等のネイティブHLS環境用のフォールバック
     if (!canHlsJs && canNative) {
       el.src = url;
       el.addEventListener('error', failByProbe, { once: true });
@@ -125,12 +123,11 @@ export function createPlayer() {
 
     const H = Hls;
     const instance = new H({
-      // media-chrome は duration が Infinity のときライブとして描画する
+      // media-chrome用のライブ配信認識設定
       liveDurationInfinity: true,
-      // 末端から 10 秒手前で再生する（セグメント 2 秒 × 5 本）。
-      // +page.svelte の liveedgeoffset はこの距離より大きくする。
+      // バッファ基準設定
       liveSyncDurationCount: 5,
-      // mediamtx.yml の hlsSegmentCount × セグメント長と同一にする（180 × 2 秒）
+      // MediaMTXの設定値に合わせたバッファ長（180 * 2秒）
       backBufferLength: 360,
     });
 
@@ -142,8 +139,7 @@ export function createPlayer() {
         instance.recoverMediaError();
         return;
       }
-      // 404 は MediaMTX が応答しており、その Ch に publish が無いことを表す。
-      // それ以外（5xx・タイムアウト・通信断）は届いていない側の問題になる。
+      // 接続エラーまたは未配信状態のハンドリング
       fail(data.response?.code === 404 ? 'idle' : 'waiting');
     });
 
@@ -151,7 +147,7 @@ export function createPlayer() {
     instance.attachMedia(el);
   }
 
-  /** <video> を渡して初期化する。戻り値は後片付けに使う。 */
+  /** video要素を接続する。戻り値はクリーンアップ関数 */
   function attach(el: HTMLVideoElement) {
     video = el;
     const v = el;
@@ -183,10 +179,10 @@ export function createPlayer() {
       return live;
     },
     resume: () => resumeFn?.(),
-    // load() より先に呼ぶと、media-chrome の読み込みと並行して取得できる
+    // 事前にプリフェッチする
     prefetch: () => {
       loadHlsJs().catch(() => {
-        /* ネイティブ HLS で再生できる可能性があるので、ここでは状態を変えない */
+        /* ネイティブ再生の可能性があるため、プリフェッチ失敗時はエラー処理を遅延 */
       });
     },
     attach,

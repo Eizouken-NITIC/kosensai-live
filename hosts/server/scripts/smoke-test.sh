@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# 起動後の疎通確認。ffmpeg でテストパターンを SRT publish し、
-# Caddy 経由で HLS プレイリストとセグメントが取れるところまで確認する。
+# 起動後の疎通確認用スクリプト。ffmpegでテストパターンをSRT送信し、
+# Caddy経由でHLSプレイリストとセグメントが取得できるかを確認します。
 #
-#   ./scripts/smoke-test.sh          # ch1 を 30 秒テスト
-#   ./scripts/smoke-test.sh ch3 60   # ch3 を 60 秒テスト
+#   ./scripts/smoke-test.sh          # ch1を30秒テスト
+#   ./scripts/smoke-test.sh ch3 60   # ch3を60秒テスト
 #
 # 前提: curl と、SRT 有効ビルドの ffmpeg。
 #   ffmpeg -protocols | grep -w srt で確認できる。
@@ -23,8 +23,8 @@ SRT_PORT="${SRT_PORT:-8890}"
 DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["site"]["domain"])' "${REPO_DIR}/config.json")}"
 JAR="$(mktemp)"
 
-# ⚠️ MediaMTX は最初のプレイリスト要求を ?cookieCheck=1 付き URL へ 302 し、
-#    セッション Cookie を張る。-L と Cookie jar が無いと 404 に見えるため注意する。
+# MediaMTXの仕様上、初回のプレイリスト要求時の302リダイレクト（Cookie付与）を
+# 追跡するためにcookie jarを使用します。
 fetch() { curl -sS -L -c "${JAR}" -b "${JAR}" --max-time 10 "$@"; }
 
 FFPID=""

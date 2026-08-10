@@ -25,16 +25,13 @@ srtAddress: :8890
 hls: yes
 hlsAddress: 127.0.0.1:8888
 hlsEncryption: no                  # TLS 終端は Caddy に集約
-# 視聴ページと HLS は同一オリジンのため実際には検査されない。Caddy 側では CORS ヘッダーを付与しない。
 hlsAllowOrigins: ["*"]
 hlsTrustedProxies: [127.0.0.1]     # 前段は Caddy
 hlsVariant: mpegts
-# OBS のキーフレーム間隔と同一にする。
+# OBS のキーフレーム間隔と同一にする
 hlsSegmentDuration: 2s
-# app/src/lib/player.svelte.ts の backBufferLength と同一にする（180 × 2 秒 = 360 秒）。
-# 4 チャンネル合計 18.5 Mbps で約 830 MB のメモリを占める。
+# app/src/lib/player.svelte.ts の backBufferLength と同一にする
 hlsSegmentCount: 180
-# 視聴開始までの待ち時間が 11.89 秒から 0.12 秒になる（リハーサル環境での実測）。
 hlsAlwaysRemux: yes
 
 ###############################################
@@ -56,20 +53,18 @@ playback: no
 #   例) srt://<server>:8890?streamid=publish:ch1&passphrase=...&latency=120000
 ###############################################
 paths:
-  # Ch1: 第一体育館（ATEM Mini Pro → 本部OBS → ここ）
+  # Ch1: 第一体育館
   ch1:
     source: publisher
 
-  # Ch2: 第二体育館（ATEM Mini Pro → 本部OBS → ここ）
+  # Ch2: 第二体育館
   ch2:
     source: publisher
 
-  # Ch3: 屋外遊撃 iPhone（Moblin → 本部OBS → ここ）
+  # Ch3: 屋外
   ch3:
     source: publisher
 
-  # Ch4: サイネージ合成（本部OBS 生成）
+  # Ch4: サイネージ合成
   ch4:
     source: publisher
-
-  # all_others を追加すると、任意のパス名への publish を許すことになる。
