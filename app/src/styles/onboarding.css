@@ -47,11 +47,12 @@ html.tour .page .topbar {
   margin-top: var(--sp-3);
   align-items: baseline;
 }
-/* 何番目かを示す数字である。桁が変わっても幅が動かないよう等幅で組む。 */
+/* 何番目かを示す数字である。桁が変わっても幅が動かないよう、サイネージの時計と同じく
+   等幅の書体ではなく数字だけを等幅にする。--font-mono はホスト名に取ってある。 */
 .driver-popover.onboarding .driver-popover-progress-text {
   color: var(--fg-muted);
-  font-family: var(--font-mono);
   font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
 }
 
 /* 上端のタブと同じ組み方にする。枠も下地も持たず、下線だけで主従を分ける。 */
@@ -78,7 +79,13 @@ html.tour .page .topbar {
   outline-offset: 3px;
 }
 
+/* 既定は 32×28 の横長で、字よりも当たり判定のほうが大きい。フォーカスの輪郭がその形で
+   出るため、字に合わせた正方形へ詰める。 */
 .driver-popover.onboarding .driver-popover-close-btn {
+  width: 1.5em;
+  height: 1.5em;
+  font-size: var(--fs-md);
+  line-height: 1.5em;
   color: var(--fg-muted);
 }
 .driver-popover.onboarding .driver-popover-close-btn:hover,

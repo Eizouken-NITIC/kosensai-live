@@ -47,7 +47,7 @@ export async function startOnboarding(): Promise<void> {
     stageRadius: STAGE_RADIUS,
     stagePadding: STAGE_PADDING,
     showProgress: true,
-    progressText: '{{current}} / {{total}}',
+    progressText: '{{current}}/{{total}}',
     nextBtnText: '次へ',
     prevBtnText: '戻る',
     doneBtnText: '視聴をはじめる',
