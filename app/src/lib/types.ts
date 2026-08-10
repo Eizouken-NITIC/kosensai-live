@@ -31,11 +31,11 @@ export type Signage = {
  *
  * - `connecting`  接続を試している最中。まだ失敗していない
  * - `playing`     再生中
- * - `waiting`     取得に失敗した。その Ch はまだ配信されていない
+ * - `idle`        プレイリストが 404。サーバーは応答しており、その Ch に publish が無い
+ * - `waiting`     それ以外の失敗。サーバーの停止か端末の通信断で、区別は付かない
  * - `blocked`     ブラウザの自動再生ポリシーで止められた
  * - `unsupported` HLS を再生できないブラウザ
  *
- * `connecting` と `waiting` を分けているのは、Ch を切り替えた直後に
- * 配信されていないと断定してしまわないため。
+ * `connecting` を分けているのは、Ch を切り替えた直後に失敗と断定しないため。
  */
-export type PlayerState = 'connecting' | 'playing' | 'waiting' | 'blocked' | 'unsupported';
+export type PlayerState = 'connecting' | 'playing' | 'idle' | 'waiting' | 'blocked' | 'unsupported';

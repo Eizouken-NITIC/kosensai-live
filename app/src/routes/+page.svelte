@@ -187,12 +187,17 @@
       </media-control-bar>
     </media-controller>
 
-    <!-- 映像が出ない理由は、配信の開始前・サーバーの停止・端末の通信断のいずれも
-         ありうる。アプリはこれらを区別できないため、状態を断定せず読み込み中とだけ
-         示す。配信を行わない時間帯は OBS がテロップを送るため、その旨は映像に映る。 -->
-    {#if player.state === 'connecting' || player.state === 'waiting'}
+    {#if player.state === 'connecting'}
       <div class="cover" role="status" aria-live="polite">
         <p>読み込み中…</p>
+      </div>
+    {:else if player.state === 'idle'}
+      <div class="cover" role="status" aria-live="polite">
+        <p>このチャンネルは配信されていません</p>
+      </div>
+    {:else if player.state === 'waiting'}
+      <div class="cover" role="status" aria-live="polite">
+        <p>接続できません</p>
         <!-- 自動リトライは続いているが、待てない人のために手動の出口も出す。 -->
         <button class="retry" type="button" onclick={() => player.load(current)}>
           今すぐ再読み込み

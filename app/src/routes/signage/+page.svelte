@@ -11,6 +11,14 @@
 
   const player = createPlayer();
 
+  const coverText = $derived(
+    player.state === 'idle'
+      ? 'このチャンネルは配信されていません'
+      : player.state === 'waiting'
+        ? '接続できません'
+        : '読み込み中…',
+  );
+
   let clock = $state('--:--');
   let videoEl = $state<HTMLVideoElement | null>(null);
   let site = $state<ReturnType<typeof EmbeddedSite> | null>(null);
@@ -65,11 +73,9 @@
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={videoEl} playsinline autoplay preload="none"></video>
 
-    <!-- 配信を行わない時間帯は OBS がテロップを送るため、その旨は映像に映る。
-         ここでは配信の状態を断定しない。 -->
     {#if !player.isLive}
       <div class="cover">
-        <p>読み込み中…</p>
+        <p>{coverText}</p>
       </div>
     {/if}
   </section>

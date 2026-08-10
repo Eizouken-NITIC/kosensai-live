@@ -11,6 +11,10 @@ const RETRY_MS = 5000;
 
 let hlsJsPromise: Promise<HlsConstructor> | null = null;
 
+function playlistUrl(ch: string): string {
+  return `/hls/${ch}/index.m3u8`;
+}
+
 function loadHlsJs(): Promise<HlsConstructor> {
   if (!hlsJsPromise) {
     hlsJsPromise = import('hls.js').then((mod) => mod.default);
@@ -36,11 +40,26 @@ export function createPlayer() {
     }
   }
 
-  function fail() {
+  function fail(reason: 'idle' | 'waiting') {
     clearRetry();
-    state = 'waiting';
+    state = reason;
     live = false;
     retryTimer = setTimeout(() => load(channel, true), RETRY_MS);
+  }
+
+  /* 応答コードが手元に無い経路のための判定。<video> の error は理由を持たないため、
+   * プレイリストを取り直して 404 かどうかを見る。 */
+  async function failByProbe() {
+    let reason: 'idle' | 'waiting' = 'waiting';
+    if (channel) {
+      try {
+        const res = await fetch(playlistUrl(channel), { cache: 'no-store' });
+        if (res.status === 404) reason = 'idle';
+      } catch {
+        /* 取りに行けない。端末の通信が切れている */
+      }
+    }
+    fail(reason);
   }
 
   function teardown() {
@@ -80,7 +99,7 @@ export function createPlayer() {
       state = 'connecting';
     }
 
-    const url = `/hls/${ch}/index.m3u8`;
+    const url = playlistUrl(ch);
     const canNative = !!el.canPlayType('application/vnd.apple.mpegurl');
 
     let Hls: HlsConstructor | null = null;
@@ -94,7 +113,7 @@ export function createPlayer() {
     // Safari はここへ入る。hls.js を使わずネイティブの HLS で再生する。
     if (!canHlsJs && canNative) {
       el.src = url;
-      el.addEventListener('error', fail, { once: true });
+      el.addEventListener('error', failByProbe, { once: true });
       attemptPlay();
       return;
     }
@@ -123,8 +142,9 @@ export function createPlayer() {
         instance.recoverMediaError();
         return;
       }
-      // NETWORK_ERROR の 404 = MediaMTX にまだ publish されていない = 配信開始前
-      fail();
+      // 404 は MediaMTX が応答しており、その Ch に publish が無いことを表す。
+      // それ以外（5xx・タイムアウト・通信断）は届いていない側の問題になる。
+      fail(data.response?.code === 404 ? 'idle' : 'waiting');
     });
 
     instance.loadSource(url);
@@ -143,13 +163,13 @@ export function createPlayer() {
     };
 
     v.addEventListener('playing', onPlaying);
-    v.addEventListener('error', fail);
-    v.addEventListener('ended', fail);
+    v.addEventListener('error', failByProbe);
+    v.addEventListener('ended', failByProbe);
 
     return () => {
       v.removeEventListener('playing', onPlaying);
-      v.removeEventListener('error', fail);
-      v.removeEventListener('ended', fail);
+      v.removeEventListener('error', failByProbe);
+      v.removeEventListener('ended', failByProbe);
       teardown();
       video = null;
     };
