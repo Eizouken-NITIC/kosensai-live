@@ -40,18 +40,6 @@ export async function startOnboarding(): Promise<void> {
 
   const { driver } = await import('driver.js');
 
-  /* 幅を変えられるのは映像とパネルが横に並ぶときだけである。その判定は CSS が持つので、
-     ブレークポイントの数値を写さず、つまみが表示されているかどうかで見る。 */
-  const grip = document.querySelector('.grip');
-  const resizable = !!grip && getComputedStyle(grip).display !== 'none';
-
-  const panelText = [
-    `${externalSite.title}をこの中に表示しています。`,
-    '中でページを開いたあとは、ブラウザの戻る操作で前のページへ戻れます。',
-    '右下のボタンを押すと、別のタブで開きます。',
-    resizable ? '左の境界をドラッグすると、幅を変えられます。' : '',
-  ].join('');
-
   const tour = driver({
     popoverClass: 'onboarding',
     overlayColor: OVERLAY_COLOR,
@@ -100,7 +88,7 @@ export async function startOnboarding(): Promise<void> {
         element: '.panel',
         popover: {
           title: externalSite.title,
-          description: panelText,
+          description: externalSite.description,
         },
       },
     ],

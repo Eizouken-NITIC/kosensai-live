@@ -24,6 +24,8 @@ export type Site = {
 export type ExternalSite = {
   /** 画面に表示する表示名である。 */
   title: string;
+  /** 初回の案内でこの欄を説明する文である。 */
+  description: string;
   /** iframe に表示する URL である。 */
   embedUrl: string;
   /** 別タブで開く URL である。 */

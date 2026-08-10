@@ -14,7 +14,8 @@
     "  label は来場者に表示する唯一の文字列。id の ChN は運用側の呼称であるため表示しない。",
     "externalSite: このリポジトリの外で運用されているサイト。視聴ページとサイネージが",
     "  iframe で埋め込み、別タブへのリンクも表示する。",
-    "  embedUrl は iframe に表示する URL、homeUrl は別タブで開く URL、title は表示名である。"
+    "  embedUrl は iframe に表示する URL、homeUrl は別タブで開く URL、title は表示名である。",
+    "  description は初回の案内でこの欄を説明する文である。"
   ],
   "site": {
     "name": "KOSENSAI-LIVE",
@@ -22,6 +23,7 @@
   },
   "externalSite": {
     "title": "高専祭公式サイト",
+    "description": "高専祭公式サイトをこの中に表示しています。中でページを開いたあとは、ブラウザの戻る操作で前のページへ戻れます。右下のボタンを押すと、別のタブで開きます。",
     "embedUrl": "https://kosensai.ichinoseki.ac.jp/",
     "homeUrl": "https://kosensai.ichinoseki.ac.jp/"
   },
