@@ -2,8 +2,11 @@
    選択子は画面ごとのファイルへ分ける。マークアップとブロックの対応を 1 対 1 に保つため、
    ページ固有の規則は必ずルート（.page / .signage）のネストの中へ入れる。 */
 
+@import 'driver.js/dist/driver.css';
+
 @import './styles/tokens.css';
 @import './styles/shared.css';
 @import './styles/media-chrome.css';
 @import './styles/viewer.css';
 @import './styles/signage.css';
+@import './styles/onboarding.css';

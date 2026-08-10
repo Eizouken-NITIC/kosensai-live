@@ -6,7 +6,7 @@
   import { setThemeColor } from '$lib/themeColor';
   import Logo from '$lib/components/Logo.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
-  import Welcome from '$lib/components/Welcome.svelte';
+  import { startOnboarding } from '$lib/onboarding';
   import { channels, site } from '$lib/config';
 
   const DEFAULT_CH = 'ch1';
@@ -129,6 +129,7 @@
       }
     }
     select(initial ?? DEFAULT_CH, false);
+    startOnboarding();
 
     return () => {
       clearTimeout(hideTimer);
@@ -242,6 +243,4 @@
   <aside class="panel" style="--panel-w: {panelWidth}px">
     <EmbeddedSite allowPopups withLink />
   </aside>
-
-  <Welcome />
 </div>

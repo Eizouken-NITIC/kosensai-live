@@ -11,6 +11,9 @@ importers:
       '@fontsource-variable/noto-sans-jp':
         specifier: ^5.3.0
         version: 5.3.0
+      driver.js:
+        specifier: ^1.8.0
+        version: 1.8.0
       hls.js:
         specifier: ^1.6.16
         version: 1.6.16
@@ -450,6 +453,9 @@ packages:
 
   devalue@5.9.0:
     resolution: {integrity: sha512-RWrqdArjvPbsATEhOPUo6Wndc/iWnkWKlhIrdlF3zMMYo/c3CVtoaVAyLtWxz5h8nSlkHzxnzV2uLydPXmtF+A==}
+
+  driver.js@1.8.0:
+    resolution: {integrity: sha512-+8/IO7h1v14IzWh2GP60N7T3PFZweXwdn5e5POuxRSBoCYUojsBxzqawPeXh3YZIibRy7EehYNEyxe7slwwtdg==}
 
   esbuild@0.28.1:
     resolution: {integrity: sha512-HrJrvZv5ayxBzPfwphOoNzkzOIIlifzk0KJrGK2c8R4+LKpMtpYLQeUdjnwjWv/LZlkH2laZk+4w78pi99D4Vw==}
@@ -900,6 +906,8 @@ snapshots:
   deepmerge@4.3.1: {}
 
   devalue@5.9.0: {}
+
+  driver.js@1.8.0: {}
 
   esbuild@0.28.1:
     optionalDependencies:

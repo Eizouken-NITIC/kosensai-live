@@ -1,0 +1,95 @@
+/* 初回の案内（driver.js）の外観を、この画面の下地・文字・余白のトークンへ揃える。
+   driver.js は吹き出しを body の直下へ追加するため、.page のネストの中には置けない。 */
+
+/* 幅 1000px 以上では操作が無いと上端のバーが消える。案内が上端を指している間は出したままにする。 */
+html.tour .page .topbar {
+  opacity: 1;
+}
+
+:root {
+  --driver-popover-font-family: var(--font);
+  /* 画面の他の切り替えと同じ速さにする */
+  --driver-animation-duration: 200ms;
+}
+
+.driver-popover.onboarding {
+  max-width: 22em;
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: var(--fs-md);
+  /* 既定の影は白い吹き出しを前提にしており、暗い下地では輪郭が濁る */
+  box-shadow: none;
+}
+
+.driver-popover.onboarding .driver-popover-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: 1.5;
+}
+.driver-popover.onboarding .driver-popover-title[style*='block'] + .driver-popover-description {
+  margin-top: var(--sp-2);
+}
+.driver-popover.onboarding .driver-popover-description {
+  color: var(--fg-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+}
+
+.driver-popover.onboarding .driver-popover-footer {
+  margin-top: var(--sp-4);
+}
+/* 何番目かを示す数字である。桁が変わっても幅が動かないよう等幅で組む。 */
+.driver-popover.onboarding .driver-popover-progress-text {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+.driver-popover.onboarding .driver-popover-navigation-btns button + button {
+  margin-left: var(--sp-2);
+}
+
+/* 押しボタンの形は覆いの中の .retry と揃える。色だけ下地に合わせる。 */
+.driver-popover.onboarding .driver-popover-footer-btn {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--sp-2) var(--sp-3);
+  background: transparent;
+  color: var(--fg);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.driver-popover.onboarding .driver-popover-footer-btn:hover,
+.driver-popover.onboarding .driver-popover-footer-btn:focus {
+  background: var(--line);
+}
+/* 先へ進む操作が主である。タブの下線と同じアクセントで示す。 */
+.driver-popover.onboarding .driver-popover-navigation-btns button:last-child {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.driver-popover.onboarding .driver-popover-close-btn {
+  color: var(--fg-muted);
+}
+.driver-popover.onboarding .driver-popover-close-btn:hover,
+.driver-popover.onboarding .driver-popover-close-btn:focus {
+  color: var(--fg);
+}
+
+/* 矢印は 4 辺のうち 1 辺だけを見せる三角形であり、見せる辺は指す向きごとに違う。
+   まとめて border-color を指定すると、透明にしてある 3 辺まで塗ってしまう。 */
+.driver-popover.onboarding .driver-popover-arrow-side-top {
+  border-top-color: var(--surface);
+}
+.driver-popover.onboarding .driver-popover-arrow-side-bottom {
+  border-bottom-color: var(--surface);
+}
+.driver-popover.onboarding .driver-popover-arrow-side-left {
+  border-left-color: var(--surface);
+}
+.driver-popover.onboarding .driver-popover-arrow-side-right {
+  border-right-color: var(--surface);
+}
