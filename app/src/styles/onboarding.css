@@ -79,13 +79,8 @@ html.tour .page .topbar {
   outline-offset: 3px;
 }
 
-/* 既定は 32×28 の横長で、字よりも当たり判定のほうが大きい。フォーカスの輪郭がその形で
-   出るため、字に合わせた正方形へ詰める。 */
+/* 既定のホバーは白地の吹き出しを前提にした濃い灰であり、この下地では見えなくなる。 */
 .driver-popover.onboarding .driver-popover-close-btn {
-  width: 1.5em;
-  height: 1.5em;
-  font-size: var(--fs-md);
-  line-height: 1.5em;
   color: var(--fg-muted);
 }
 .driver-popover.onboarding .driver-popover-close-btn:hover,
