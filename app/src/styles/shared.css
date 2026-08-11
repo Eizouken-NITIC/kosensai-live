@@ -101,16 +101,3 @@
   border: 0;
   background: #fff;
 }
-.embed-link {
-  position: absolute;
-  right: var(--sp-3);
-  bottom: calc(var(--sp-3) + var(--safe-b));
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--radius-round);
-  background: var(--scrim-2);
-  color: var(--on-video);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  text-decoration: none;
-  backdrop-filter: blur(6px);
-}

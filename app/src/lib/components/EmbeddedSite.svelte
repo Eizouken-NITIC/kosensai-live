@@ -1,9 +1,7 @@
 <script lang="ts">
   import { externalSite } from '$lib/config';
 
-  /* allowPopups: 埋め込んだページ内のリンクを新しいタブで開けるようにする。 */
-  let { allowPopups = false, withLink = false }: { allowPopups?: boolean; withLink?: boolean } =
-    $props();
+  let { allowPopups = false }: { allowPopups?: boolean } = $props();
 
   let frameEl = $state<HTMLIFrameElement | null>(null);
 
@@ -24,10 +22,4 @@
       ? 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox'
       : 'allow-scripts allow-same-origin'}
   ></iframe>
-{/if}
-
-{#if withLink && externalSite.homeUrl}
-  <a class="embed-link" href={externalSite.homeUrl} target="_blank" rel="noopener">
-    {externalSite.title}を開く ↗
-  </a>
 {/if}
