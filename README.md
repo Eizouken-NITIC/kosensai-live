@@ -42,7 +42,7 @@
    └───────────────► サイネージ端末
 ```
 
-配信サーバーでは MediaMTX が SRT ストリームを受信し、トランスコードせずに HLS へ remux します。トランスコードや ABR は行なわれません。Caddy が TLS 終端・リバースプロキシ・静的配信を担い、視聴ページとサイネージページも同じサーバーから配信します。
+配信サーバーでは MediaMTX が SRT ストリームを受信し、トランスコードも ABR も行わずに HLS へ remux します。Caddy が TLS 終端・リバースプロキシ・静的配信を担い、視聴ページとサイネージページも同じサーバーから配信します。
 
 TLS 証明書は、配信サーバーがプライベートネットワーク上にあり HTTP-01 チャレンジが到達しないため、Let's Encrypt の DNS-01 チャレンジで取得しています。
 
@@ -67,8 +67,7 @@ Raspberry Pi 上で Chromium Kiosk モードでの運用を想定しています
 
 ### ローカル検証環境
 
-Docker Compose で動くローカル検証環境を用意しています。
-視聴ページの挙動確認、チャンネル切り替え、回線切断時の自動復帰、サイネージの表示確認、負荷テストまで手元で実行できます。
+Docker Compose で動きます。視聴ページの挙動確認、チャンネル切り替え、回線切断時の自動復帰、サイネージの表示確認、負荷テストまで手元で実行できます。
 
 ---
 
@@ -114,8 +113,6 @@ kosensai-live/
 
 ## 3. クイックスタート
 
-Docker があれば、配信サーバーからテスト映像の送出までを PC 1 台で立ち上げられます。カメラも実機のサーバーも必要ありません。
-
 ```bash
 cd rehearsal
 ./scripts/up.sh          # 起動
@@ -137,7 +134,7 @@ cd rehearsal
 cd app
 pnpm install
 pnpm lint        # Prettier と svelte-check の実行
-pnpm build       # 本番用ビルド（成果物は web/ に出力されます）
+pnpm build       # 成果物は web/ に出力されます
 ```
 
 **2. 配信サーバーを構築する（MediaMTX + Caddy）**
@@ -145,7 +142,7 @@ pnpm build       # 本番用ビルド（成果物は web/ に出力されます�
 ```bash
 cd hosts/server
 cp .env.example .env     # チャンネルごとの SRT パスフレーズを設定します
-sudo ./scripts/get-cert.sh   # TLS 証明書を取得します（DNS-01 チャレンジ）
+sudo ./scripts/get-cert.sh   # DNS-01 チャレンジで取得します
 ./scripts/preflight.sh       # 設定・証明書・カーネルパラメータの整合性を確認します
 docker compose up -d
 ```
@@ -163,8 +160,6 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 ---
 
 ## 5. 設定の編集
-
-`config.json` を書き換えることで、チャンネル構成・サイト名・外部埋め込みサイト等をカスタマイズできます。
 
 ### config.json
 
@@ -189,8 +184,6 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 サイネージに表示する QR コードは `tools/make-qr.py` で生成します。config のドメインを変更した場合に実行してください。
 
 ### エンドポイント
-
-デプロイ後のアクセス先は以下の通りです。
 
 - **視聴用 Web ページ**: `https://<domain>/`
 - **サイネージ用ページ**: `https://<domain>/signage/`
