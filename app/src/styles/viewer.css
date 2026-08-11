@@ -70,6 +70,34 @@
     border-top-width: 1px;
   }
 
+  .panel-links {
+    position: absolute;
+    right: var(--sp-3);
+    bottom: calc(var(--sp-3) + var(--safe-b));
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .panel-link {
+    display: flex;
+    align-items: center;
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--radius-round);
+    background: var(--scrim-2);
+    color: var(--on-video);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-decoration: none;
+    backdrop-filter: blur(6px);
+  }
+  .panel-link.gh {
+    padding: var(--sp-2);
+  }
+  .panel-link.gh svg {
+    width: 1em;
+    height: 1em;
+  }
+
   /* 幅を変えられるのは横並びのときだけなので、つまみは表示しない */
   .grip {
     display: none;

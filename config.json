@@ -2,8 +2,9 @@
   "_comment": [
     "配信の定義。複数のマシンに跨って一致している必要がある値をここに集約する。",
     "app とシェルスクリプトと tools が、いずれもこのファイルを直接参照する。",
-    "site: 配信サイトの名前とホスト名。名前は各ページの title・ロゴの代替テキスト・",
-    "  OS の再生通知に出る。",
+    "site: 配信サイトの名前・ホスト名・GitHub リポジトリの URL。名前は各ページの",
+    "  title・ロゴの代替テキスト・OS の再生通知に出る。repository は視聴ページの",
+    "  GitHub リンクに使う。",
     "  Caddyfile だけは JSON を読めないためホスト名を直接書いており、preflight.sh が",
     "  このファイルと突き合わせる。",
     "signage: ?ch= が付かない場合に映す Ch と、QR の脇に表示する文言。",
@@ -20,7 +21,8 @@
   ],
   "site": {
     "name": "KOSENSAI-LIVE",
-    "domain": "live.kosensai.ichinoseki.ac.jp"
+    "domain": "live.kosensai.ichinoseki.ac.jp",
+    "repository": "https://github.com/Eizouken-NITIC/kosensai-live"
   },
   "externalSite": {
     "title": "高専祭公式サイト",

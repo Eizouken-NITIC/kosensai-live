@@ -16,6 +16,8 @@ export type Site = {
   name: string;
   /** 配信サイトのホスト名である。 */
   domain: string;
+  /** GitHub リポジトリの URL である。視聴ページにリンクを表示する。 */
+  repository: string;
 };
 
 /** このリポジトリの外で運用されているサイトの所在を表す。iframe で埋め込み、リンクも表示する。 */
