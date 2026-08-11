@@ -7,7 +7,7 @@
 #   CLIENTS  同時視聴者数（既定 10）
 #   CH       対象チャンネル（既定 ch1）
 #   DURATION 実行秒数（既定 30）
-#   DOMAIN   既定 live.kosensai.ichinoseki.ac.jp
+#   DOMAIN   必須（load-test.sh が config.json から渡す）
 #
 # 結果は /out/c<i> に "バイト数 セグメント数 エラー数" 形式で書く。
 
@@ -16,7 +16,7 @@ set -u
 CLIENTS="${CLIENTS:-10}"
 CH="${CH:-ch1}"
 DURATION="${DURATION:-30}"
-DOMAIN="${DOMAIN:-live.kosensai.ichinoseki.ac.jp}"
+DOMAIN="${DOMAIN:?DOMAIN is required}"
 BASE="https://${DOMAIN}"
 
 # 自己署名なので -k。cookieCheck の 302 を追うため -L と Cookie jar。

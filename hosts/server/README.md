@@ -49,7 +49,7 @@ sudo sysctl -n net.core.rmem_max
 echo 'net.core.rmem_max=26214400' | sudo tee /etc/sysctl.d/99-srt.conf
 
 # 2. 本リポジトリをクローンし、作業ディレクトリへ移動します
-git clone <本リポジトリのURL> && cd kosensai-broadcast/hosts/server
+git clone <本リポジトリのURL> && cd kosensai-live/hosts/server
 
 # 3. .env ファイルを作成し、パスフレーズを記述します（Chごとに10〜79文字）
 cp .env.example .env

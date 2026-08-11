@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Let's Encrypt証明書をDNS-01チャレンジ（手動）で取得し、certs/に配置するスクリプト
-# ※学内プライベートIPのためHTTP-01は使用不可
+# プライベート IP のため HTTP-01 は使用不可
 #
 #   sudo ./scripts/get-cert.sh
 

@@ -48,7 +48,7 @@ services:
     volumes:
       - ../hosts/server/mediamtx.yml:/mediamtx.yml:ro
     ports:
-      # 視聴は https://live.kosensai.ichinoseki.ac.jp:8443/（/etc/hosts に要追記）
+      # 視聴は https://<domain>:8443/（/etc/hosts に要追記）
       - "8443:443"
       # SRT。外から手で送り込みたいとき用（publisher は内部で完結する）
       - "8890:8890/udp"
@@ -75,6 +75,8 @@ services:
     restart: unless-stopped
     network_mode: "service:mediamtx"
     depends_on: [caddy]
+    environment:
+      DOMAIN: "${DOMAIN}"
     volumes:
       - ./preview.Caddyfile:/etc/caddy/Caddyfile:ro
 

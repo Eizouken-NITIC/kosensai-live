@@ -19,6 +19,7 @@ cd "${REH_DIR}"
 CLIENTS="${1:-10}"
 CH="${2:-ch1}"
 DURATION="${3:-30}"
+DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["site"]["domain"])' ../config.json)}"
 
 docker inspect rehearsal-mediamtx >/dev/null 2>&1 \
   || { echo "リハーサル環境が起動していません。先に ./scripts/up.sh を実行してください" >&2; exit 1; }
@@ -47,7 +48,7 @@ for ch in ${CHANNELS}; do
   docker run --rm -d \
     --name "rehearsal-client-${ch}" \
     --network "container:rehearsal-mediamtx" \
-    -e CLIENTS="${CLIENTS}" -e CH="${ch}" -e DURATION="${DURATION}" \
+    -e CLIENTS="${CLIENTS}" -e CH="${ch}" -e DURATION="${DURATION}" -e DOMAIN="${DOMAIN}" \
     -v "${REH_DIR}/client/pull.sh:/pull.sh:ro" \
     -v "${REH_DIR}/out/${ch}:/out" \
     --entrypoint /bin/sh \

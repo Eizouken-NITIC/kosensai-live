@@ -76,7 +76,7 @@ else:
     line("NG", "31", "mediamtx.yml=%s / config.json=%s" % (sorted(mtx), sorted(web)))
     ok = False
 
-	# Caddyfileの記述内容とconfig.jsonのドメイン整合性を検証します。
+
 caddy = (repo / "hosts/server/Caddyfile").read_text(encoding="utf-8")
 hosts = set(re.findall(r"^([A-Za-z0-9.-]+\.[A-Za-z]{2,})\s*\{", caddy, re.M))
 if hosts == {conf["site"]["domain"]}:

@@ -9,13 +9,16 @@ set -euo pipefail
 REH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REH_DIR}"
 
-DOMAIN="live.kosensai.ichinoseki.ac.jp"
+DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["site"]["domain"])' ../config.json)}"
 PORT=8443
 PREVIEW_PORT=8080
 WITH_PUBLISHERS=1
 [[ "${1:-}" == "--idle" ]] && WITH_PUBLISHERS=0
 
 command -v docker >/dev/null || { echo "docker が必要です" >&2; exit 1; }
+
+# compose.yml と preview.Caddyfile が参照する環境変数を書き出す
+echo "DOMAIN=${DOMAIN}" > .env
 
 # --- 自己署名証明書（本番は certbot の DNS-01。ここでは検証用） -------------
 if [[ ! -f certs/fullchain.pem ]]; then

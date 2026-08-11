@@ -53,18 +53,12 @@ playback: no
 #   例) srt://<server>:8890?streamid=publish:ch1&passphrase=...&latency=120000
 ###############################################
 paths:
-  # Ch1: 第一体育館
+  # config.json の channels[].id と一致させる
   ch1:
     source: publisher
-
-  # Ch2: 第二体育館
   ch2:
     source: publisher
-
-  # Ch3: 屋外
   ch3:
     source: publisher
-
-  # Ch4: サイネージ合成
   ch4:
     source: publisher

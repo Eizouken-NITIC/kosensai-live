@@ -1,6 +1,7 @@
 # 実値のパスフレーズ。絶対にコミットしない。
 .env
 hosts/server/.env
+rehearsal/.env
 
 # 証明書（certbot で取得したもの）
 *.pem

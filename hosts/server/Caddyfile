@@ -1,8 +1,8 @@
 # Caddy（唯一の TLS 終端）
 #
-# 学内サーバーには外部からの HTTP-01 審査通信が届かないため、
-# Caddy の自動 ACME は使わず、certbot（DNS-01・手動）で取得した
-# 証明書を明示指定する。
+# 配信サーバーはプライベートネットワーク上にあり、外部からの
+# HTTP-01 チャレンジが到達しないため、Caddy の自動 ACME は使わず
+# certbot（DNS-01・手動）で取得した証明書を明示指定する。
 {
 	# 自動 HTTPS のリダイレクトだけ有効、ACME 発行はしない
 	auto_https disable_redirects
@@ -62,7 +62,7 @@ live.kosensai.ichinoseki.ac.jp {
 	}
 }
 
-# 学内で IP 直打ち・名前違いで来た場合の受け皿（TLS なし）
+# IP 直打ち・名前違いで来た場合の受け皿（TLS なし）
 :80 {
 	redir https://live.kosensai.ichinoseki.ac.jp{uri} permanent
 }
