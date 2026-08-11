@@ -70,6 +70,9 @@
     border-top-width: 1px;
   }
 
+  /* ---- 埋め込みの上に重ねるリンク ---- */
+  /* 帯は左右いっぱいに伸びるので、そのままでは埋め込んだページの下端がクリック
+     できなくなる。帯は操作を透過させ、その中のリンクだけが受け取る。 */
   .panel-links {
     --link-h: 30px;
     position: absolute;
@@ -78,7 +81,8 @@
     bottom: calc(var(--sp-3) + var(--safe-b));
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: var(--sp-2);
+    pointer-events: none;
   }
   .panel-link {
     display: flex;
@@ -93,6 +97,12 @@
     font-weight: 600;
     text-decoration: none;
     backdrop-filter: blur(6px);
+    pointer-events: auto;
+  }
+  /* 外部サイトへのリンクは右端に置く。space-between にすると、GitHub の
+     リンクが無い構成でこれが左へ寄ってしまう。 */
+  .panel-link.external {
+    margin-left: auto;
   }
   .panel-link.gh {
     width: var(--link-h);

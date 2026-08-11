@@ -1,6 +1,9 @@
 <script lang="ts">
   import { externalSite } from '$lib/config';
 
+  /* allowPopups: 埋め込んだページ内のリンクを新しいタブで開けるようにする。
+     sandbox を緩めるため、操作の主体が来場者である視聴ページだけで渡す。
+     サイネージは無人で表示するだけなので渡さない。 */
   let { allowPopups = false }: { allowPopups?: boolean } = $props();
 
   let frameEl = $state<HTMLIFrameElement | null>(null);

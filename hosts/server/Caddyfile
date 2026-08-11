@@ -34,8 +34,13 @@ live.kosensai.ichinoseki.ac.jp {
 	}
 
 	# --- ライセンス全文（ディレクトリ一覧を有効にする） ---
+	# handle /licenses/* は末尾スラッシュ無しの /licenses にマッチしないため、
+	# 一覧へ寄せる。付け忘れると catch-all の file_server に落ちて 404 になる。
+	redir /licenses /licenses/
+
 	handle /licenses/* {
 		root * /srv/live
+		encode zstd gzip
 		file_server browse
 	}
 
