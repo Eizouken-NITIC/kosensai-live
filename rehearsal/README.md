@@ -71,6 +71,13 @@ docker compose logs -f mediamtx
 | **サイネージ専用ページ** | [http://localhost:8080/signage/](http://localhost:8080/signage/) |
 | **チャンネル直接指定** | [http://localhost:8080/?ch=ch3](http://localhost:8080/?ch=ch3) |
 
+### LAN の実機（スマホ等）から開く場合
+
+`scripts/up.sh` が起動時に、この PC の LAN アドレスと mDNS 名を一覧で表示します。表示された `https://<アドレス>:8444/` を実機のブラウザで開いてください。自己署名証明書のため警告が出ますが、「詳細設定」から進めば視聴できます。
+
+平文の `http://<アドレス>:8080/` でもページ自体は開きますが、映像の再生は始まりません。MediaMTX が HLS のセッション Cookie に `Secure` 属性を付けるため、ブラウザが安全なコンテキストと見なさない接続では Cookie を保存できないためです。`http://localhost` だけは例外的に安全なコンテキストとして扱われるので、この PC からは平文で視聴できます。
+
+証明書には起動時点の LAN アドレスが記録されます。接続するネットワークを変えてアドレスが変わった場合は、`scripts/up.sh` を実行し直すと証明書を作り直します。
 
 <details>
 <summary>本番と同じホスト名・TLS で開きたい場合</summary>
@@ -126,7 +133,7 @@ sudo sed -i '' "/${DOMAIN//./\\.}/d" /etc/hosts
 | `compose.yml` | MediaMTX、Caddy、プレビュー中継プロキシ、テストパターン送信コンテナ4系統を起動・管理するDocker Composeファイル。 |
 | `publisher.Dockerfile` | テスト映像配信用FFmpegコンテナのビルドファイル。日本語フォントを追加しています。 |
 | `publish.sh` | 1チャンネル分のカラーバー映像、テストサイン波、タイムコードをFFmpegで合成してSRT送出するプログラム。 |
-| `preview.Caddyfile` | ローカルでのhosts設定変更を回避するために稼働する、リバースプロキシ用Caddyの設定ファイル。 |
+| `preview.Caddyfile` | ローカルでのhosts設定変更を回避するために稼働する、リバースプロキシ用Caddyの設定ファイル。平文の 8080 と、LAN の実機から開くための TLS の 8444 を持ちます。 |
 | `scripts/up.sh` | 自己署名証明書（SSL/TLS）を自動作成したのち、検証環境を立ち上げる起動スクリプト。 |
 | `scripts/down.sh` | 動作しているすべてのコンテナを停止・消去するスクリプト（`--clean` 指定ですべての生成データも削除します）。 |
 | `scripts/reload.sh` | フロントエンドソースコード（`app/` 配下）をリビルドして再適用し、Caddyコンテナの接続を自動再構築するスクリプト。 |

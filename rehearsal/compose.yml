@@ -54,6 +54,8 @@ services:
       - "8890:8890/udp"
       # プレビュー用の入口（/etc/hosts と証明書警告を回避する。preview.Caddyfile 参照）
       - "8080:8080"
+      # プレビュー用の入口（TLS）。LAN の実機から開くときに使う。
+      - "8444:8444"
     # HLS(127.0.0.1:8888) は本番同様わざと公開しない。Caddy 経由でのみ触れる。
 
   caddy:
@@ -79,6 +81,7 @@ services:
       DOMAIN: "${DOMAIN}"
     volumes:
       - ./preview.Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
 
   # --- テストパターン送出 --------------------------------------------------
   pub-ch1:

@@ -3,9 +3,11 @@
 hosts/server/.env
 rehearsal/.env
 
-# 証明書（certbot で取得したもの）
+# 証明書（本番は certbot、リハーサルは up.sh が生成する）
 *.pem
 *.key
+hosts/server/certs/
+rehearsal/certs/
 
 # 録画・作業ファイル
 # 拡張子だけで無視すると、MPEG-TS のセグメントと TypeScript のソースが
