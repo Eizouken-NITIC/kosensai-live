@@ -61,6 +61,7 @@ TLS 証明書は、配信サーバーがプライベートネットワーク上�
 Raspberry Pi 上で Chromium Kiosk モードでの運用を想定しています。
 
 - 配信開始の自動検出と再生開始
+- ライブ先端への自動追従（遅れを再生速度とシークで詰め戻し）
 - 長時間運転向けのページ自動リロード（6時間周期）
 - QR コード表示
 
@@ -113,7 +114,9 @@ kosensai-live/
 
 ## 3. クイックスタート
 
-### 検証環境の起動と停止
+### まず手元で動かす
+
+Docker があれば、配信サーバーからテスト映像の送出までを PC 1 台で立ち上げられます。カメラも実機のサーバーも必要ありません。
 
 ```bash
 cd rehearsal
@@ -122,14 +125,40 @@ cd rehearsal
 ./scripts/down.sh        # 停止
 ```
 
-### 配信サイトのビルド
+負荷テストや LAN の実機からの確認方法は [rehearsal/README.md](rehearsal/README.md) にあります。
+
+### 自分のイベントで動かす
+
+まず `config.json` を書き換えます（[4 章](#4-設定の編集)）。そのうえで、マシンごとに次の順で構築します。
+
+**1. 配信サイトをビルドする**
 
 ```bash
 cd app
 pnpm install
 pnpm lint        # Prettier と svelte-check の実行
-pnpm build       # 本番用ビルド
+pnpm build       # 本番用ビルド（成果物は web/ に出力されます）
 ```
+
+**2. 配信サーバーを構築する（MediaMTX + Caddy）**
+
+```bash
+cd hosts/server
+cp .env.example .env     # チャンネルごとの SRT パスフレーズを設定します
+sudo ./scripts/get-cert.sh   # TLS 証明書を取得します（DNS-01 チャレンジ）
+./scripts/preflight.sh       # 設定・証明書・カーネルパラメータの整合性を確認します
+docker compose up -d
+```
+
+システム要件、SRT 用カーネルパラメータの設定、疎通テストの手順は [hosts/server/README.md](hosts/server/README.md) にあります。
+
+**3. 本部 PC（OBS）を設定する**
+
+OBS に入力する SRT の URL は `hosts/obs/srt-urls.sh` が `config.json` と `.env` から生成します。キーフレーム間隔などの設定値は [hosts/obs/README.md](hosts/obs/README.md) を参照してください。
+
+**4. サイネージ端末を用意する（任意）**
+
+Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium のキオスク起動と自動復帰の設定までを行います。詳細は [hosts/signage/README.md](hosts/signage/README.md) にあります。
 
 ---
 

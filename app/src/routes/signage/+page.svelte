@@ -9,7 +9,8 @@
   const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先iframeの自動リロード間隔
   const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転時のリーク対策（ページリロード間隔）
 
-  const player = createPlayer();
+  // 無人で流し続けるため、巻き戻せることより先端に張り付くことを優先する
+  const player = createPlayer('live');
 
   const coverText = $derived(
     player.state === 'idle'

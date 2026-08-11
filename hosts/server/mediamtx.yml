@@ -30,7 +30,8 @@ hlsTrustedProxies: [127.0.0.1]     # 前段は Caddy
 hlsVariant: mpegts
 # OBS のキーフレーム間隔と同一にする
 hlsSegmentDuration: 2s
-# app/src/lib/player.svelte.ts の backBufferLength と同一にする
+# 巻き戻せる長さを決める。app/src/lib/player.svelte.ts の dvr 側の
+# backBufferLength と同一にする（180 × 2 秒 = 6 分）
 hlsSegmentCount: 180
 hlsAlwaysRemux: yes
 

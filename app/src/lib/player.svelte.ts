@@ -1,12 +1,42 @@
-import type { PlayerState } from './types';
+import type { PlayerState, PlayerSync } from './types';
 
 // hls.jsは動的インポートするため、型はhls.jsから参照
 type HlsConstructor = typeof import('hls.js').default;
 type HlsInstance = InstanceType<HlsConstructor>;
 type HlsErrorData = import('hls.js').ErrorData;
+type HlsConfig = import('hls.js').HlsConfig;
 
 // 未配信（404）はここで検出する（5xxやタイムアウトはhls.jsが処理）
 const RETRY_MS = 5000;
+
+/**
+ * PlayerSync ごとの hls.js の設定。
+ *
+ * 各カウントは mediamtx.yml の hlsSegmentDuration（2 秒）の倍数として効く。
+ *
+ * live 側の maxLiveSyncPlaybackRate と liveMaxLatencyDurationCount が、遅れを詰め戻す
+ * ための設定である。hls.js の既定はどちらも無効で、一度遅れるとその遅れを抱えたまま
+ * 再生し続ける。小さな遅れは再生速度を 5% 上げて目立たないうちに詰め、シークが要る
+ * ほど開いた場合だけ先端へ飛ばす。再生速度を上げても音の高さは変わらない
+ * （HTMLMediaElement の preservesPitch が既定で有効なため）。
+ */
+const SYNC_CONFIG: Record<PlayerSync, Partial<HlsConfig>> = {
+  dvr: {
+    // 先端から 10 秒後方に構える。回線が細っても数秒なら途切れない
+    liveSyncDurationCount: 5,
+    // mediamtx.yml の hlsSegmentCount と同一にする（180 × 2 秒）
+    backBufferLength: 360,
+  },
+  live: {
+    // 先端から 6 秒後方。会場内の有線・近接 Wi-Fi を前提にできるので短く取る
+    liveSyncDurationCount: 3,
+    // 20 秒以上開いたら先端へシークする（再生速度では現実的な時間で詰まらない）
+    liveMaxLatencyDurationCount: 10,
+    maxLiveSyncPlaybackRate: 1.05,
+    // 巻き戻さないので過去は捨てる。Raspberry Pi で何時間も抱え込ませない
+    backBufferLength: 30,
+  },
+};
 
 let hlsJsPromise: Promise<HlsConstructor> | null = null;
 
@@ -21,7 +51,7 @@ function loadHlsJs(): Promise<HlsConstructor> {
   return hlsJsPromise;
 }
 
-export function createPlayer() {
+export function createPlayer(sync: PlayerSync = 'dvr') {
   let state = $state<PlayerState>('connecting');
   let channel = $state<string | null>(null);
   // 切替時の明滅防止用の独立フラグ
@@ -125,10 +155,7 @@ export function createPlayer() {
     const instance = new H({
       // media-chrome用のライブ配信認識設定
       liveDurationInfinity: true,
-      // バッファ基準設定
-      liveSyncDurationCount: 5,
-      // MediaMTXの設定値に合わせたバッファ長（180 * 2秒）
-      backBufferLength: 360,
+      ...SYNC_CONFIG[sync],
     });
 
     hls = instance;
