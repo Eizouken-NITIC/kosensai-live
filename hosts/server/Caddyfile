@@ -33,6 +33,12 @@ live.kosensai.ichinoseki.ac.jp {
 		respond "ok" 200
 	}
 
+	# --- ライセンス全文（ディレクトリ一覧を有効にする） ---
+	handle /licenses/* {
+		root * /srv/live
+		file_server browse
+	}
+
 	# --- 視聴ページ / サイネージページ（静的 HTML） ---
 	handle {
 		root * /srv/live
