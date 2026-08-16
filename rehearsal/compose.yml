@@ -89,8 +89,13 @@ services:
         condition: service_started
     # 生成物はディレクトリごとマウントする。ファイル単位で指定すると、初回起動時に
     # Docker が同名のディレクトリを作成して Caddy が設定を読めなくなる。
+    #
+    # :8444 の証明書を発行する internal CA の鍵は /data にある。ボリュームへ置かないと
+    # reload.sh の --force-recreate のたびに CA が変わり、実機で受け入れた証明書の例外が
+    # 毎回無効になる。
     volumes:
       - ./generated/caddy:/etc/caddy/generated:ro
+      - caddy_preview_data:/data
     command:
       ["caddy", "run", "--config", "/etc/caddy/generated/preview.Caddyfile", "--adapter", "caddyfile"]
 
@@ -114,3 +119,6 @@ services:
     <<: *publisher
     container_name: rehearsal-pub-ch4
     command: ["ch4", "rehearsal-ch4-passphrase"]
+
+volumes:
+  caddy_preview_data:
