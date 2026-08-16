@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# リハーサル環境の前準備。compose が caddy と preview より先に一度だけ実行する。
+# リハーサル環境の前準備。compose が 2 つの Caddy より先に一度だけ実行する。
 
 set -euo pipefail
 
@@ -26,6 +26,6 @@ else
   chmod 640 "${KEY}"
 fi
 
-# preview の Caddyfile はホスト名を含むため、config.json の値を反映して生成する。
-sed "s|@@DOMAIN@@|${DOMAIN}|g" /repo/rehearsal/init/preview.Caddyfile > /generated/preview.Caddyfile
-echo "preview の Caddyfile を生成した（${DOMAIN}）"
+# caddy-preview の Caddyfile はホスト名を含むため、config.json の値を反映して生成する。
+sed "s|@@DOMAIN@@|${DOMAIN}|g" /repo/rehearsal/containers/init/preview.Caddyfile > /generated/preview.Caddyfile
+echo "caddy-preview の Caddyfile を生成した（${DOMAIN}）"

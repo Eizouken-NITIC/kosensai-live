@@ -3,7 +3,7 @@
 # 本番と同じ mediamtx.yml / Caddyfile / web/ を、コピーせずマウントして使用する。
 # コピーを配置すると本番との差分が発生するため、参照のみとする。
 #
-# caddy と publisher は mediamtx のネットワーク名前空間へ相乗りさせている。macOS の
+# 2 つの Caddy と publisher は mediamtx のネットワーク名前空間へ相乗りさせている。macOS の
 # Docker Desktop では host ネットワークを使用できず、かつ本番の Caddyfile は MediaMTX が
 # 127.0.0.1:8888 で待ち受けている前提で書かれているためである。
 
@@ -14,14 +14,14 @@ x-passphrases: &passphrases
   MTX_PATHS_CH3_SRTPUBLISHPASSPHRASE: rehearsal-ch3-passphrase
   MTX_PATHS_CH4_SRTPUBLISHPASSPHRASE: rehearsal-ch4-passphrase
 
-# 送出の内容は publisher/publish.sh にある。チャンネルごとに異なるのは名前とパスフレーズ
-# だけであるため、compose 側には引数のみを配置する。
+# 送出の内容は containers/publisher/publish.sh にある。チャンネルごとに異なるのは名前と
+# パスフレーズだけであるため、compose 側には引数のみを配置する。
 #
 # 既定は 640x360@15 の ultrafast である。ビットレートや画質を実測する場合のみ本番相当へ
 # 引き上げる:
 #   REH_SIZE=1280x720 REH_FPS=30 REH_BITRATE=2500k REH_PRESET=veryfast docker compose up -d
 x-publisher: &publisher
-  build: ./publisher
+  build: ./containers/publisher
   network_mode: "service:mediamtx"
   depends_on: [mediamtx]
   restart: unless-stopped
@@ -32,11 +32,11 @@ x-publisher: &publisher
     REH_PRESET: "${REH_PRESET:-}"
 
 services:
-  # 証明書と preview の Caddyfile を生成する。caddy と preview はこの完了を待つ。
+  # 証明書と caddy-preview の Caddyfile を生成する。2 つの Caddy はこの完了を待つ。
   init:
-    build: ./init
+    build: ./containers/init
     container_name: rehearsal-init
-    command: ["/repo/rehearsal/init/init.sh"]
+    command: ["/repo/rehearsal/containers/init/init.sh"]
     volumes:
       - ..:/repo:ro
       - ./certs:/certs
@@ -54,14 +54,15 @@ services:
       - "8443:443"
       # SRT。外部から手動で送信する場合に使用する（publisher は内部で完結する）
       - "8890:8890/udp"
-      # プレビュー（init/preview.Caddyfile を参照）
+      # プレビュー（containers/init/preview.Caddyfile を参照）
       - "8080:8080"
       - "8444:8444"
     # HLS(127.0.0.1:8888) は本番と同様に公開しない。Caddy 経由でのみアクセスする。
 
-  caddy:
+  # 本番の Caddyfile をそのまま動作させる。caddy-preview の転送先である。
+  caddy-origin:
     image: caddy:2.11.4-alpine
-    container_name: rehearsal-caddy
+    container_name: rehearsal-caddy-origin
     restart: unless-stopped
     network_mode: "service:mediamtx"
     depends_on:
@@ -74,15 +75,17 @@ services:
       - ./certs:/etc/caddy/certs:ro
       - ../web:/srv/live:ro
 
-  preview:
+  # Host ヘッダを本番のホスト名へ付け替えて caddy-origin へ転送する。/etc/hosts を
+  # 追記せずにブラウザから開くための前段であり、リハーサル専用である。
+  caddy-preview:
     image: caddy:2.11.4-alpine
-    container_name: rehearsal-preview
+    container_name: rehearsal-caddy-preview
     restart: unless-stopped
     network_mode: "service:mediamtx"
     depends_on:
       init:
         condition: service_completed_successfully
-      caddy:
+      caddy-origin:
         condition: service_started
     # 生成物はディレクトリごとマウントする。ファイル単位で指定すると、初回起動時に
     # Docker が同名のディレクトリを作成して Caddy が設定を読めなくなる。

@@ -1,4 +1,4 @@
-# init サービスが生成する自己署名証明書と preview の Caddyfile
+# init サービスが生成する自己署名証明書と caddy-preview の Caddyfile
 certs/
 generated/
 # load-test.sh の結果

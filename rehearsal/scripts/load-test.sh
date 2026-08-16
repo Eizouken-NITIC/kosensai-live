@@ -44,7 +44,7 @@ for ch in ${CHANNELS}; do
     --name "rehearsal-client-${ch}" \
     --network "container:rehearsal-mediamtx" \
     -e CLIENTS="${CLIENTS}" -e CH="${ch}" -e DURATION="${DURATION}" -e DOMAIN="${DOMAIN}" \
-    -v "${REH_DIR}/client/pull.sh:/pull.sh:ro" \
+    -v "${REH_DIR}/containers/client/pull.sh:/pull.sh:ro" \
     -v "${REH_DIR}/out/${ch}:/out" \
     --entrypoint /bin/sh \
     curlimages/curl:latest /pull.sh >/dev/null
