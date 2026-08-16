@@ -6,8 +6,8 @@
   import { setNowPlaying } from '$lib/mediaSession';
   import { channels, signage, site } from '$lib/config';
 
-  const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先iframeの自動リロード間隔
-  const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転時のリーク対策（ページリロード間隔）
+  const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先iframeを自動リロードする間隔である
+  const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転時のメモリリーク対策として、ページをリロードする間隔である
 
   // 無人で流し続けるため、巻き戻せることより先端に張り付くことを優先する
   const player = createPlayer('live');
@@ -42,7 +42,7 @@
     const timers = [
       setInterval(tick, 5000),
       setInterval(() => embed?.reload(), IFRAME_RELOAD_MS),
-      // ライブ再生中でない場合はページをリロード（メモリ解放）
+      // ライブ再生中でない場合はメモリを解放するためページをリロードする
       setInterval(() => {
         if (videoEl?.paused || (videoEl?.readyState ?? 0) < 3) location.reload();
       }, PAGE_RELOAD_MS),
@@ -54,7 +54,7 @@
     };
   });
 
-  // 自動再生ブロック時は自動で再開を試行
+  // 自動再生がブロックされた場合は自動で再開を試行する
   $effect(() => {
     if (player.state === 'blocked') player.resume();
   });
@@ -69,7 +69,7 @@
   </header>
 
   <section class="stage">
-    <!-- 音声付き自動再生のためmutedは付与せず、ブラウザ起動引数による制御に依存 -->
+    <!-- 音声付き自動再生のためmutedは付与せず、ブラウザの起動引数による制御に依存する -->
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={videoEl} playsinline autoplay preload="none"></video>
 

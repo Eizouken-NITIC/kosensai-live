@@ -5,9 +5,9 @@
 普段は実行する必要がない。URL が変わったときだけ実行する。
 
 視聴者の端末が外部へ到達できるとは限らないため、実行時に QR を生成する JS ライブラリは
-使わず、静的な SVG を配置する。
+使用せず、静的な SVG を配置する。
 
-このスクリプト自体は配信物に含めない。app/static/ へ置くとビルド成果物へ
+このスクリプト自体は配信物に含めない。app/static/ へ配置するとビルド成果物へ
 複製され、視聴者へ配信されてしまう。
 
     python3 -m venv /tmp/qrenv && /tmp/qrenv/bin/pip install segno
@@ -36,7 +36,7 @@ qr.save(
     scale=1,        # サイズは CSS 側で決めるので等倍で出力する
     border=2,       # 静音域。規格の推奨は 4 だが画面表示なら 2 で読める
     dark="#000000",
-    light=None,     # 背景は透明
+    light=None,     # 背景は透明にする
     svgclass=None,
     lineclass=None,
     omitsize=True,  # width/height を出力せず viewBox だけにする

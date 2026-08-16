@@ -1,4 +1,4 @@
-/** ブラウザの UI に出る色を、再生の状態に合わせて差し替える。
+/** ブラウザの UI に表示される色を、再生の状態に合わせて差し替える。
  *
  * 色は CSS のトークンを参照する。 */
 export function setThemeColor(token: string): void {

@@ -1,12 +1,12 @@
 import type { PlayerState, PlayerSync } from './types';
 
-// hls.jsは動的インポートするため、型はhls.jsから参照
+// hls.jsは動的インポートするため、型はhls.jsから参照する
 type HlsConstructor = typeof import('hls.js').default;
 type HlsInstance = InstanceType<HlsConstructor>;
 type HlsErrorData = import('hls.js').ErrorData;
 type HlsConfig = import('hls.js').HlsConfig;
 
-// 未配信（404）はここで検出する（5xxやタイムアウトはhls.jsが処理）
+// 未配信（404）はここで検出する（5xxやタイムアウトはhls.jsが処理する）
 const RETRY_MS = 5000;
 
 /**
@@ -16,7 +16,7 @@ const RETRY_MS = 5000;
  *
  * live 側の maxLiveSyncPlaybackRate と liveMaxLatencyDurationCount が、遅れを詰め戻す
  * ための設定である。hls.js の既定はどちらも無効で、一度遅れるとその遅れを抱えたまま
- * 再生し続ける。小さな遅れは再生速度を 5% 上げて目立たないうちに詰め、シークが要る
+ * 再生し続ける。小さな遅れは再生速度を 5% 上げて目立たないうちに詰め、シークが必要な
  * ほど開いた場合だけ先端へ飛ばす。再生速度を上げても音の高さは変わらない
  * （HTMLMediaElement の preservesPitch が既定で有効なため）。
  */
@@ -28,7 +28,7 @@ const SYNC_CONFIG: Record<PlayerSync, Partial<HlsConfig>> = {
     backBufferLength: 360,
   },
   live: {
-    // 先端から 6 秒後方。会場内の有線・近接 Wi-Fi を前提にできるので短く取る
+    // 先端から 6 秒後方に構える。会場内の有線・近接 Wi-Fi を前提にできるので短く設定する
     liveSyncDurationCount: 3,
     // 20 秒以上開いたら先端へシークする（再生速度では現実的な時間で詰まらない）
     liveMaxLatencyDurationCount: 10,
@@ -54,7 +54,7 @@ function loadHlsJs(): Promise<HlsConstructor> {
 export function createPlayer(sync: PlayerSync = 'dvr') {
   let state = $state<PlayerState>('connecting');
   let channel = $state<string | null>(null);
-  // 切替時の明滅防止用の独立フラグ
+  // チャンネル切替時の明滅を防止するための独立したフラグである
   let live = $state(false);
 
   let video: HTMLVideoElement | null = null;
@@ -76,7 +76,7 @@ export function createPlayer(sync: PlayerSync = 'dvr') {
     retryTimer = setTimeout(() => load(channel, true), RETRY_MS);
   }
 
-  /* <video>のエラーは詳細を判別できないため、プレイリストの404を確認 */
+  /* <video>のエラーは詳細を判別できないため、プレイリストの404を確認する */
   async function failByProbe() {
     let reason: 'idle' | 'waiting' = 'waiting';
     if (channel) {
@@ -84,7 +84,7 @@ export function createPlayer(sync: PlayerSync = 'dvr') {
         const res = await fetch(playlistUrl(channel), { cache: 'no-store' });
         if (res.status === 404) reason = 'idle';
       } catch {
-        /* ネットワークオフライン */
+        /* ネットワークがオフラインの場合はここで例外を捕捉し、reason は既定値の 'waiting' のままにする */
       }
     }
     fail(reason);
@@ -110,7 +110,7 @@ export function createPlayer(sync: PlayerSync = 'dvr') {
     const p = video?.play();
     if (p && p.catch) {
       p.catch(() => {
-        // サイネージなどの自動再生ブロックからの回復用
+        // 自動再生がブロックされた場合に、サイネージなどで再生を再開するために使用する
         resumeFn = () => video?.play().catch(() => {});
         state = 'blocked';
         live = false;
@@ -138,7 +138,7 @@ export function createPlayer(sync: PlayerSync = 'dvr') {
     }
     const canHlsJs = !!(Hls && Hls.isSupported());
 
-    // Safari等のネイティブHLS環境用のフォールバック
+    // Safari等のネイティブHLS環境用のフォールバックである
     if (!canHlsJs && canNative) {
       el.src = url;
       el.addEventListener('error', failByProbe, { once: true });
@@ -153,7 +153,7 @@ export function createPlayer(sync: PlayerSync = 'dvr') {
 
     const H = Hls;
     const instance = new H({
-      // media-chrome用のライブ配信認識設定
+      // media-chromeがライブ配信と認識するための設定である
       liveDurationInfinity: true,
       ...SYNC_CONFIG[sync],
     });
@@ -166,7 +166,7 @@ export function createPlayer(sync: PlayerSync = 'dvr') {
         instance.recoverMediaError();
         return;
       }
-      // 接続エラーまたは未配信状態のハンドリング
+      // 接続エラーまたは未配信状態をここで処理する
       fail(data.response?.code === 404 ? 'idle' : 'waiting');
     });
 
@@ -174,7 +174,7 @@ export function createPlayer(sync: PlayerSync = 'dvr') {
     instance.attachMedia(el);
   }
 
-  /** video要素を接続する。戻り値はクリーンアップ関数 */
+  /** video要素を接続する。戻り値はクリーンアップ関数である */
   function attach(el: HTMLVideoElement) {
     video = el;
     const v = el;
@@ -209,7 +209,7 @@ export function createPlayer(sync: PlayerSync = 'dvr') {
     // 事前にプリフェッチする
     prefetch: () => {
       loadHlsJs().catch(() => {
-        /* ネイティブ再生の可能性があるため、プリフェッチ失敗時はエラー処理を遅延 */
+        /* ネイティブ再生の可能性があるため、プリフェッチ失敗時のエラー処理を遅延させる */
       });
     },
     attach,

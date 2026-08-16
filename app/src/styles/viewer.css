@@ -1,5 +1,5 @@
 /* 視聴ページ（app/src/routes/+page.svelte）
-   手元で 30cm ほどの距離から見る画面である。基準を --fs-md に置き、px のトークンを使う。 */
+   手元で 30cm ほどの距離から視聴する画面である。基準を --fs-md に定め、px のトークンを使用する。 */
 
 .page {
   font-size: var(--fs-md);
@@ -12,7 +12,7 @@
   grid-template-rows: auto auto 1fr;
 
   /* ---- 上端のバー ---- */
-  /* 下の余白も区切り線も置かず、タブのインジケータでバーを終わらせる。
+  /* 下の余白も区切り線も配置せず、タブのインジケータでバーを終わらせる。
      ベースライン揃えのため、インジケータの分だけ下へ伸びた高さの中心に
      ロゴの中心が一致する。 */
   .topbar {
@@ -99,7 +99,7 @@
     backdrop-filter: blur(6px);
     pointer-events: auto;
   }
-  /* 外部サイトへのリンクは右端に置く。space-between にすると、GitHub の
+  /* 外部サイトへのリンクは右端に配置する。space-between にすると、GitHub の
      リンクが無い構成でこれが左へ寄ってしまう。 */
   .panel-link.external {
     margin-left: auto;
@@ -126,7 +126,7 @@
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: 1fr;
 
-    /* 暗がりを敷いて文字を読ませ、操作が無ければ消す。 */
+    /* 暗がりを敷いて文字を読ませ、操作が無ければ見えなくする。 */
     .topbar {
       grid-area: stage;
       align-self: start;
@@ -160,7 +160,7 @@
     }
 
     /* ---- 境界のつまみ ----
-       CSS の resize は隅の正方形しか作れないため、辺で掴ませるにはこれを置くほかにない。 */
+       CSS の resize は隅の正方形しか描画できないため、辺で掴ませるにはこれを配置するほかにない。 */
     .grip {
       display: block;
       grid-area: panel;
@@ -169,7 +169,7 @@
       width: 11px;
       margin-left: -5px;
       cursor: col-resize;
-      /* 上端のバーより手前に置く */
+      /* 上端のバーより手前に配置する */
       z-index: 2;
       /* ドラッグ中にブラウザのパンが割り込むのを止める */
       touch-action: none;

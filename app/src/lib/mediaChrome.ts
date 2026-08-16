@@ -1,4 +1,4 @@
-/** 使用するカスタム要素を定義する。定義には DOM が要るため prerender 時には呼べない。 */
+/** 使用するカスタム要素を定義する。定義には DOM が必要であるため prerender 時には呼べない。 */
 export function loadMediaChrome(): void {
   Promise.all([
     import('media-chrome/dist/media-controller.js'),
@@ -11,12 +11,12 @@ export function loadMediaChrome(): void {
     import('media-chrome/dist/media-pip-button.js'),
     import('media-chrome/dist/media-fullscreen-button.js'),
   ]).catch(() => {
-    /* コントロールが出ないだけで再生は続く */
+    /* コントロールが表示されないだけで再生は継続する */
   });
 }
 
 /**
- * LIVE ボタンが先端の判定中もクリックを受け付けるようにする。戻り値は後片付けに使う。
+ * LIVE ボタンが先端の判定中もクリックを受け付けるようにする。戻り値は後片付けに使用する。
  *
  * media-chrome は再生中かつ先端と判定している間、クリックを無視し aria-disabled を
  * 付与する。先端の判定には liveedgeoffset の幅があるため、その範囲内で数秒遅れて

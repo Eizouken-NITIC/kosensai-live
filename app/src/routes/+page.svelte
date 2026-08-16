@@ -13,13 +13,13 @@
   const DEFAULT_CH = 'ch1';
   const STORE_KEY = 'selectedChannel';
   const OVERLAY_HIDE_MS = 2000;
-  // 初回起動時のミュート吹き出しの表示時間
+  // 初回起動時にミュート吹き出しを表示する時間である
   const MUTE_HINT_MS = 10000;
 
   const PANEL_INITIAL = 360;
   const PANEL_MIN = 280;
   const PANEL_MAX_RATIO = 0.6;
-  // キーボード操作時のパネル幅の変化幅
+  // キーボード操作時にパネル幅を変化させる量である
   const PANEL_STEP = 16;
   const PANEL_STEP_LARGE = 64;
 
@@ -29,7 +29,7 @@
   let overlayVisible = $state(true);
   let videoEl = $state<HTMLVideoElement | null>(null);
   let liveBtn = $state<HTMLElement | null>(null);
-  // 自動再生の制約でミュート起動する。解除するまでコントロールを消さない。
+  // 自動再生の制約でミュート起動する。解除するまでコントロールを非表示にしない。
   let muted = $state(true);
   let muteHint = $state(false);
   let panelWidth = $state(PANEL_INITIAL);
@@ -39,7 +39,7 @@
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
-  // 映像未配信時にUIを固定表示するためのフラグ
+  // 映像が未配信のときにUIを固定表示するためのフラグである
   const pinned = $derived(!player.isLive);
 
   function showOverlay() {
@@ -58,7 +58,7 @@
     try {
       localStorage.setItem(STORE_KEY, ch.id);
     } catch {
-      /* ローカルストレージ無効時 */
+      /* ローカルストレージへ書き込めない場合は選択の保存を諦め、再生はそのまま続行する */
     }
     player.load(ch.id);
     showOverlay();
@@ -75,7 +75,7 @@
     const startWidth = panelWidth;
 
     grip.setPointerCapture(event.pointerId);
-    // ドラッグ中にiframeへのポインター干渉を防ぐフラグ
+    // ドラッグ中にiframeへポインターイベントが奪われないようにするフラグである
     dragging = true;
 
     const onMove = (e: PointerEvent) =>
@@ -91,7 +91,7 @@
     grip.addEventListener('pointermove', onMove);
     grip.addEventListener('pointerup', onUp);
     grip.addEventListener('pointercancel', onUp);
-    // ドラッグ中の選択などのデフォルト挙動を防止
+    // ドラッグ中にテキスト選択などのデフォルト挙動が起こらないようにする
     event.preventDefault();
   }
 
@@ -126,7 +126,7 @@
       try {
         initial = localStorage.getItem(STORE_KEY);
       } catch {
-        /* ローカルストレージ無効時 */
+        /* ローカルストレージを読み取れない場合は initial を null のままにし、既定チャンネルへフォールバックする */
       }
     }
     select(initial ?? DEFAULT_CH, false);
@@ -141,7 +141,7 @@
     };
   });
 
-  // 再生状態に応じてテーマカラーを変更
+  // 再生状態に応じてテーマカラーを変更する
   $effect(() => {
     setThemeColor(player.isLive ? '--live' : '--surface');
   });
@@ -156,12 +156,12 @@
 
 <svelte:head><title>{site.name}</title></svelte:head>
 
-<!-- a11yエラー防止のためbody要素でイベントを受信 -->
+<!-- a11yエラーを防止するため、body要素でイベントを受信する -->
 <svelte:body onmousemove={showOverlay} onpointerdown={showOverlay} onfocusin={showOverlay} />
 <svelte:window bind:innerWidth={winWidth} />
 
 <div class="page screen" class:dragging>
-  <!-- レスポンシブレイアウト（幅1000px基準）の配置 -->
+  <!-- 幅1000pxを基準に、レスポンシブレイアウトへ配置を切り替える -->
   <div class="topbar" class:visible={overlayVisible || pinned}>
     <div class="bar">
       <Logo live={player.isLive} />
@@ -181,12 +181,12 @@
   </div>
 
   <section class="stage">
-    <!-- ライブ配信用のコントローラー制御 -->
+    <!-- ライブ配信向けにコントローラーの動作を設定する -->
     <media-controller mediastreamtype="live" seektoliveoffset="0" liveedgeoffset="12">
       <!-- svelte-ignore a11y_media_has_caption -->
       <video slot="media" bind:this={videoEl} playsinline muted autoplay preload="none"></video>
 
-      <!-- 自動再生制約への対応（ミュート解除まで非表示にしない） -->
+      <!-- 自動再生の制約に対応するため、ミュート解除まで非表示にしない -->
       <media-control-bar noautohide={muted || undefined}>
         <media-play-button></media-play-button>
         <media-mute-button class:hint={muteHint}>
@@ -211,7 +211,7 @@
     {:else if player.state === 'waiting'}
       <div class="cover" role="status" aria-live="polite">
         <p>接続中です...</p>
-        <!-- 手動の再読み込みボタン -->
+        <!-- 利用者が手動で再読み込みできるボタンである -->
         <button class="retry" type="button" onclick={() => player.load(current)}>
           今すぐ再読み込み
         </button>
@@ -224,10 +224,10 @@
     {/if}
   </section>
 
-  <!-- 幅調整用のスプリッター -->
+  <!-- ここはパネル幅を調整するスプリッターである -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <!-- キーボード操作（Aria）対応セパレーター -->
+  <!-- キーボード操作とARIAに対応したセパレーターである -->
   <div
     class="grip"
     role="separator"

@@ -45,7 +45,7 @@ media-mute-button.hint::part(tooltip) {
 }
 
 /* ピクチャインピクチャに対応しない環境ではボタンを表示しない。media-chrome は
-   属性を付けるだけで、押せないボタンを消す処理は持たない。 */
+   属性を付けるだけで、押せないボタンを非表示にする処理は持たない。 */
 media-pip-button[mediapipunavailable] {
   display: none;
 }

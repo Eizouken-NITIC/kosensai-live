@@ -1,11 +1,11 @@
 /* 初回の案内（driver.js）の外観を、この画面の作りへ合わせる。
    driver.js は吹き出しを body の直下へ追加するため、.page のネストの中には置けない。
 
-   合わせる先は次の 4 点である。面は 1px の直線で仕切り、囲みの箱を作らない。
-   アクセントは塗りではなく線として、選択中を示すときだけ使う。押しボタンは素の文字で、
+   合わせる先は次の 4 点である。面は 1px の直線で仕切り、囲みの箱を描画しない。
+   アクセントは塗りではなく線として、選択中を示すときだけ使用する。押しボタンは素の文字で、
    下地も枠も持たない。主と従は文字の大きさではなく --fg と --fg-muted で分ける。 */
 
-/* 幅 1000px 以上では操作が無いと上端のバーが消える。案内が上端を指している間は出したままにする。 */
+/* 幅 1000px 以上では操作が無いと上端のバーが消える。案内が上端を指している間は表示したままにする。 */
 html.tour .page .topbar {
   opacity: 1;
 }
@@ -16,7 +16,7 @@ html.tour .page .topbar {
   --driver-animation-duration: 200ms;
 }
 
-/* 浮かぶカードではなく、映像の上に重ねたもう 1 枚の面として置く。 */
+/* 浮かぶカードではなく、映像の上に重ねたもう 1 枚の面として配置する。 */
 .driver-popover.onboarding {
   max-width: 24em;
   /* 段落の多い文でも画面から出ないようにし、収まらない分は中で送る */
@@ -40,7 +40,7 @@ html.tour .page .topbar {
   margin-top: var(--sp-2);
 }
 /* 文言は config.json が持ち、段落は改行文字で分かれている。driver.js は文言を innerHTML
-   へ入れるため、文言側にタグを置かずにここで改行を出す。 */
+   へ入れるため、文言側にタグを配置せず、ここで改行を表示する。 */
 .driver-popover.onboarding .driver-popover-description {
   color: var(--fg-muted);
   font-size: var(--fs-sm);
@@ -54,7 +54,7 @@ html.tour .page .topbar {
   align-items: baseline;
 }
 /* 何番目かを示す数字である。桁が変わっても幅が動かないよう、サイネージの時計と同じく
-   等幅の書体ではなく数字だけを等幅にする。--font-mono はホスト名に取ってある。 */
+   等幅の書体ではなく数字だけを等幅にする。--font-mono はホスト名向けに確保してある。 */
 .driver-popover.onboarding .driver-popover-progress-text {
   color: var(--fg-muted);
   font-size: var(--fs-xs);

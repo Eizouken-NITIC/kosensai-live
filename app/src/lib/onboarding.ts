@@ -1,7 +1,7 @@
 /* 初めて視聴ページを開いた人へ、実際の要素を指しながら画面の読み方を伝える。
  *
- * 最初のステップだけは指す先を持たず、画面の中央に置く。driver.js は要素を指定しない
- * ステップに対して 0×0 の要素を画面の中央へ作り、それを基準に吹き出しを置く。 */
+ * 最初のステップだけは指す先を持たず、画面の中央に配置する。driver.js は要素を指定しない
+ * ステップに対して 0×0 の要素を画面の中央へ生成し、それを基準に吹き出しを配置する。 */
 
 import { externalSite, welcome } from './config';
 
@@ -21,7 +21,7 @@ function seen(): boolean {
   try {
     return localStorage.getItem(STORE_KEY) === '1';
   } catch {
-    // 読めない環境では初めての来場者へ確実に届くほうを選び、毎回出す
+    // localStorage を読み取れない環境では、初めての来場者へ確実に届く方を優先し、常にオンボーディングを表示する
     return false;
   }
 }
@@ -30,7 +30,7 @@ function markSeen(): void {
   try {
     localStorage.setItem(STORE_KEY, '1');
   } catch {
-    /* ローカルストレージ無効時 */
+    /* ローカルストレージが利用できない環境では保存できないため、ここでは何もしない */
   }
 }
 
@@ -93,7 +93,7 @@ export async function startOnboarding(): Promise<void> {
     ],
   });
 
-  // 幅 1000px 以上では操作が無いと上端のバーが消えるため、案内の間だけ出したままにする
+  // 幅 1000px 以上では操作が無いと上端のバーが消えるため、案内の間だけ表示したままにする
   document.documentElement.classList.add('tour');
   tour.drive();
 }

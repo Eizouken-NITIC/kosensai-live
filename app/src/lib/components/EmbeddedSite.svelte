@@ -8,7 +8,7 @@
 
   let frameEl = $state<HTMLIFrameElement | null>(null);
 
-  /** 埋め込んだページを読み込み直す。埋め込み先の更新を取得するために使う。 */
+  /** 埋め込んだページを読み込み直す。埋め込み先の更新を取得するために使用する。 */
   export function reload() {
     if (frameEl) frameEl.src = frameEl.src;
   }
