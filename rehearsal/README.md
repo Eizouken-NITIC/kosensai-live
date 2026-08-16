@@ -44,17 +44,17 @@ rm -rf generated
 
 | ページ | URL |
 | --- | --- |
-| 視聴ページ | [http://localhost:8080/](http://localhost:8080/) |
-| サイネージ | [http://localhost:8080/signage/](http://localhost:8080/signage/) |
-| チャンネル指定 | [http://localhost:8080/?ch=ch3](http://localhost:8080/?ch=ch3) |
+| 視聴ページ | [https://localhost:8444/](https://localhost:8444/) |
+| サイネージ | [https://localhost:8444/signage/](https://localhost:8444/signage/) |
+| チャンネル指定 | [https://localhost:8444/?ch=ch3](https://localhost:8444/?ch=ch3) |
+
+証明書は Caddy の internal CA が接続時に発行するため、ブラウザは発行元を信頼せず警告を表示します。「詳細設定」から進んでください。CA の鍵はボリュームへ保持するので、一度受け入れれば `docker compose down -v` を実行するまでは再表示されません。
+
+平文で待ち受けないのは、MediaMTX が HLS のセッション Cookie に `Secure` 属性を付与しており、ブラウザが安全なコンテキストと見なさない接続では Cookie を保存できず、再生が始まらないためです。
 
 ### LAN の実機（スマートフォン等）から開く
 
-`https://<この PC のアドレス>:8444/` を開きます。
-
-証明書は Caddy の internal CA が接続時に発行するため、ブラウザは発行元を信頼せず警告を表示します。「詳細設定」から進んでください。IP で直接開いた場合は証明書のホスト名も一致しませんが、操作は同じです。
-
-平文の `http://` では再生が始まりません。MediaMTX が HLS のセッション Cookie に `Secure` 属性を付与するためです。`http://localhost` だけは例外的に安全なコンテキストとして扱われるため、この PC からは `:8080` で視聴できます。
+`https://<この PC のアドレス>:8444/` を開きます。IP アドレスは `ipconfig getifaddr en0`、mDNS 名は `hostname -s` の結果に `.local` を付けたもので確認できます。IP で直接開いた場合は証明書のホスト名も一致しませんが、操作は同じです。
 
 ### 本番と同じホスト名・TLS で開く
 
