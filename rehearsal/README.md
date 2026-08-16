@@ -2,9 +2,7 @@
 
 `docker compose` で起動します。MediaMTX と Caddy は `hosts/server/` の `mediamtx.yml` と `Caddyfile`、および `web/` をそのままマウントして使用します。本番で本部 OBS が行う SRT 送出は、カラーバーを生成する ffmpeg のコンテナ 4 つ（チャンネルごとに 1 つ）が代わりに行います。
 
-Caddy は 2 つ動作します。`caddy-origin` が本番の `Caddyfile` をそのまま動作させ、`caddy-preview` が Host ヘッダを付け替えて `caddy-origin` へ転送します。本番の `Caddyfile` はホスト名でしか site をマッチしないため、`/etc/hosts` を追記せずにブラウザから開くための前段です。
-
-証明書と `caddy-preview` の Caddyfile は `init` サービスが起動時に生成するため、事前の準備はありません。
+`caddy-preview` が Host ヘッダを付け替えて `caddy-origin` へ転送します（本番のCaddyfileを使用しつつプレビューしたいため）。
 
 ---
 
@@ -19,7 +17,7 @@ docker compose up -d
 # publisher を起動せず、配信前の「待機中」表示を確認する
 docker compose up -d mediamtx caddy-origin caddy-preview
 
-# 起動済みの publisher を停止・再開する（回線切断のシミュレーション）
+# publisher を停止・再開する（回線切断のシミュレーション）
 docker compose stop pub-ch1
 docker compose start pub-ch1
 
@@ -52,7 +50,7 @@ rm -rf generated
 
 ### LAN の実機（スマートフォン等）から開く
 
-`https://<この PC のアドレス>:8444/` を開きます。IP アドレスは `ipconfig getifaddr en0`、mDNS 名は `hostname -s` の結果に `.local` を付けたもので確認できます。
+`https://<この PC のアドレス>:8444/` を開きます。
 
 証明書は Caddy の internal CA が接続時に発行するため、ブラウザは発行元を信頼せず警告を表示します。「詳細設定」から進んでください。IP で直接開いた場合は証明書のホスト名も一致しませんが、操作は同じです。
 
@@ -68,7 +66,7 @@ echo "127.0.0.1 ${DOMAIN}" | sudo tee -a /etc/hosts
 
 # ブラウザで https://${DOMAIN}:8443/ を開く
 
-# 確認後は必ず追記を削除する
+# 追記を削除
 sudo sed -i '' "/${DOMAIN//./\\.}/d" /etc/hosts
 ```
 
