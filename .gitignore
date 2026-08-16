@@ -3,7 +3,7 @@
 hosts/server/.env
 rehearsal/.env
 
-# 証明書（本番は certbot、リハーサルは up.sh が生成する）
+# 証明書（本番は certbot、リハーサルは init サービスが生成する）
 *.pem
 *.key
 hosts/server/certs/

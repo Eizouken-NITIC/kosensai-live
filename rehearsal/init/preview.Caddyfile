@@ -1,0 +1,54 @@
+# プレビュー用のエントリポイント。リハーサル専用であり、本番には存在しない。
+#
+# 本番の Caddyfile はホスト名で site をマッチするため、直接アクセスするには /etc/hosts への
+# 追記が必要になる。追記を削除し忘れると本番のホスト名を名前解決できなくなるため、
+# Host ヘッダを付け替えて本番 Caddy へ転送するこのエントリポイントを経由させる。
+#
+# @@DOMAIN@@ は init.sh が config.json の値へ置換する。
+#
+# 以下の 2 つの site はいずれもホスト名を持たないため、スキーム（http:// と https://）を
+# 明示する必要がある。省略すると両方が既定の自動化ポリシーとなり、片方のみが internal CA を
+# 指定している状態が衝突と判定されて Caddy が起動しない。
+
+{
+	auto_https off
+	admin off
+}
+
+(to_caddy) {
+	reverse_proxy https://127.0.0.1:443 {
+		header_up Host @@DOMAIN@@
+
+		transport http {
+			tls
+			tls_insecure_skip_verify
+			tls_server_name @@DOMAIN@@
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
+
+# この PC から視聴するためのエントリポイント。ブラウザは http://localhost を安全な
+# コンテキストとして扱うため、MediaMTX が付与する Secure 属性付きの Cookie も
+# 平文の接続で送信される。
+http://:8080 {
+	import to_caddy
+}
+
+# LAN の実機から視聴するためのエントリポイント。localhost 以外では平文の接続で
+# Secure 属性の Cookie を保存できず再生が開始しないため、TLS が必要になる。証明書は
+# Caddy の internal CA が接続時に発行するため、ホスト名でも IP でも受け付ける。
+#
+# ただし IP で直接アクセスした場合、ブラウザは SNI を送信せず、Caddy は接続先のローカル
+# アドレスを使用するため、コンテナ内部のアドレスで発行されてホスト名が一致しない。
+# 実機からは mDNS 名（<この PC のホスト名>.local）でアクセスすると一致する。
+https://:8444 {
+	tls internal {
+		on_demand
+	}
+	import to_caddy
+}

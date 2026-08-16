@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
-# app/ をビルドして、リハーサル環境に反映する。
-#
-#   ./scripts/reload.sh
-#
-# ビルドのたびに web/ が作り直される（adapter-static が出力先を消して作る）ため、
-# bind mount が古いディレクトリを掴んだままになり 404 になる。
-# caddy を再起動してマウントを張り直す必要がある。
+# app/ をビルドし、リハーサル環境へ反映する。
 
 set -euo pipefail
 
@@ -17,8 +11,13 @@ pnpm run build 2>&1 | tail -3
 
 cd "${REH_DIR}"
 echo
-echo "== マウントを張り直す =="
-docker compose up -d --force-recreate caddy preview >/dev/null 2>&1
+echo "== マウントを再設定 =="
+# adapter-static はビルドのたびに web/ を削除して再作成するため、bind mount が削除済みの
+# ディレクトリを参照したままとなり 404 を返す。caddy を再作成して再マウントする。
+#
+# --no-deps を指定しない場合は mediamtx まで再作成され、ネットワーク名前空間を相乗りして
+# いる publisher が名前空間を失って停止する。
+docker compose up -d --force-recreate --no-deps caddy preview
 sleep 2
 
 code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)

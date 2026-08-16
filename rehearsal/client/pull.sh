@@ -1,15 +1,15 @@
 #!/bin/sh
-# 視聴クライアントを模擬する。
-# hls.js と同じ手順（マスタープレイリスト → variant → セグメント順次取得）を
-# curl で再現し、N 本並列で回して合計スループットとエラー数を算出する。
+# 視聴クライアントを模擬する。hls.js と同じ手順（マスタープレイリスト → variant →
+# セグメントの順次取得）を curl で再現し、N 本を並列実行して合計スループットとエラー数を
+# 算出する。
 #
 # 環境変数:
 #   CLIENTS  同時視聴者数（既定 10）
 #   CH       対象チャンネル（既定 ch1）
 #   DURATION 実行秒数（既定 30）
-#   DOMAIN   必須（load-test.sh が config.json から渡す）
+#   DOMAIN   必須。load-test.sh が config.json から取得して渡す
 #
-# 結果は /out/c<i> に "バイト数 セグメント数 エラー数" 形式で書く。
+# 結果は /out/c<i> へ「バイト数 セグメント数 エラー数」の形式で出力する。
 
 set -u
 
@@ -19,8 +19,9 @@ DURATION="${DURATION:-30}"
 DOMAIN="${DOMAIN:?DOMAIN is required}"
 BASE="https://${DOMAIN}"
 
-# 自己署名なので -k。cookieCheck の 302 を追うため -L と Cookie jar。
-# Caddy は同じネットワーク名前空間の 127.0.0.1:443。
+# 自己署名証明書のため -k を指定する。MediaMTX が最初のプレイリスト要求へ cookieCheck 付きの
+# 302 を返すため、-L と Cookie jar が必要になる。Caddy は同じネットワーク名前空間の
+# 127.0.0.1:443 で待ち受けている。
 CURL="curl -sk -L --resolve ${DOMAIN}:443:127.0.0.1 --max-time 15"
 
 mkdir -p /out
@@ -56,7 +57,7 @@ client() {
         *)           bytes=$((bytes + n)); segs=$((segs + 1)) ;;
       esac
     done
-    # 見たセグメント名の記憶は直近だけで足りる（プレイリストは3本しか持たない）
+    # 取得済みセグメント名の保持は直近のみで足りる。プレイリストは 3 本しか保持しない。
     seen=$(printf '%s' "$seen" | tr ' ' '\n' | tail -20 | tr '\n' ' ')
     sleep 3
   done

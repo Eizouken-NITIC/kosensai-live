@@ -95,7 +95,9 @@ kosensai-live/
 ├─ web/                       app/ のビルド成果物
 │
 ├─ rehearsal/                 ローカル検証
-├─ tools/make-qr.py           QR コード生成スクリプト
+├─ tools/                     複数のマシンから使用する共通スクリプト
+│  ├─ config.sh               config.json の値をシェルから読み出す関数
+│  └─ make-qr.py              QR コード生成スクリプト
 ├─ LICENSE
 └─ THIRD-PARTY.md
 ```
@@ -115,9 +117,9 @@ kosensai-live/
 
 ```bash
 cd rehearsal
-./scripts/up.sh          # 起動
+docker compose up -d     # 起動
 ./scripts/reload.sh      # app/ の変更をビルドして検証環境に反映
-./scripts/down.sh        # 停止
+docker compose down -v   # 停止
 ```
 
 負荷テストや LAN の実機からの確認方法は [rehearsal/README.md](rehearsal/README.md) にあります。
@@ -173,7 +175,7 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 | `signage` | サイネージページのデフォルトチャンネルおよび QR コード横のテキスト |
 | `welcome` | オンボーディング案内文 |
 
-- **適用のタイミング**: `app/` はビルド時にこの設定をインポートし、`hosts/` 内の各種スクリプトと `tools/make-qr.py` は実行時に直接読み込みます。
+- **適用のタイミング**: `app/` はビルド時にこの設定をインポートします。`hosts/` と `rehearsal/` の各種スクリプトは実行時に `tools/config.sh` を経由して読み込み、`tools/make-qr.py` は直接読み込みます。
 
 ### Caddyfile
 

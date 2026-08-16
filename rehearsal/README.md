@@ -8,7 +8,7 @@
 
 ## 1. 本番環境との主な差異
 
-1. **SSL/TLS証明書**: 自己署名証明書を使用します。
+1. **SSL/TLS証明書**: 本番ホスト名に対しては `init` サービスが生成する自己署名証明書を、プレビュー用の `:8444` に対しては Caddy の internal CA が発行する証明書を使用します。
 2. **待ち受けポート番号**: HTTPSのポートが **8443** ポートになります。
 3. **映像ソース**: カメラ映像の代わりに、コンテナ内のFFmpegが生成するカラーバーテスト映像（CH1〜CH4）を使用します。
 
@@ -31,34 +31,37 @@
 
 ## 2. 使い方（開発・検証コマンド）
 
-すべて `rehearsal/` ディレクトリ配下で実行します。
+すべて `rehearsal/` ディレクトリ配下で実行します。起動と停止は `docker compose` が直接扱います。証明書と `preview` の Caddyfile は、`init` サービスが起動時に生成します。
 
 ```bash
 cd rehearsal
 
-# 1. サーバーとテスト映像4系統を起動します
-./scripts/up.sh                    
+# サーバーとテスト映像4系統を起動します
+docker compose up -d
 
-# サーバーコンテナのみを起動します
-./scripts/up.sh --idle             
+# publisher を起動せず、配信前の「待機中」表示を確認します
+docker compose up -d mediamtx caddy preview
 
-# 2. 開発中の app/ (SvelteKit) をビルドし、実行中のコンテナへリアルタイム反映させます（開発時はこれを使用します）
-./scripts/reload.sh                
+# 起動済みの publisher を停止します（回線切断のシミュレーション。start で復帰します）
+docker compose stop pub-ch1
 
-# 3. ch1に対して、20人規模の視聴アクセスを想定した負荷テストを30秒間実行します
-./scripts/load-test.sh 20 ch1 30   
+# 開発中の app/ (SvelteKit) をビルドし、実行中のコンテナへ反映します
+./scripts/reload.sh
+
+# ch1 に対して、20人規模の視聴アクセスを想定した負荷テストを30秒間実行します
+./scripts/load-test.sh 20 ch1 30
 
 # すべてのチャンネルに対して、各10人ずつ（計40人）の視聴負荷を60秒間同時にかけます
-./scripts/load-test.sh 10 all 60   
+./scripts/load-test.sh 10 all 60
 
-# 4. MediaMTXのログを表示し、ストリームの受信状態や接続エラー情報を確認します
-docker compose logs -f mediamtx    
+# MediaMTX のログを表示し、ストリームの受信状態や接続エラーを確認します
+docker compose logs -f mediamtx
 
-# 5. 検証環境を一時停止・削除します
-./scripts/down.sh                  
+# 検証環境を停止・削除します
+docker compose down -v
 
-# コンテナを停止し、自動生成された自己署名証明書や負荷テストの結果ファイルもすべて消去します
-./scripts/down.sh --clean          
+# 生成物（自己署名証明書・preview の Caddyfile・負荷テストの結果）も削除します
+rm -rf certs generated out
 ```
 
 ---
@@ -73,11 +76,11 @@ docker compose logs -f mediamtx
 
 ### LAN の実機（スマホ等）から開く場合
 
-`scripts/up.sh` が起動時に、この PC の LAN アドレスと mDNS 名を一覧で表示します。表示された `https://<アドレス>:8444/` を実機のブラウザで開いてください。自己署名証明書のため警告が出ますが、「詳細設定」から進めば視聴できます。
+この PC の LAN アドレスまたは mDNS 名に対して `https://<アドレス>:8444/` を開いてください。アドレスは `ipconfig getifaddr en0`、mDNS 名は `hostname -s` の結果に `.local` を付けたもので確認できます。
 
-MediaMTX が HLS のセッション Cookie に `Secure` 属性を付けるため、ブラウザが安全なコンテキストと見なさない接続では Cookie を保存できなません。なので、確認の際はhttpsで接続してください。 `http://localhost` だけは例外的に安全なコンテキストとして扱われるので、実行する PC からは平文で視聴できます。
+`:8444` の証明書は Caddy の internal CA が接続時に発行します。ブラウザは発行元を信頼していないため警告が出ますが、「詳細設定」から進めば視聴できます。IP で直接開いた場合はブラウザが SNI を送信しないため証明書のホスト名も一致しませんが、進む操作は同じです。
 
-証明書には起動時点の LAN アドレスが記録されます。接続するネットワークを変えてアドレスが変わった場合は、`scripts/up.sh` を実行し直すと証明書を作り直します。
+MediaMTX が HLS のセッション Cookie に `Secure` 属性を付与するため、ブラウザが安全なコンテキストと見なさない接続では Cookie を保存できません。実機から確認する際は必ず HTTPS で接続してください。`http://localhost` だけは例外的に安全なコンテキストとして扱われるため、この PC からは平文の `:8080` で視聴できます。
 
 <details>
 <summary>本番と同じホスト名・TLS で開きたい場合</summary>
@@ -103,7 +106,7 @@ sudo sed -i '' "/${DOMAIN//./\\.}/d" /etc/hosts
 - **映像**: SMPTEカラーバー（`smptebars`）に、各チャンネル名（`CH1`〜`CH4`）と経過時間（ミリ秒タイムコード）を右下に表示しています。遅延の測定などに使用できます。
 - **音声**: 全チャンネル共通で 1kHz のサイン波（基準レベル: -18dBFS）を送出しています。
 
-詳細な送信処理は [publish.sh](publish.sh) に定義されています。
+詳細な送信処理は [publisher/publish.sh](publisher/publish.sh) に定義されています。
 
 ---
 
@@ -122,22 +125,26 @@ sudo sed -i '' "/${DOMAIN//./\\.}/d" /etc/hosts
 - **無線環境における不安定な帯域。** ローカルPC内部での通信のため、パケット損失等は発生しません。
 - **本番用OBSパソコンの実エンコード負荷。** 簡易的なFFmpeg送出を行っているのみのため、OBSによるハードウェアエンコード時の処理負荷は再現できません。
 - **SRTプロトコルのパケット損失・自動再送の挙動。** 
-- **アクセスするブラウザ実機固有の表示エンジン差。** 
+- **アクセスするブラウザ実機固有の表示エンジン差。**
+- **本番の Caddyfile のホスト名マッチと TLS 設定そのもの。** `:8080` と `:8444` は Host ヘッダを付け替えて本番 Caddy へ転送するプレビュー用のエントリポイントであるため、これらを経由した確認では検証できません。「本番と同じホスト名・TLS で開きたい場合」の手順で直接開いてください。
 
 ---
 
 ## 6. ファイル構成と役割
 
+`scripts/` はホスト上で実行するスクリプト、それ以外のディレクトリはコンテナの中で動作するものを格納しています。
+
 | ファイル・ディレクトリ | 役割・機能 |
 | --- | --- |
-| `compose.yml` | MediaMTX、Caddy、プレビュー中継プロキシ、テストパターン送信コンテナ4系統を起動・管理するDocker Composeファイル。 |
-| `publisher.Dockerfile` | テスト映像配信用FFmpegコンテナのビルドファイル。日本語フォントを追加しています。 |
-| `publish.sh` | 1チャンネル分のカラーバー映像、テストサイン波、タイムコードをFFmpegで合成してSRT送出するプログラム。 |
-| `preview.Caddyfile` | ローカルでのhosts設定変更を回避するために稼働する、リバースプロキシ用Caddyの設定ファイル。平文の 8080 と、LAN の実機から開くための TLS の 8444 を持ちます。 |
-| `scripts/up.sh` | 自己署名証明書（SSL/TLS）を自動作成したのち、検証環境を立ち上げる起動スクリプト。 |
-| `scripts/down.sh` | 動作しているすべてのコンテナを停止・消去するスクリプト（`--clean` 指定ですべての生成データも削除します）。 |
-| `scripts/reload.sh` | フロントエンドソースコード（`app/` 配下）をリビルドして再適用し、Caddyコンテナの接続を自動再構築するスクリプト。 |
-| `scripts/load-test.sh` | 視聴セッションを複数立ち上げ、サーバーに負荷をかけるスクリプト。 |
-| `client/pull.sh` | 負荷テストのクライアントプログラム。hls.jsの動作をcurlでシミュレートします。 |
-| `certs/` | `scripts/up.sh` 起動時に一時的に生成されるテスト用証明書の保存先（Git管理対象外）。 |
-| `out/` | 負荷テストの実行結果レポートやデータログの保存先（Git管理対象外）。 |
+| `compose.yml` | init、MediaMTX、Caddy、プレビュー中継プロキシ、テストパターン送出4系統のコンテナ定義。 |
+| `init/Dockerfile` | 前準備コンテナのイメージ定義（openssl・python3・bash を追加）。 |
+| `init/init.sh` | 自己署名証明書と `preview` の Caddyfile を生成します。Caddy 各種より先に一度だけ実行されます。 |
+| `init/preview.Caddyfile` | プレビュー中継プロキシの設定テンプレート。ホスト名は `init.sh` が `config.json` の値へ置換します。平文の 8080 と、LAN の実機から開くための TLS の 8444 を持ちます。 |
+| `publisher/Dockerfile` | テスト映像送出用 FFmpeg コンテナのイメージ定義。文字の焼き込みに使用するフォントを追加しています。 |
+| `publisher/publish.sh` | 1チャンネル分のカラーバー映像・基準音・タイムコードを FFmpeg で合成して SRT 送出します。 |
+| `client/pull.sh` | 負荷テストのクライアント。hls.js の取得手順を curl で再現します。 |
+| `scripts/reload.sh` | `app/` をリビルドし、Caddy のマウントを再設定します。 |
+| `scripts/load-test.sh` | 視聴セッションを複数起動してサーバーに負荷をかけます。 |
+| `certs/` | `init` が生成する検証用証明書の保存先（Git 管理対象外）。 |
+| `generated/` | `init` が生成する `preview` の Caddyfile の保存先（Git 管理対象外）。 |
+| `out/` | 負荷テストの結果の保存先（Git 管理対象外）。 |

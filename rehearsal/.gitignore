@@ -1,4 +1,5 @@
-# up.sh が生成する自己署名証明書
+# init サービスが生成する自己署名証明書と preview の Caddyfile
 certs/
+generated/
 # load-test.sh の結果
 out/

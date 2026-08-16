@@ -1,38 +1,30 @@
 # ローカルリハーサル環境
 #
-# 本番と同じ mediamtx.yml / Caddyfile / web/ を **コピーせずマウントして** 使う。
-# コピーを置くと必ず本番とズレるので、ここでは参照だけにしてある。
-# 起動は scripts/up.sh から（自己署名証明書の生成が要るため）。
+# 本番と同じ mediamtx.yml / Caddyfile / web/ を、コピーせずマウントして使用する。
+# コピーを配置すると本番との差分が発生するため、参照のみとする。
 #
-# ネットワークの都合:
-#   本番は mediamtx も caddy も network_mode: host。macOS の Docker Desktop では
-#   host ネットワークが素直に使えないので、ここでは caddy と publisher を
-#   mediamtx のネットワーク名前空間に相乗りさせている。
-#   こうすると caddy から 127.0.0.1:8888 で MediaMTX に届くため、
-#   本番の Caddyfile（hlsAddress が 127.0.0.1 前提）をそのまま使える。
+# caddy と publisher は mediamtx のネットワーク名前空間へ相乗りさせている。macOS の
+# Docker Desktop では host ネットワークを使用できず、かつ本番の Caddyfile は MediaMTX が
+# 127.0.0.1:8888 で待ち受けている前提で書かれているためである。
 
 x-passphrases: &passphrases
-  # リハーサル専用の使い捨て値。本番は hosts/server/.env に別の値を入れる。
+  # リハーサル専用の使い捨ての値。本番は hosts/server/.env に別の値を設定する。
   MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE: rehearsal-ch1-passphrase
   MTX_PATHS_CH2_SRTPUBLISHPASSPHRASE: rehearsal-ch2-passphrase
   MTX_PATHS_CH3_SRTPUBLISHPASSPHRASE: rehearsal-ch3-passphrase
   MTX_PATHS_CH4_SRTPUBLISHPASSPHRASE: rehearsal-ch4-passphrase
 
-# 送出の内容は publish.sh にある。チャンネルごとに異なるのは名前とパスフレーズだけ
-# なので、compose 側には引数だけを置く。
+# 送出の内容は publisher/publish.sh にある。チャンネルごとに異なるのは名前とパスフレーズ
+# だけであるため、compose 側には引数のみを配置する。
 #
-# 既定は 640x360@15 の ultrafast である。UI の確認にはこれで足りる。
-# ビットレートや画質を実測したいときだけ本番相当に上げる:
-#   REH_SIZE=1280x720 REH_FPS=30 REH_BITRATE=2500k REH_PRESET=veryfast \
-#     docker compose --profile publish up -d
+# 既定は 640x360@15 の ultrafast である。ビットレートや画質を実測する場合のみ本番相当へ
+# 引き上げる:
+#   REH_SIZE=1280x720 REH_FPS=30 REH_BITRATE=2500k REH_PRESET=veryfast docker compose up -d
 x-publisher: &publisher
-  build:
-    context: .
-    dockerfile: publisher.Dockerfile
+  build: ./publisher
   network_mode: "service:mediamtx"
   depends_on: [mediamtx]
   restart: unless-stopped
-  profiles: ["publish"]
   environment:
     REH_SIZE: "${REH_SIZE:-}"
     REH_FPS: "${REH_FPS:-}"
@@ -40,6 +32,16 @@ x-publisher: &publisher
     REH_PRESET: "${REH_PRESET:-}"
 
 services:
+  # 証明書と preview の Caddyfile を生成する。caddy と preview はこの完了を待つ。
+  init:
+    build: ./init
+    container_name: rehearsal-init
+    command: ["/repo/rehearsal/init/init.sh"]
+    volumes:
+      - ..:/repo:ro
+      - ./certs:/certs
+      - ./generated:/generated
+
   mediamtx:
     image: bluenviron/mediamtx:1.19.3
     container_name: rehearsal-mediamtx
@@ -48,40 +50,46 @@ services:
     volumes:
       - ../hosts/server/mediamtx.yml:/mediamtx.yml:ro
     ports:
-      # 視聴は https://<domain>:8443/（/etc/hosts に要追記）
+      # 本番と同じホスト名で視聴する場合の入口（/etc/hosts への追記が必要）
       - "8443:443"
-      # SRT。外から手で送り込みたいとき用（publisher は内部で完結する）
+      # SRT。外部から手動で送信する場合に使用する（publisher は内部で完結する）
       - "8890:8890/udp"
-      # プレビュー用の入口（/etc/hosts と証明書警告を回避する。preview.Caddyfile 参照）
+      # プレビュー（init/preview.Caddyfile を参照）
       - "8080:8080"
-      # プレビュー用の入口（TLS）。LAN の実機から開くときに使う。
       - "8444:8444"
-    # HLS(127.0.0.1:8888) は本番同様わざと公開しない。Caddy 経由でのみ触れる。
+    # HLS(127.0.0.1:8888) は本番と同様に公開しない。Caddy 経由でのみアクセスする。
 
   caddy:
     image: caddy:2.11.4-alpine
     container_name: rehearsal-caddy
     restart: unless-stopped
     network_mode: "service:mediamtx"
-    depends_on: [mediamtx]
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      mediamtx:
+        condition: service_started
     volumes:
       - ../hosts/server/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/etc/caddy/certs:ro
       - ../web:/srv/live:ro
 
-  # http://localhost:8080/ から見られるようにするだけの入口。
-  # Host ヘッダを付け替えて本番 Caddy に渡すので、/etc/hosts をいじらずに済む。
   preview:
     image: caddy:2.11.4-alpine
     container_name: rehearsal-preview
     restart: unless-stopped
     network_mode: "service:mediamtx"
-    depends_on: [caddy]
-    environment:
-      DOMAIN: "${DOMAIN}"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      caddy:
+        condition: service_started
+    # 生成物はディレクトリごとマウントする。ファイル単位で指定すると、初回起動時に
+    # Docker が同名のディレクトリを作成して Caddy が設定を読めなくなる。
     volumes:
-      - ./preview.Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./certs:/etc/caddy/certs:ro
+      - ./generated:/etc/caddy/generated:ro
+    command:
+      ["caddy", "run", "--config", "/etc/caddy/generated/preview.Caddyfile", "--adapter", "caddyfile"]
 
   # --- テストパターン送出 --------------------------------------------------
   pub-ch1:
