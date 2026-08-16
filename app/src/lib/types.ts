@@ -38,6 +38,11 @@ export type Welcome = {
   description: string;
 };
 
+export type Viewer = {
+  /** ?ch= も前回の選択も無い場合に映す Ch である。 */
+  defaultChannel: string;
+};
+
 export type Signage = {
   /** ?ch= が付かない場合に映す Ch である。 */
   defaultChannel: string;

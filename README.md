@@ -172,6 +172,7 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 | `site` | 配信サイトの名称・ホスト名・GitHub リポジトリの URL |
 | `channels` | チャンネル ID・表示名・OBS 待受ポート・SRT レイテンシ・ビットレート |
 | `externalSite` | 視聴ページとサイネージに iframe で埋め込む外部サイトの表示名と URL |
+| `viewer` | 視聴ページのデフォルトチャンネル |
 | `signage` | サイネージページのデフォルトチャンネルおよび QR コード横のテキスト |
 | `welcome` | オンボーディング案内文 |
 

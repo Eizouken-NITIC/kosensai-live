@@ -8,9 +8,9 @@
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import GitHubIcon from '$lib/components/GitHubIcon.svelte';
   import { startOnboarding } from '$lib/onboarding';
-  import { channels, site, externalSite } from '$lib/config';
+  import { channels, site, externalSite, viewer } from '$lib/config';
 
-  const DEFAULT_CH = 'ch1';
+  const DEFAULT_CH = viewer.defaultChannel;
   const STORE_KEY = 'selectedChannel';
   const OVERLAY_HIDE_MS = 2000;
   // 初回起動時にミュート吹き出しを表示する時間である

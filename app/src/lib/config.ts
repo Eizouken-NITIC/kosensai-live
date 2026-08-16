@@ -6,13 +6,15 @@ import {
   site as rawSite,
   channels as rawChannels,
   externalSite as rawExternalSite,
+  viewer as rawViewer,
   signage as rawSignage,
   welcome as rawWelcome,
 } from '../../../config.json';
-import type { Channel, ExternalSite, Signage, Site, Welcome } from './types';
+import type { Channel, ExternalSite, Signage, Site, Viewer, Welcome } from './types';
 
 export const site: Site = rawSite;
 export const channels: Channel[] = rawChannels;
 export const externalSite: ExternalSite = rawExternalSite;
+export const viewer: Viewer = rawViewer;
 export const signage: Signage = rawSignage;
 export const welcome: Welcome = rawWelcome;

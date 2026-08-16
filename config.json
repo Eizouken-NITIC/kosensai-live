@@ -30,6 +30,9 @@
     "embedUrl": "https://kosensai.ichinoseki.ac.jp/",
     "homeUrl": "https://kosensai.ichinoseki.ac.jp/"
   },
+  "viewer": {
+    "defaultChannel": "ch4"
+  },
   "signage": {
     "defaultChannel": "ch4",
     "inviteHeading": "スマホからも視聴できます",
