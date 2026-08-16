@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
-# 起動後の疎通確認用スクリプト。ffmpegでテストパターンをSRT送信し、
-# Caddy経由でHLSプレイリストとセグメントが取得できるかを確認します。
+# 起動後の疎通確認。ffmpeg でテストパターンを SRT 送信し、Caddy 経由で HLS のプレイリストと
+# セグメントを取得できるかを確認する。
 #
-#   ./scripts/smoke-test.sh          # ch1を30秒テスト
-#   ./scripts/smoke-test.sh ch3 60   # ch3を60秒テスト
-#
-# 前提: curl と、SRT 有効ビルドの ffmpeg。
-#   ffmpeg -protocols | grep -w srt で確認できる。
-#   非対応の場合は Docker 版で代用できる:
-#     docker run --rm --network host jrottenberg/ffmpeg:7.1-ubuntu2404 ...
+#   ./scripts/smoke-test.sh [チャンネル] [秒数]
 
+# 確認を最後まで実行するため -e は指定しない。異常は FAIL に集約して終了コードへ反映する。
 set -uo pipefail
 
 CH="${1:-ch1}"
@@ -18,18 +13,31 @@ HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
 cd "${HOST_DIR}"
 
+# shellcheck source=../../../tools/config.sh
+. "${REPO_DIR}/tools/config.sh"
+
 SRT_HOST="${SRT_HOST:-127.0.0.1}"
 SRT_PORT="${SRT_PORT:-8890}"
-DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["site"]["domain"])' "${REPO_DIR}/config.json")}"
+DOMAIN="${DOMAIN:-$(config_domain)}"
 JAR="$(mktemp)"
 
-# MediaMTXの仕様上、初回のプレイリスト要求時の302リダイレクト（Cookie付与）を
-# 追跡するためにcookie jarを使用します。
+# MediaMTX は最初のプレイリスト要求へ、セッション Cookie を付与するための 302 を返す。
+# 追跡には -L と Cookie jar が必要になる。
 fetch() { curl -sS -L -c "${JAR}" -b "${JAR}" --max-time 10 "$@"; }
 
 FFPID=""
 cleanup() { [[ -n "${FFPID}" ]] && kill "${FFPID}" 2>/dev/null; rm -f "${JAR}"; }
 trap cleanup EXIT
+
+FAIL=0
+ok() { printf '  \033[32mOK\033[0m   %s\n' "$1"; }
+ng() { printf '  \033[31mNG\033[0m   %s\n' "$1"; FAIL=1; }
+
+check() { # check <説明> <URL>
+  local code
+  code=$(fetch -o /dev/null -w '%{http_code}' "$2")
+  [[ "${code}" == "200" ]] && ok "$1" || ng "$1 (http ${code})"
+}
 
 [[ -f .env ]] || { echo ".env がありません（cp .env.example .env を実行してください）" >&2; exit 1; }
 # shellcheck disable=SC1091
@@ -42,17 +50,6 @@ PASS="${!var:-}"
 command -v ffmpeg >/dev/null || { echo "ffmpeg がありません" >&2; exit 1; }
 ffmpeg -hide_banner -protocols 2>/dev/null | grep -qw srt \
   || { echo "この ffmpeg は SRT 非対応ビルドです" >&2; exit 1; }
-
-FAIL=0
-check() { # check <説明> <URL>
-  local desc="$1" url="$2" code
-  code=$(curl -sS -L -c "${JAR}" -b "${JAR}" --max-time 10 -o /dev/null -w '%{http_code}' "${url}")
-  if [[ "${code}" == "200" ]]; then
-    printf '  \033[32mOK\033[0m   %s\n' "${desc}"
-  else
-    printf '  \033[31mNG\033[0m   %s (http %s)\n' "${desc}" "${code}"; FAIL=1
-  fi
-}
 
 echo "== ${CH} に ${SECS} 秒テストパターンを送出 =="
 ffmpeg -hide_banner -loglevel warning \
@@ -72,12 +69,11 @@ echo
 echo "== MediaMTX 直（127.0.0.1:8888） =="
 MASTER="$(fetch "http://127.0.0.1:8888/${CH}/index.m3u8")"
 if grep -q '#EXT-X-STREAM-INF' <<<"${MASTER}"; then
-  printf '  \033[32mOK\033[0m   マスタープレイリストを取得しました\n'
+  ok "マスタープレイリストを取得しました"
   grep -E 'RESOLUTION|CODECS' <<<"${MASTER}" | sed 's/^/       /'
 else
-  printf '  \033[31mNG\033[0m   MediaMTX が HLS を出力していません\n'
+  ng "MediaMTX が HLS を出力していません"
   echo "       docker compose logs mediamtx で確認してください（passphrase 不一致が最有力です）"
-  FAIL=1
 fi
 
 VARIANT="$(grep -v '^#' <<<"${MASTER}" | grep -m1 '\.m3u8')"
@@ -95,7 +91,7 @@ check "/signage/ (サイネージ)" "https://${DOMAIN}/signage/"
 
 if (( FAIL )); then
   echo
-  echo "  ヒント: 名前解決がまだならローカルだけで確かめられます"
+  echo "  名前解決が未設定の場合は、次のコマンドでローカルのみを確認できます"
   echo "    curl -k --resolve ${DOMAIN}:443:127.0.0.1 https://${DOMAIN}/hls/${CH}/index.m3u8"
 fi
 

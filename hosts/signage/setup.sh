@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# サイネージ端末（Raspberry Pi + Chromium Kiosk）のセットアップ。
-# 端末上で実行する。
-#
-#   ./setup.sh                 # config.json の signage.defaultChannel
-#   SIGNAGE_CH=ch1 ./setup.sh  # 別 Ch を映す端末
+# サイネージ端末（Raspberry Pi + Chromium Kiosk）をセットアップする。端末上で実行する。
 
 set -euo pipefail
 
 HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
-DOMAIN="${DOMAIN:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["site"]["domain"])' "${REPO_DIR}/config.json")}"
+
+# shellcheck source=../../tools/config.sh
+. "${REPO_DIR}/tools/config.sh"
+
+DOMAIN="${DOMAIN:-$(config_domain)}"
 SIGNAGE_CH="${SIGNAGE_CH:-}"
 
 URL="https://${DOMAIN}/signage/"
@@ -38,7 +38,8 @@ sed "s|@@SIGNAGE_URL@@|${URL}|" \
 
 systemctl --user daemon-reload
 systemctl --user enable --now signage.service
-sudo loginctl enable-linger "${USER}"   # 未ログインでも起動させる
+# 未ログインの状態でもサービスを起動させる
+sudo loginctl enable-linger "${USER}"
 
 echo
 echo "== GPU メモリの確認 =="
@@ -47,7 +48,7 @@ CONFIG=/boot/firmware/config.txt
 if grep -q '^gpu_mem=256' "${CONFIG}" 2>/dev/null; then
   echo "  gpu_mem=256 は設定済みです"
 else
-  echo "  ⚠️ ${CONFIG} に gpu_mem=256 を追記して再起動してください"
+  echo "  ${CONFIG} に gpu_mem=256 を追記して再起動してください"
   echo "     echo 'gpu_mem=256' | sudo tee -a ${CONFIG}"
 fi
 

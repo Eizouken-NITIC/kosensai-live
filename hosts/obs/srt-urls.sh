@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
-# 本部 OBS に入力する SRT URL 一覧を生成する。
-#
-# チャンネル定義（リポジトリ直下の config.json）とパスフレーズ
-# （hosts/server/.env）から組み立てる。
-#
-# 実行例:
-#   ./srt-urls.sh                       # MediaMTX と OBS が同一ホスト
-#   MTX_HOST=10.1.2.3 ./srt-urls.sh     # 別ホストの場合
+# 本部 OBS に入力する SRT の URL 一覧を生成する。
+# チャンネル定義は config.json から、パスフレーズは hosts/server/.env から読み込む。
 
 set -euo pipefail
 

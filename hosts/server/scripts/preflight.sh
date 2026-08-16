@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
-# 配信サーバーの起動前の環境整合性チェックを行います。
-#
-#   ./scripts/preflight.sh
+# 配信サーバーの起動前に、設定・証明書・ホストの整合性を確認する。
 
+# 確認を最後まで実行するため -e は指定しない。異常は FAIL に集約して終了コードへ反映する。
 set -uo pipefail
 
 HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
 cd "${HOST_DIR}"
 
+# shellcheck source=../../../tools/config.sh
+. "${REPO_DIR}/tools/config.sh"
+
+CHANNELS="$(config_channel_ids)"
+
 FAIL=0
 ok()   { printf '  \033[32mOK\033[0m   %s\n' "$1"; }
 warn() { printf '  \033[33mWARN\033[0m %s\n' "$1"; }
 ng()   { printf '  \033[31mNG\033[0m   %s\n' "$1"; FAIL=1; }
+
+passphrase_var() { printf 'MTX_PATHS_%s_SRTPUBLISHPASSPHRASE' "$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')"; }
 
 echo "== 配信サーバー設定 (hosts/server/) =="
 for f in mediamtx.yml Caddyfile compose.yml; do
@@ -21,13 +27,12 @@ done
 
 echo
 echo "== 配信サイト (web/) =="
-# web/ は app/ のビルド成果物です。存在しない場合は、cd app && pnpm build を実行してください。
 for f in index.html signage/index.html; do
   [[ -f "${REPO_DIR}/web/${f}" ]] && ok "web/${f}" || ng "web/${f} がありません（cd app && pnpm build を実行してください）"
 done
 [[ -d "${REPO_DIR}/web/_app/immutable" ]] && ok "web/_app/immutable/" \
   || ng "web/_app/immutable/ がありません（cd app && pnpm build を実行してください）"
-# 配布物に必要なライセンス本文の有無を確認します。
+# 配布物にはライセンス本文の同梱が必要である。
 for f in hls.js-Apache-2.0.txt media-chrome-MIT.txt noto-sans-jp-OFL-1.1.txt; do
   [[ -f "${REPO_DIR}/web/licenses/${f}" ]] && ok "web/licenses/${f}" || ng "web/licenses/${f} がありません"
 done
@@ -39,25 +44,24 @@ if [[ ! -f .env ]]; then
 else
   # shellcheck disable=SC1091
   set -a; source .env; set +a
-  for ch in CH1 CH2 CH3 CH4; do
-    var="MTX_PATHS_${ch}_SRTPUBLISHPASSPHRASE"
+  for ch in ${CHANNELS}; do
+    var="$(passphrase_var "${ch}")"
     val="${!var:-}"
+    # SRT のパスフレーズは 10〜79 文字である。
     if   [[ -z "$val" ]];                    then ng "${var} が設定されていません"
     elif [[ "$val" == CHANGEME* ]];          then ng "${var} がサンプル値のままです"
     elif (( ${#val} < 10 || ${#val} > 79 )); then ng "${var} は 10〜79 文字にしてください（現在 ${#val} 文字）"
     else ok "${var} (${#val} 文字)"
     fi
   done
-  dup=$(printf '%s\n' "${MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE:-}" "${MTX_PATHS_CH2_SRTPUBLISHPASSPHRASE:-}" \
-        "${MTX_PATHS_CH3_SRTPUBLISHPASSPHRASE:-}" "${MTX_PATHS_CH4_SRTPUBLISHPASSPHRASE:-}" \
+  dup=$(for ch in ${CHANNELS}; do var="$(passphrase_var "${ch}")"; printf '%s\n' "${!var:-}"; done \
         | sort | uniq -d | grep -c . || true)
   (( dup == 0 )) && ok "Ch ごとに別のパスフレーズを使用しています" || warn "同じパスフレーズを複数 Ch で使っています"
 fi
 
 echo
 echo "== config.json と他の設定が一致しているか =="
-if command -v python3 >/dev/null; then
-  if python3 - "${REPO_DIR}" <<'PY'
+if python3 - "${REPO_DIR}" <<'PY'
 import json, re, sys, pathlib
 repo = pathlib.Path(sys.argv[1])
 conf = json.loads((repo / "config.json").read_text(encoding="utf-8"))
@@ -76,7 +80,6 @@ else:
     line("NG", "31", "mediamtx.yml=%s / config.json=%s" % (sorted(mtx), sorted(web)))
     ok = False
 
-
 caddy = (repo / "hosts/server/Caddyfile").read_text(encoding="utf-8")
 hosts = set(re.findall(r"^([A-Za-z0-9.-]+\.[A-Za-z]{2,})\s*\{", caddy, re.M))
 if hosts == {conf["site"]["domain"]}:
@@ -87,10 +90,7 @@ else:
 
 sys.exit(0 if ok else 1)
 PY
-  then :; else FAIL=1; fi
-else
-  warn "python3 が無いため、config.json との突き合わせをスキップします"
-fi
+then :; else FAIL=1; fi
 
 echo
 echo "== 証明書 =="

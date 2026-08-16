@@ -72,6 +72,8 @@ docker compose up -d
 > [!WARNING]
 > `.env` に定義する各種パスフレーズ（passphrase）は、送信側（OBSなどの送出用PC）の設定値と完全に一致している必要があります。
 
+手順 7 の `smoke-test.sh` には、SRT を有効にしてビルドされた ffmpeg が必要です。`ffmpeg -protocols | grep -w srt` で確認できます。非対応のビルドしか用意できない場合は、Docker 版（`jrottenberg/ffmpeg` など）を `--network host` で実行して代用してください。
+
 ---
 
 ## 4. 運用・管理コマンド
