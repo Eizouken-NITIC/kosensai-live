@@ -1,6 +1,6 @@
 # rehearsal — ローカル検証環境
 
-手元の PC 1 台で、テストパターンの送出から視聴ページでの再生までを起動します。`hosts/server/` の `mediamtx.yml` と `Caddyfile`、および `web/` をマウントして使用し、映像だけをコンテナ内の ffmpeg が生成するカラーバー 4 系統に置き換えます。
+`docker compose` で起動します。MediaMTX と Caddy は `hosts/server/` の `mediamtx.yml` と `Caddyfile`、および `web/` をそのままマウントして使用します。本番で本部 OBS が行う SRT 送出は、カラーバーを生成する ffmpeg のコンテナ 4 つ（チャンネルごとに 1 つ）が代わりに行います。
 
 証明書と `preview` の Caddyfile は `init` サービスが起動時に生成するため、事前の準備はありません。
 
