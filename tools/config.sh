@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# config.json の値をシェルから読む。各ホストのスクリプトが source して使う。
+# config.json の値をシェルから読み込む。
 #
 #   . "${REPO_DIR}/tools/config.sh"
 #   DOMAIN="${DOMAIN:-$(config_domain)}"

@@ -42,11 +42,5 @@ qr.save(
     omitsize=True,  # width/height を出力せず viewBox だけにする
 )
 
-# segno は currentColor を受け付けないため、生成後に差し替える。
-# サイネージは <img> で読み込んでおり、その場合 SVG は独立した文書として扱われて
-# 親の色を継承しないため黒で描画される。将来インライン展開する場合に色を制御できる。
-svg = OUT.read_text(encoding="utf-8").replace('stroke="#000"', 'stroke="currentColor"')
-OUT.write_text(svg, encoding="utf-8")
-
 print(f"{OUT.name}: {URL}")
 print(f"  version {qr.version} / error {qr.error} / {qr.symbol_size(scale=1, border=2)[0]}モジュール角 / {OUT.stat().st_size} バイト")
