@@ -37,7 +37,7 @@ docker compose logs -f mediamtx
 docker compose down -v
 
 # 生成物（証明書・caddy-preview の Caddyfile・負荷テストの結果）を削除する
-rm -rf certs generated out
+rm -rf generated
 ```
 
 ---
@@ -82,7 +82,7 @@ sudo sed -i '' "/${DOMAIN//./\\.}/d" /etc/hosts
   - `publisher/` … カラーバーと 1kHz の基準音を SRT で送出します。チャンネル名と経過時刻を映像へ焼き込むため、遅延の目視に使用できます
   - `client/pull.sh` … 負荷テストのクライアント。hls.js の取得手順を curl で再現します
 - `scripts/` … ホスト上で実行するスクリプト
-- `certs/` `generated/` `out/` … 生成物（Git 管理対象外）
+- `generated/` … 生成物（Git 管理対象外）。`certs/` に証明書、`caddy/` に `caddy-preview` の Caddyfile、`load-test/` に負荷テストの結果を置きます
 
 ---
 

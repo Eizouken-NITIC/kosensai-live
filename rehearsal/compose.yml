@@ -39,8 +39,8 @@ services:
     command: ["/repo/rehearsal/containers/init/init.sh"]
     volumes:
       - ..:/repo:ro
-      - ./certs:/certs
-      - ./generated:/generated
+      - ./generated/certs:/certs
+      - ./generated/caddy:/caddy
 
   mediamtx:
     image: bluenviron/mediamtx:1.19.3
@@ -72,7 +72,7 @@ services:
         condition: service_started
     volumes:
       - ../hosts/server/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./certs:/etc/caddy/certs:ro
+      - ./generated/certs:/etc/caddy/certs:ro
       - ../web:/srv/live:ro
 
   # Host ヘッダを本番のホスト名へ付け替えて caddy-origin へ転送する。/etc/hosts を
@@ -90,7 +90,7 @@ services:
     # 生成物はディレクトリごとマウントする。ファイル単位で指定すると、初回起動時に
     # Docker が同名のディレクトリを作成して Caddy が設定を読めなくなる。
     volumes:
-      - ./generated:/etc/caddy/generated:ro
+      - ./generated/caddy:/etc/caddy/generated:ro
     command:
       ["caddy", "run", "--config", "/etc/caddy/generated/preview.Caddyfile", "--adapter", "caddyfile"]
 

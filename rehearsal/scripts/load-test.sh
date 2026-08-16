@@ -33,9 +33,9 @@ echo "  同時視聴者 : ${CLIENTS} 人 × ${NCH} Ch = $((CLIENTS * NCH)) セ�
 echo "  実行時間   : ${DURATION} 秒"
 echo
 
-rm -rf "${REH_DIR}/out"
+rm -rf "${REH_DIR}/generated/load-test"
 for ch in ${CHANNELS}; do
-  mkdir -p "${REH_DIR}/out/${ch}"
+  mkdir -p "${REH_DIR}/generated/load-test/${ch}"
 done
 
 for ch in ${CHANNELS}; do
@@ -45,7 +45,7 @@ for ch in ${CHANNELS}; do
     --network "container:rehearsal-mediamtx" \
     -e CLIENTS="${CLIENTS}" -e CH="${ch}" -e DURATION="${DURATION}" -e DOMAIN="${DOMAIN}" \
     -v "${REH_DIR}/containers/client/pull.sh:/pull.sh:ro" \
-    -v "${REH_DIR}/out/${ch}:/out" \
+    -v "${REH_DIR}/generated/load-test/${ch}:/out" \
     --entrypoint /bin/sh \
     curlimages/curl:latest /pull.sh >/dev/null
 done
@@ -61,7 +61,7 @@ echo "== 結果 =="
 python3 - "${DURATION}" "${CLIENTS}" ${CHANNELS} <<'PY'
 import sys, pathlib
 dur = int(sys.argv[1]); nclients = int(sys.argv[2]); chans = sys.argv[3:]
-out = pathlib.Path("out")
+out = pathlib.Path("generated/load-test")
 tot_bytes = tot_segs = tot_errs = 0
 print(f"  {'Ch':<6} {'視聴者':>6} {'受信':>10} {'合計':>11} {'1人あたり':>12} {'セグ':>6} {'エラー':>6}")
 print("  " + "-" * 66)

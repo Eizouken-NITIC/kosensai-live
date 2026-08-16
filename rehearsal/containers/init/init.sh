@@ -27,5 +27,5 @@ else
 fi
 
 # caddy-preview の Caddyfile はホスト名を含むため、config.json の値を反映して生成する。
-sed "s|@@DOMAIN@@|${DOMAIN}|g" /repo/rehearsal/containers/init/preview.Caddyfile > /generated/preview.Caddyfile
+sed "s|@@DOMAIN@@|${DOMAIN}|g" /repo/rehearsal/containers/init/preview.Caddyfile > /caddy/preview.Caddyfile
 echo "caddy-preview の Caddyfile を生成した（${DOMAIN}）"
