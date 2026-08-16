@@ -20,10 +20,11 @@ echo "== マウントを再設定 =="
 docker compose up -d --force-recreate --no-deps caddy-origin caddy-preview
 sleep 2
 
-code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+# 自己署名の internal CA が発行するため -k を指定する。
+code=$(curl -sk -o /dev/null -w '%{http_code}' https://localhost:8444/)
 if [[ "${code}" == "200" ]]; then
-  echo "  OK  http://localhost:8080/"
+  echo "  OK  https://localhost:8444/"
 else
-  echo "  NG  http://localhost:8080/ が http ${code}" >&2
+  echo "  NG  https://localhost:8444/ が http ${code}" >&2
   exit 1
 fi

@@ -55,7 +55,6 @@ services:
       # SRT。外部から手動で送信する場合に使用する（publisher は内部で完結する）
       - "8890:8890/udp"
       # プレビュー（containers/init/preview.Caddyfile を参照）
-      - "8080:8080"
       - "8444:8444"
     # HLS(127.0.0.1:8888) は本番と同様に公開しない。Caddy 経由でのみアクセスする。
 

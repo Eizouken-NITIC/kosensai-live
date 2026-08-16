@@ -5,17 +5,24 @@
 # Host ヘッダを付け替えて caddy-origin へ転送するこのエントリポイントを経由させる。
 #
 # @@DOMAIN@@ は init.sh が config.json の値へ置換する。
-#
-# 以下の 2 つの site はいずれもホスト名を持たないため、スキーム（http:// と https://）を
-# 明示する必要がある。省略すると両方が既定の自動化ポリシーとなり、片方のみが internal CA を
-# 指定している状態が衝突と判定されて Caddy が起動しない。
 
 {
 	auto_https off
 	admin off
 }
 
-(to_caddy) {
+# MediaMTX が HLS のセッション Cookie に Secure 属性を付与し、ブラウザは安全なコンテキストで
+# しか保存しないため、平文では再生が開始しない。証明書は Caddy の internal CA が接続時に
+# 発行するため、ホスト名でも IP でも受け付ける。
+#
+# ただし IP で直接アクセスした場合、ブラウザは SNI を送信せず、Caddy は接続先のローカル
+# アドレスを使用するため、コンテナ内部のアドレスで発行されてホスト名が一致しない。
+# mDNS 名（<この PC のホスト名>.local）でアクセスすると一致する。
+https://:8444 {
+	tls internal {
+		on_demand
+	}
+
 	reverse_proxy https://127.0.0.1:443 {
 		header_up Host @@DOMAIN@@
 
@@ -30,25 +37,4 @@
 		output stdout
 		format console
 	}
-}
-
-# この PC から視聴するためのエントリポイント。ブラウザは http://localhost を安全な
-# コンテキストとして扱うため、MediaMTX が付与する Secure 属性付きの Cookie も
-# 平文の接続で送信される。
-http://:8080 {
-	import to_caddy
-}
-
-# LAN の実機から視聴するためのエントリポイント。localhost 以外では平文の接続で
-# Secure 属性の Cookie を保存できず再生が開始しないため、TLS が必要になる。証明書は
-# Caddy の internal CA が接続時に発行するため、ホスト名でも IP でも受け付ける。
-#
-# ただし IP で直接アクセスした場合、ブラウザは SNI を送信せず、Caddy は接続先のローカル
-# アドレスを使用するため、コンテナ内部のアドレスで発行されてホスト名が一致しない。
-# 実機からは mDNS 名（<この PC のホスト名>.local）でアクセスすると一致する。
-https://:8444 {
-	tls internal {
-		on_demand
-	}
-	import to_caddy
 }

@@ -58,7 +58,7 @@ rm -rf generated
 
 ### 本番と同じホスト名・TLS で開く
 
-`:8080` と `:8444` は `caddy-preview` のエントリポイントであるため、本番 `Caddyfile` のホスト名マッチと TLS 設定そのものは検証できません。これらを確認する場合は、`/etc/hosts` へ一時的に追記して `caddy-origin` の `:8443` を直接開きます。
+`:8444` は `caddy-preview` のエントリポイントであるため、本番 `Caddyfile` のホスト名マッチと TLS 設定そのものは検証できません。これらを確認する場合は、`/etc/hosts` へ一時的に追記して `caddy-origin` の `:8443` を直接開きます。
 
 ```bash
 DOMAIN=$(python3 -c 'import json;print(json.load(open("../config.json"))["site"]["domain"])')
