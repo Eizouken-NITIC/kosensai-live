@@ -5,6 +5,8 @@ export type Channel = {
   id: string;
   /** 来場者へ表示する唯一の文字列である。 */
   label: string;
+  /** false にすると視聴ページのタブから外す。省略時は表示する。配信中に書き換えてよい。 */
+  visible?: boolean;
   /** OBS が Listener として待つポートである。Ch4 は OBS 内で合成するため null になる。 */
   obsListenPort: number | null;
   srtLatencyUs: number | null;

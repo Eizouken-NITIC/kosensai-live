@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { createPlayer } from '$lib/player.svelte.js';
   import { loadMediaChrome, keepLiveButtonEnabled } from '$lib/mediaChrome';
   import { setNowPlaying } from '$lib/mediaSession';
@@ -8,7 +8,8 @@
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import GitHubIcon from '$lib/components/GitHubIcon.svelte';
   import { startOnboarding } from '$lib/onboarding';
-  import { channels, site, externalSite, viewer } from '$lib/config';
+  import { site, externalSite, viewer } from '$lib/config';
+  import { liveConfig, syncLiveConfig } from '$lib/liveConfig.svelte';
 
   const DEFAULT_CH = viewer.defaultChannel;
   const STORE_KEY = 'selectedChannel';
@@ -49,7 +50,8 @@
   }
 
   function select(id: string | null, updateUrl = true) {
-    const ch = channels.find((c) => c.id === id) ?? channels[0];
+    const list = liveConfig.channels;
+    const ch = list.find((c) => c.id === id) ?? list.find((c) => c.id === DEFAULT_CH) ?? list[0];
     if (!ch) return;
     current = ch.id;
     document.title = `${ch.label} | ${site.name}`;
@@ -131,14 +133,27 @@
     }
     select(initial ?? DEFAULT_CH, false);
     startOnboarding();
+    const stopSync = syncLiveConfig();
 
     return () => {
       clearTimeout(hideTimer);
       clearTimeout(hintTimer);
       v.removeEventListener('volumechange', onVolumeChange);
       releaseLiveBtn();
+      stopSync();
       detach();
     };
+  });
+
+  // 見ている Ch が一覧から外れたら既定の Ch へ移り、表示名が変わったら題名を追従させる
+  $effect(() => {
+    const ch = liveConfig.channels.find((c) => c.id === current);
+    if (!ch) {
+      untrack(() => select(DEFAULT_CH));
+      return;
+    }
+    document.title = `${ch.label} | ${site.name}`;
+    setNowPlaying(ch.label, site.name);
   });
 
   // 再生状態に応じてテーマカラーを変更する
@@ -167,7 +182,7 @@
       <Logo live={player.isLive} />
 
       <nav aria-label="チャンネル">
-        {#each channels as ch (ch.id)}
+        {#each liveConfig.channels as ch (ch.id)}
           <button
             type="button"
             aria-current={ch.id === current ? 'true' : undefined}
