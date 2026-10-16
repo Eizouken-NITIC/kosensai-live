@@ -10,6 +10,9 @@ services:
     network_mode: host
     env_file:
       - .env
+    environment:
+      # publish を許可する接続元。mediamtx.yml の authInternalUsers[0] を上書きする。
+      MTX_AUTHINTERNALUSERS_0_IPS: "127.0.0.1/32,::1/128,${HQ_IP:?.env に HQ_IP を設定してください}/32"
     volumes:
       - ./mediamtx.yml:/mediamtx.yml:ro
     logging:

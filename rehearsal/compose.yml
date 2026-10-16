@@ -12,6 +12,9 @@ x-passphrases: &passphrases
   MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE: rehearsal-ch1-passphrase
   MTX_PATHS_CH2_SRTPUBLISHPASSPHRASE: rehearsal-ch2-passphrase
   MTX_PATHS_CH3_SRTPUBLISHPASSPHRASE: rehearsal-ch3-passphrase
+  # 本番は HQ_IP だけに絞る。リハーサルは 8890 から手動で送出できるよう全体を許可する。
+  # publisher は mediamtx の名前空間に相乗りしており 127.0.0.1 から送出する。
+  MTX_AUTHINTERNALUSERS_0_IPS: "0.0.0.0/0,::/0"
 
 # 送出の内容は containers/publisher/publish.sh にある。チャンネルごとに異なるのは名前と
 # パスフレーズだけであるため、compose 側には引数のみを配置する。

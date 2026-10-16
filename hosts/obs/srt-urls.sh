@@ -32,6 +32,9 @@ domain = conf["site"]["domain"]
 def passphrase(cid):
     return os.environ.get(f"MTX_PATHS_{cid.upper()}_SRTPUBLISHPASSPHRASE", "<未設定>")
 
+def listen_passphrase(cid):
+    return os.environ.get(f"OBS_{cid.upper()}_LISTEN_PASSPHRASE", "<未設定>")
+
 print("=" * 72)
 print(" 1. OBS メディアソース（SRT Listener）… 現場からの受け口")
 print("=" * 72)
@@ -41,10 +44,10 @@ for c in chans:
         continue
     print(f"\n[{c['label']}]")
     print(f"  srt://0.0.0.0:{c['obsListenPort']}?mode=listener"
-          f"&passphrase={passphrase(c['id'])}&latency={c['srtLatencyUs']}")
+          f"&passphrase={listen_passphrase(c['id'])}&latency={c['srtLatencyUs']}")
     print(f"  → 現場側(Caller)には次を渡してください:")
     print(f"    srt://{obs_host}:{c['obsListenPort']}"
-          f"?passphrase={passphrase(c['id'])}&latency={c['srtLatencyUs']}")
+          f"?passphrase={listen_passphrase(c['id'])}&latency={c['srtLatencyUs']}")
 
 print()
 print("=" * 72)

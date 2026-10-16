@@ -12,12 +12,14 @@ cd "${HOST_DIR}"
 . "${REPO_DIR}/tools/config.sh"
 
 CHANNELS="$(config_channel_ids)"
+LISTEN_CHANNELS="$(config_listen_channel_ids)"
 
 FAIL=0
 ok()   { printf '  \033[32mOK\033[0m   %s\n' "$1"; }
 warn() { printf '  \033[33mWARN\033[0m %s\n' "$1"; }
 ng()   { printf '  \033[31mNG\033[0m   %s\n' "$1"; FAIL=1; }
 
+listen_var()     { printf 'OBS_%s_LISTEN_PASSPHRASE' "$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')"; }
 passphrase_var() { printf 'MTX_PATHS_%s_SRTPUBLISHPASSPHRASE' "$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')"; }
 
 echo "== 配信サーバー設定 (hosts/server/) =="
@@ -44,19 +46,33 @@ if [[ ! -f .env ]]; then
 else
   # shellcheck disable=SC1091
   set -a; source .env; set +a
-  for ch in ${CHANNELS}; do
-    var="$(passphrase_var "${ch}")"
-    val="${!var:-}"
+  check_passphrase() { # check_passphrase <変数名>
+    local val="${!1:-}"
     # SRT のパスフレーズは 10〜79 文字である。
-    if   [[ -z "$val" ]];                    then ng "${var} が設定されていません"
-    elif [[ "$val" == CHANGEME* ]];          then ng "${var} がサンプル値のままです"
-    elif (( ${#val} < 10 || ${#val} > 79 )); then ng "${var} は 10〜79 文字にしてください（現在 ${#val} 文字）"
-    else ok "${var} (${#val} 文字)"
+    if   [[ -z "$val" ]];                    then ng "$1 が設定されていません"
+    elif [[ "$val" == CHANGEME* ]];          then ng "$1 がサンプル値のままです"
+    elif (( ${#val} < 10 || ${#val} > 79 )); then ng "$1 は 10〜79 文字にしてください（現在 ${#val} 文字）"
+    else ok "$1 (${#val} 文字)"
     fi
-  done
+  }
+  for ch in ${CHANNELS}; do check_passphrase "$(passphrase_var "${ch}")"; done
+  for ch in ${LISTEN_CHANNELS}; do check_passphrase "$(listen_var "${ch}")"; done
   dup=$(for ch in ${CHANNELS}; do var="$(passphrase_var "${ch}")"; printf '%s\n' "${!var:-}"; done \
         | sort | uniq -d | grep -c . || true)
   (( dup == 0 )) && ok "Ch ごとに別のパスフレーズを使用しています" || warn "同じパスフレーズを複数 Ch で使っています"
+  # 現場に渡す値で配信サーバーへ送出できると、本部を通さずに公開 Ch へ映像を流せてしまう。
+  for ch in ${LISTEN_CHANNELS}; do
+    pub="$(passphrase_var "${ch}")"; lis="$(listen_var "${ch}")"
+    [[ -n "${!lis:-}" && "${!lis:-}" == "${!pub:-}" ]] && ng "${lis} が ${pub} と同じ値です。現場用は別の値にしてください"
+  done
+
+  echo
+  echo "== .env / 接続元の制限 =="
+  if [[ "${HQ_IP:-}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    ok "HQ_IP=${HQ_IP}（配信サーバーへの送出はこの IP とサーバー自身からだけ受け付けます）"
+  else
+    ng "HQ_IP に本部 PC の IPv4 アドレスを設定してください（現在: ${HQ_IP:-未設定}）"
+  fi
 fi
 
 echo
