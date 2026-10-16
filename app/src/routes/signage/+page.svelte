@@ -4,7 +4,8 @@
   import Logo from '$lib/components/Logo.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import { setNowPlaying } from '$lib/mediaSession';
-  import { channels, signage, site } from '$lib/config';
+  import { signage, site } from '$lib/config';
+  import { liveConfig, syncLiveConfig } from '$lib/liveConfig.svelte';
 
   const IFRAME_RELOAD_MS = 5 * 60 * 1000; // 埋め込み先iframeを自動リロードする間隔である
   const PAGE_RELOAD_MS = 6 * 60 * 60 * 1000; // 長時間運転時のメモリリーク対策として、ページをリロードする間隔である
@@ -20,6 +21,7 @@
         : '読み込み中…',
   );
 
+  let currentCh = $state(signage.defaultChannel);
   let clock = $state('--:--');
   let videoEl = $state<HTMLVideoElement | null>(null);
   let embed = $state<ReturnType<typeof EmbeddedSite> | null>(null);
@@ -35,8 +37,9 @@
     if (!videoEl) return;
     const detach = player.attach(videoEl);
     const ch = new URLSearchParams(location.search).get('ch') ?? signage.defaultChannel;
+    currentCh = ch;
     player.load(ch);
-    setNowPlaying(channels.find((c) => c.id === ch)?.label ?? ch, site.name);
+    const stopSync = syncLiveConfig();
 
     tick();
     const timers = [
@@ -50,8 +53,14 @@
 
     return () => {
       timers.forEach(clearInterval);
+      stopSync();
       detach();
     };
+  });
+
+  // 無人運転のため Ch は ?ch= に固定し、表示名の変更だけを追従させる
+  $effect(() => {
+    setNowPlaying(liveConfig.labelOf(currentCh), site.name);
   });
 
   // 自動再生がブロックされた場合は自動で再開を試行する
