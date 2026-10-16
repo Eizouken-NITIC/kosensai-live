@@ -12,7 +12,6 @@ x-passphrases: &passphrases
   MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE: rehearsal-ch1-passphrase
   MTX_PATHS_CH2_SRTPUBLISHPASSPHRASE: rehearsal-ch2-passphrase
   MTX_PATHS_CH3_SRTPUBLISHPASSPHRASE: rehearsal-ch3-passphrase
-  MTX_PATHS_CH4_SRTPUBLISHPASSPHRASE: rehearsal-ch4-passphrase
 
 # 送出の内容は containers/publisher/publish.sh にある。チャンネルごとに異なるのは名前と
 # パスフレーズだけであるため、compose 側には引数のみを配置する。
@@ -114,10 +113,6 @@ services:
     container_name: rehearsal-pub-ch3
     command: ["ch3", "rehearsal-ch3-passphrase"]
 
-  pub-ch4:
-    <<: *publisher
-    container_name: rehearsal-pub-ch4
-    command: ["ch4", "rehearsal-ch4-passphrase"]
 
 volumes:
   caddy_preview_data:
