@@ -131,7 +131,7 @@
     }
     select(initial ?? DEFAULT_CH, false);
     startOnboarding();
-    const stopSync = syncLiveConfig();
+    const stopSync = syncLiveConfig({ page: 'viewer', channel: () => current });
 
     return () => {
       clearTimeout(hideTimer);

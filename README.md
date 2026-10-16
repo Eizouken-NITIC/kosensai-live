@@ -81,6 +81,7 @@ kosensai-live/
 │  ├─ server/                 配信サーバー
 │  │  ├─ compose.yml / mediamtx.yml / Caddyfile / .env.example
 │  │  ├─ certs/               証明書格納ディレクトリ（Git 管理外）
+│  │  ├─ logs/                アクセスログ格納ディレクトリ（Git 管理外）
 │  │  └─ scripts/             preflight / get-cert / smoke-test
 │  ├─ obs/                    本部配信用 PC
 │  │  └─ srt-urls.sh          OBS に入力する SRT の URL を自動生成するスクリプト
@@ -96,7 +97,8 @@ kosensai-live/
 ├─ rehearsal/                 ローカル検証
 ├─ tools/                     複数のマシンから使用する共通スクリプト
 │  ├─ config.sh               config.json の値をシェルから読み出す関数
-│  └─ make-qr.py              QR コード生成スクリプト
+│  ├─ make-qr.py              QR コード生成スクリプト
+│  └─ analyze-access.py       アクセスログから視聴数を集計するスクリプト
 ├─ LICENSE
 └─ THIRD-PARTY.md
 ```

@@ -9,6 +9,9 @@ rehearsal/.env
 hosts/server/certs/
 rehearsal/generated/
 
+# 配信サーバーのアクセスログ（来場者の IP を含む）
+hosts/server/logs/
+
 # 録画・作業ファイル
 # 拡張子だけで無視すると、MPEG-TS のセグメントと TypeScript のソースが
 # どちらも .ts のため区別できない。録画の置き場所を指定して限定する。

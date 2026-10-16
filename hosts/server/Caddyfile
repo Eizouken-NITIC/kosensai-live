@@ -67,9 +67,23 @@ live.kosensai.ichinoseki.ac.jp {
 		-Server
 	}
 
-	log {
+	# docker compose logs で流し見するための出力である。Docker 側で古い分から消える。
+	log console {
 		output stdout
 		format console
+	}
+
+	# 後から集計・調査するための記録である。tools/analyze-access.py が読む。
+	# 1 行は要求ヘッダーを含めて 1.5 KB 前後で、視聴者 1 人あたり毎秒 1 行前後になる。
+	# 200 人が 8 時間見ると 1 日で 9 GB 程度になる。100 MiB ごとに gzip して 300 世代
+	# （元の量で 30 GB、圧縮後で 3 GB 前後）残し、2 日分が消えないようにする。
+	log access {
+		output file /var/log/caddy/access.log {
+			roll_size 100MiB
+			roll_keep 300
+			roll_keep_for 8760h
+		}
+		format json
 	}
 }
 
