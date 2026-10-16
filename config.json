@@ -31,10 +31,10 @@
     "homeUrl": "https://kosensai.ichinoseki.ac.jp/"
   },
   "viewer": {
-    "defaultChannel": "ch4"
+    "defaultChannel": "ch3"
   },
   "signage": {
-    "defaultChannel": "ch4",
+    "defaultChannel": "ch3",
     "inviteHeading": "スマホからも視聴できます",
     "inviteNote": "学内Wi-Fi限定です"
   },
@@ -51,20 +51,13 @@
     },
     {
       "id": "ch2",
-      "label": "第二体育館",
+      "label": "遊撃",
       "obsListenPort": 9002,
-      "srtLatencyUs": 200000,
-      "bitrateKbps": 4500
-    },
-    {
-      "id": "ch3",
-      "label": "屋外",
-      "obsListenPort": 9003,
       "srtLatencyUs": 500000,
       "bitrateKbps": 4500
     },
     {
-      "id": "ch4",
+      "id": "ch3",
       "label": "総合",
       "obsListenPort": null,
       "srtLatencyUs": null,
