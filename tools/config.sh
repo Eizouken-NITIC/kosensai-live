@@ -20,3 +20,9 @@ config_channel_ids() {
   python3 -c 'import json,sys;print("\n".join(c["id"] for c in json.load(open(sys.argv[1],encoding="utf-8"))["channels"]))' \
     "${CONFIG_JSON}"
 }
+
+# 本部 OBS が SRT Listener で受ける Ch（obsListenPort が null でないもの）の id を 1 行 1 件で
+config_listen_channel_ids() {
+  python3 -c 'import json,sys;print("\n".join(c["id"] for c in json.load(open(sys.argv[1],encoding="utf-8"))["channels"] if c.get("obsListenPort")))' \
+    "${CONFIG_JSON}"
+}

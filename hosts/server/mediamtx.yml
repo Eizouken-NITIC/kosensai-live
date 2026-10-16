@@ -5,6 +5,9 @@
 # docker-compose の env_file (.env) から
 #   MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE=...
 # の形で注入する。
+#
+# 本部 PC の IP もこのファイルに書かない。compose.yml が .env の HQ_IP を
+# MTX_AUTHINTERNALUSERS_0_IPS へ渡し、下の publish の許可範囲を上書きする。
 ###############################################
 
 ###############################################
@@ -26,7 +29,6 @@ hls: yes
 hlsAddress: 127.0.0.1:8888
 hlsEncryption: no                  # TLS 終端は Caddy に集約
 hlsAllowOrigins: ["*"]
-hlsTrustedProxies: [127.0.0.1]     # 前段は Caddy
 hlsVariant: mpegts
 # OBS のキーフレーム間隔と同一にする
 hlsSegmentDuration: 2s
@@ -46,6 +48,26 @@ api: no
 metrics: no
 pprof: no
 playback: no
+
+###############################################
+# 接続元の制限
+#
+# ここに書いた範囲は .env を設定し忘れた場合の既定値で、サーバー自身からしか送出・取得できない。
+# - publish: 本部 PC からのみ。compose.yml が HQ_IP を足して上書きする。
+#   127.0.0.1 は smoke-test.sh とリハーサルの publisher が使う。
+# - read: Caddy からのみ。HLS の視聴者はすべて Caddy を経由するため 127.0.0.1 に見える。
+#   来場者が SRT で直接取り出すことを防ぐ。hlsTrustedProxies を設定すると
+#   視聴者の実 IP で判定されて HLS が止まるため、設定しない。視聴者の IP は Caddy のログに残る。
+###############################################
+authInternalUsers:
+  - user: any
+    ips: ['127.0.0.1/32', '::1/128']
+    permissions:
+      - action: publish
+  - user: any
+    ips: ['127.0.0.1/32', '::1/128']
+    permissions:
+      - action: read
 
 ###############################################
 # Path definitions

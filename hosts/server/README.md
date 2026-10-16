@@ -51,9 +51,9 @@ echo 'net.core.rmem_max=26214400' | sudo tee /etc/sysctl.d/99-srt.conf
 # 2. 本リポジトリをクローンし、作業ディレクトリへ移動します
 git clone <本リポジトリのURL> && cd kosensai-live/hosts/server
 
-# 3. .env ファイルを作成し、パスフレーズを記述します（Ch ごとに 10〜79 文字）
+# 3. .env ファイルを作成し、パスフレーズと本部 PC の IP を記述します（パスフレーズは 10〜79 文字）
 cp .env.example .env
-for i in 1 2 3 4; do echo "ch$i: $(openssl rand -base64 24)"; done
+for i in 1 2 3 4 5; do openssl rand -base64 24; done   # パスフレーズは 1 つずつ別の値にします
 $EDITOR .env
 
 # 4. TLS 証明書を取得します（DNS-01 チャレンジを使用します）
@@ -71,6 +71,31 @@ docker compose up -d
 
 > [!WARNING]
 > `.env` に定義する各種パスフレーズ（passphrase）は、送信側（OBS などの送出用 PC）の設定値と完全に一致している必要があります。
+
+### .env の設定項目
+
+| 変数 | 用途 |
+| --- | --- |
+| `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` | 本部 OBS → 配信サーバーの送出に使うパスフレーズです。**現場には渡しません。** |
+| `OBS_<Ch>_LISTEN_PASSPHRASE` | 現場 → 本部 OBS（SRT Listener）に使うパスフレーズです。現場の端末に渡すのはこちらです。`obsListenPort` を持つ Ch にだけ設定します。 |
+| `HQ_IP` | 本部 PC の IPv4 アドレスです。配信サーバーへの送出は、この IP とサーバー自身からだけ受け付けます。 |
+
+現場用と送出用のパスフレーズを同じ値にすると、現場の端末を持つ人が本部を通さずに公開 Ch へ送出できてしまうため、`preflight.sh` が NG にします。
+
+### 接続元の制限
+
+`mediamtx.yml` の `authInternalUsers` で、MediaMTX に接続できる送信元を制限しています。
+
+| 操作 | 許可する送信元 |
+| --- | --- |
+| publish（送出） | サーバー自身（127.0.0.1）と `HQ_IP` |
+| read（取得） | サーバー自身（127.0.0.1）のみ。HLS の視聴者は Caddy を経由するため、すべて 127.0.0.1 からの接続になります。 |
+
+`HQ_IP` は `compose.yml` が環境変数 `MTX_AUTHINTERNALUSERS_0_IPS` として MediaMTX へ渡します。`.env` に `HQ_IP` が無い場合、`docker compose up` は起動を中止します。
+
+この制限は、MediaMTX から**送信元の IP がそのまま見えている**ことを前提にしています。配信サーバーを VM や LXC（Proxmox など）で動かす場合は、ブリッジ接続で LAN 上に固有の IP を持たせてください。NAT を挟むと、本部 PC からの送出が NAT の IP に見えて拒否されます。本部 PC から送出して `docker compose logs mediamtx` に `is publishing` が出ること、`authentication failed` が出ないことを確認してください。
+
+視聴者の IP は Caddy のアクセスログに残ります。MediaMTX のログでは、HLS の視聴者はすべて 127.0.0.1 と表示されます。
 
 手順 7 の `smoke-test.sh` には、SRT を有効にしてビルドされた ffmpeg が必要です。`ffmpeg -protocols | grep -w srt` で確認できます。非対応のビルドしか用意できない場合は、Docker 版（`jrottenberg/ffmpeg` など）を `--network host` で実行して代用してください。
 
@@ -105,9 +130,9 @@ docker compose restart mediamtx
 | ファイル・ディレクトリ | 役割・設定内容 |
 | --- | --- |
 | `compose.yml` | MediaMTX および Caddy のコンテナ定義（`network_mode: host`） |
-| `mediamtx.yml` | SRT ストリームの受信と HLS 生成の設定。パスフレーズは `.env` から読み込みます。 |
+| `mediamtx.yml` | SRT ストリームの受信と HLS 生成、接続元の制限の設定。パスフレーズと本部 PC の IP は `.env` から読み込みます。 |
 | `Caddyfile` | TLS 終端、`/hls/*` パスに対する MediaMTX へのリバースプロキシ転送、および `web/` の静的配信設定。 |
-| `.env.example` | 各種パスフレーズを設定するためのテンプレート。 |
+| `.env.example` | 各種パスフレーズと本部 PC の IP を設定するためのテンプレート。 |
 | `certs/` | Certbot 経由で取得した本番用 TLS 証明書の格納先（Git 管理対象外）。 |
 | `scripts/preflight.sh` | 起動前の整合性チェック。環境変数、パスフレーズ、証明書の有無、sysctl パラメータ値、および `config.json` との整合性を自動検証します。 |
 | `scripts/get-cert.sh` | Let's Encrypt から手動 DNS-01 チャレンジ方式で TLS 証明書を取得し、`certs/` に配置するスクリプト。 |

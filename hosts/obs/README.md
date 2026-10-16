@@ -33,3 +33,7 @@ MTX_HOST=10.1.2.3 OBS_HOST=10.1.2.4 ./hosts/obs/srt-urls.sh
 
 各チャンネルの定義（待受ポート、レイテンシ、ビットレート等）および視聴 URL のホスト名は、すべてリポジトリ直下の `config.json` から自動的に読み込まれます。
 SRT 接続用のパスフレーズは `hosts/server/.env` の設定を読み込みます。
+
+- 現場 → OBS（出力 1）には `OBS_<Ch>_LISTEN_PASSPHRASE` を使います。現場の端末に渡すのはこの値です。
+- OBS → MediaMTX（出力 2）には `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` を使います。この値は現場に渡さないでください。
+- 配信サーバーは、`.env` の `HQ_IP` からの送出だけを受け付けます。OBS を動かす PC の IP を `HQ_IP` に設定してください。
