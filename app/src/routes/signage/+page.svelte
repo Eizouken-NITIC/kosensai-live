@@ -39,7 +39,7 @@
     const ch = new URLSearchParams(location.search).get('ch') ?? signage.defaultChannel;
     currentCh = ch;
     player.load(ch);
-    const stopSync = syncLiveConfig();
+    const stopSync = syncLiveConfig({ page: 'signage', channel: () => currentCh });
 
     tick();
     const timers = [

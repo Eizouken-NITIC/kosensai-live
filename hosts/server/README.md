@@ -137,3 +137,47 @@ docker compose restart mediamtx
 | `scripts/preflight.sh` | 起動前の整合性チェック。環境変数、パスフレーズ、証明書の有無、sysctl パラメータ値、および `config.json` との整合性を自動検証します。 |
 | `scripts/get-cert.sh` | Let's Encrypt から手動 DNS-01 チャレンジ方式で TLS 証明書を取得し、`certs/` に配置するスクリプト。 |
 | `scripts/smoke-test.sh` | 配信サーバーへテスト用 SRT ストリームを送信し、正常に HLS セグメントが生成されて再生可能かを実機検証するスクリプト。 |
+| `logs/` | Caddy が出力するアクセスログの格納先（Git 管理対象外）。`compose.yml` でホストにマウントされます。 |
+
+---
+
+## 6. アクセスログと視聴数の集計
+
+### ログの場所と保存量
+
+Caddy のアクセスログは、ホスト側の `hosts/server/logs/` ディレクトリ（コンテナ内の `/var/log/caddy/`）に JSON 形式で記録されます。`compose.yml` でホストのディレクトリにマウントしているため、コンテナを再作成しても消えません。
+
+| 項目 | 値 |
+| --- | --- |
+| **ログの場所** | `hosts/server/logs/access.log`（現行分） |
+| **形式** | JSON（Caddy structured log、1 行 1 リクエスト） |
+| **ローテーション** | 100 MiB ごとに gzip 圧縮 |
+| **保持世代数** | 300 世代（元の量で約 30 GB、圧縮後 3 GB 前後） |
+| **目安容量** | 200 人が 8 時間視聴すると 1 日で約 9 GB（圧縮前） |
+
+`hosts/server/logs/` は来場者の IP アドレスを含むため、`.gitignore` で Git 管理対象外にしています。ログファイルは root 所有で作成されるため、集計時は `sudo` が必要です。
+
+### 集計スクリプトの使い方
+
+視聴ページとサイネージは、30 秒ごとに `/config.json` を読み直す際、クエリパラメータとして端末 ID・ページ種別・視聴中の Ch を付与します（`/config.json?v=<端末ID>&p=<ページ>&ch=<Ch>`）。`tools/analyze-access.py` はこの要求だけをアクセスログから抽出し、視聴数を集計します。
+
+```bash
+# 日ごとの延べ端末数・同時視聴数の最大を表示します
+sudo python3 tools/analyze-access.py hosts/server/logs/access*.log*
+
+# 1 分ごとの同時視聴数を CSV に書き出します（Ch ごと・サイネージの内訳つき）
+sudo python3 tools/analyze-access.py --csv minutes.csv hosts/server/logs/access*.log*
+```
+
+同時視聴数は、その 1 分間に要求を送った端末の数です。読み直しは 30 秒ごとのため、開いている端末は 1 分に必ず 1 回以上数えられます。延べ端末数は、その日に現れた ID の数です。gzip 圧縮済みのログファイル（`.gz`）もそのまま読めます。
+
+### 端末 ID に含まれる情報
+
+端末 ID は `crypto.randomUUID()` で生成したランダムな UUID であり、ブラウザの `localStorage` に保存されます。同じブラウザで再度開くと同じ ID が送られます。
+
+- **含まれるもの**: ランダムな文字列のみ
+- **含まれないもの**: 氏名・メールアドレス・端末の機種名・IP アドレスなどの個人情報
+
+ID からは「同じブラウザからの接続である」ことだけが分かります。`localStorage` を消去すると新しい ID が割り振られます。
+
+ID 自体は個人情報を含みませんが、アクセスログの各行には ID とは別に、接続元の IP アドレスと User-Agent などの要求ヘッダーが記録されます（Cookie と Authorization は Caddy が伏せ字にします）。ログファイルの取り扱いには注意してください。
