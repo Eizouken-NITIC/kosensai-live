@@ -1,7 +1,7 @@
 /* Ch の一覧と表示名を、配信中に差し替えられるようにする。
  *
- * ビルド時に埋め込んだ config.json を初期値とし、web/config.json を定期的に読み直す。
- * 読めない・形が崩れている場合は直前の値を使い続けるため、表示が消えることはない。
+ * web/config.json を定期的に読み直す。読めない・形が崩れている・表示する Ch が無い場合は、
+ * ビルド時に埋め込んだ config.json の値に戻す。どの端末も同じ 2 通りのどちらかを表示する。
  * MediaMTX 側は全 Ch を常に待ち受けており、ここでは何も変えない。 */
 
 import { channels as bundled } from './config';
@@ -39,17 +39,20 @@ export const liveConfig = {
   },
 };
 
-async function refresh() {
+async function fetchChannels(): Promise<Channel[] | null> {
   try {
     const res = await fetch('/config.json', { cache: 'no-store' });
-    if (!res.ok) return;
-    const json: unknown = await res.json();
-    const list = (json as { channels?: unknown })?.channels;
-    if (!isChannelList(list) || visibleOf(list).length === 0) return;
-    if (JSON.stringify(list) !== JSON.stringify(all)) all = list;
+    if (!res.ok) return null;
+    const list = ((await res.json()) as { channels?: unknown })?.channels;
+    return isChannelList(list) && visibleOf(list).length > 0 ? list : null;
   } catch {
-    /* 通信断や書き換え途中の JSON は無視し、直前の値を使い続ける */
+    /* 通信断や書き換え途中の JSON である */
+    return null;
   }
+}
+
+async function refresh() {
+  all = (await fetchChannels()) ?? bundled;
 }
 
 /** 定期的な読み直しを始める。戻り値で止める。 */

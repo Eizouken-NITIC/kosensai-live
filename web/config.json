@@ -14,6 +14,9 @@
     "channels:",
     "  id は MediaMTX のパス名（hosts/server/mediamtx.yml の paths:）と一致する必要がある。",
     "  label は来場者に表示する唯一の文字列である。id の ChN は運用側の呼称であるため表示しない。",
+    "  visible を false にすると視聴ページのタブから外す。省略時は表示する。",
+    "  label と visible は、配信サーバー上の web/config.json を書き換えると 30 秒以内に反映される。",
+    "  再ビルドするとこのファイルの内容に戻る。",
     "externalSite: このリポジトリの外で運用されているサイトである。視聴ページとサイネージが",
     "  iframe で埋め込み、別タブへのリンクも表示する。",
     "  embedUrl は iframe に表示する URL、homeUrl は別タブで開く URL、title は表示名である。",
@@ -31,10 +34,10 @@
     "homeUrl": "https://kosensai.ichinoseki.ac.jp/"
   },
   "viewer": {
-    "defaultChannel": "ch4"
+    "defaultChannel": "ch3"
   },
   "signage": {
-    "defaultChannel": "ch4",
+    "defaultChannel": "ch3",
     "inviteHeading": "スマホからも視聴できます",
     "inviteNote": "学内Wi-Fi限定です"
   },
@@ -51,20 +54,13 @@
     },
     {
       "id": "ch2",
-      "label": "第二体育館",
+      "label": "遊撃",
       "obsListenPort": 9002,
-      "srtLatencyUs": 200000,
-      "bitrateKbps": 4500
-    },
-    {
-      "id": "ch3",
-      "label": "屋外",
-      "obsListenPort": 9003,
       "srtLatencyUs": 500000,
       "bitrateKbps": 4500
     },
     {
-      "id": "ch4",
+      "id": "ch3",
       "label": "総合",
       "obsListenPort": null,
       "srtLatencyUs": null,

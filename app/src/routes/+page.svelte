@@ -54,8 +54,6 @@
     const ch = list.find((c) => c.id === id) ?? list.find((c) => c.id === DEFAULT_CH) ?? list[0];
     if (!ch) return;
     current = ch.id;
-    document.title = `${ch.label} | ${site.name}`;
-    setNowPlaying(ch.label, site.name);
     if (updateUrl) history.replaceState(null, '', `?ch=${ch.id}`);
     try {
       localStorage.setItem(STORE_KEY, ch.id);
@@ -145,7 +143,7 @@
     };
   });
 
-  // 見ている Ch が一覧から外れたら既定の Ch へ移り、表示名が変わったら題名を追従させる
+  // 題名と再生通知を表示名に合わせる。見ている Ch が一覧から外れたら既定の Ch へ移る
   $effect(() => {
     const ch = liveConfig.channels.find((c) => c.id === current);
     if (!ch) {
