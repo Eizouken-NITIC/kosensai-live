@@ -1,6 +1,6 @@
 # hosts/server — 配信サーバー構築・運用手順書
 
-本ディレクトリは、SRTストリームを受信してHLS形式の動画を生成する「MediaMTX」と、SSL/TLS暗号化（TLS終端）、静的コンテンツ配信、およびリバースプロキシを担う「Caddy」を、Docker Compose環境で起動・運用するための各種設定と手順を管理しています。
+本ディレクトリは、SRT ストリームを受信して HLS 形式の動画を生成する MediaMTX と、TLS 終端・静的コンテンツ配信・リバースプロキシを担う Caddy を、Docker Compose 環境で起動・運用するための各種設定と手順を管理しています。
 
 配信サーバーには、本ディレクトリ配下のファイル群のみを配置（デプロイ）します。配信サイトの実体は、リポジトリ直下の `web/` ディレクトリに格納されており、`compose.yml` 内で `../../web` としてマウントして配信されます。
 
@@ -25,13 +25,13 @@
 | 項目 | 動作環境・システム要件 | 備考 |
 | --- | --- | --- |
 | **OS** | Ubuntu 22.04 LTS / 24.04 LTS | |
-| **CPU** | 2コア以上 | トランスコードは行わず、HLS への remux のみを行います。 |
-| **RAM** | 4GB以上 | HLSセグメントをメモリ上に保持します。 |
-| **ディスク容量**| 20GB以上 | ログおよび一時セグメントファイルの格納領域です。 |
-| **ネットワーク**| ブリッジ接続・配信用VLAN・**固定IPアドレス** | |
+| **CPU** | 2 コア以上 | トランスコードは行わず、HLS への remux のみを行います。 |
+| **RAM** | 4 GB 以上 | HLS セグメントをメモリ上に保持します。 |
+| **ディスク容量**| 20 GB 以上 | ログおよび一時セグメントファイルの格納領域です。 |
+| **ネットワーク**| ブリッジ接続・配信用 VLAN・**固定 IP アドレス** | |
 
-### SRTバッファのカーネルパラメータ設定
-SRTプロトコルの安定したパケット転送のため、カーネルパラメータの `net.core.rmem_max` の値を引き上げてください。
+### SRT バッファのカーネルパラメータ設定
+SRT プロトコルの安定したパケット転送のため、カーネルパラメータの `net.core.rmem_max` の値を引き上げてください。
 
 ```bash
 # パラメータの現在値を確認するコマンド
@@ -43,7 +43,7 @@ sysctl -n net.core.rmem_max        # 「26214400」が返ることを確認し�
 ## 3. サーバーセットアップ手順
 
 ```bash
-# 1. SRT用のネットワークバッファを確保
+# 1. SRT 用のネットワークバッファを確保
 sudo sysctl -w net.core.rmem_max=26214400
 sudo sysctl -n net.core.rmem_max
 echo 'net.core.rmem_max=26214400' | sudo tee /etc/sysctl.d/99-srt.conf
@@ -56,7 +56,7 @@ cp .env.example .env
 for i in 1 2 3 4 5; do openssl rand -base64 24; done   # パスフレーズは 1 つずつ別の値にします
 $EDITOR .env
 
-# 4. SSL/TLS証明書を取得します（DNS-01チャレンジを使用します）
+# 4. TLS 証明書を取得します（DNS-01 チャレンジを使用します）
 sudo ./scripts/get-cert.sh
 
 # 5. 起動前のシステムチェックを実行します
@@ -65,12 +65,12 @@ sudo ./scripts/get-cert.sh
 # 6. コンテナ群をバックグラウンドで起動します
 docker compose up -d
 
-# 7. 疎通テストを実行します（例: ch1の疎通テスト）
+# 7. 疎通テストを実行します（例: ch1 の疎通テスト）
 ./scripts/smoke-test.sh ch1
 ```
 
 > [!WARNING]
-> `.env` に定義する各種パスフレーズ（passphrase）は、送信側（OBSなどの送出用PC）の設定値と完全に一致している必要があります。
+> `.env` に定義する各種パスフレーズ（passphrase）は、送信側（OBS などの送出用 PC）の設定値と完全に一致している必要があります。
 
 ### .env の設定項目
 
@@ -107,16 +107,16 @@ docker compose up -d
 # コンテナの稼働ステータスを確認します
 docker compose ps
 
-# MediaMTXのログを表示（ストリーム受信状態などの確認）
+# MediaMTX のログを表示（ストリーム受信状態などの確認）
 docker compose logs -f mediamtx
 
-# Caddyのログを表示（アクセスログの確認）
+# Caddy のログを表示（アクセスログの確認）
 docker compose logs -f caddy
 
 # 静的コンテンツ（web/ 配下）の更新内容を反映します
 git pull && docker compose restart caddy
 
-# MediaMTXの設定（mediamtx.yml）の変更を即時反映します
+# MediaMTX の設定（mediamtx.yml）の変更を即時反映します
 docker compose restart mediamtx
 ```
 
@@ -129,11 +129,11 @@ docker compose restart mediamtx
 
 | ファイル・ディレクトリ | 役割・設定内容 |
 | --- | --- |
-| `compose.yml` | MediaMTXおよびCaddyのコンテナ定義（`network_mode: host`） |
-| `mediamtx.yml` | SRTストリームの受信とHLS生成、接続元の制限の設定。パスフレーズと本部 PC の IP は `.env` から読み込みます。 |
-| `Caddyfile` | SSL/TLSの終端、`/hls/*` パスに対するMediaMTXへのリバースプロキシ転送、および `web/` の静的配信設定。 |
+| `compose.yml` | MediaMTX および Caddy のコンテナ定義（`network_mode: host`） |
+| `mediamtx.yml` | SRT ストリームの受信と HLS 生成、接続元の制限の設定。パスフレーズと本部 PC の IP は `.env` から読み込みます。 |
+| `Caddyfile` | TLS 終端、`/hls/*` パスに対する MediaMTX へのリバースプロキシ転送、および `web/` の静的配信設定。 |
 | `.env.example` | 各種パスフレーズと本部 PC の IP を設定するためのテンプレート。 |
-| `certs/` | Certbot経由で取得した本番用SSL/TLS証明書の格納先（Git管理対象外）。 |
-| `scripts/preflight.sh` | 起動前整合性チェック。環境変数、パスフレーズ、証明書の有無、sysctlパラメータ値、および `config.json` ととの整合性を自動検証します。 |
-| `scripts/get-cert.sh` | Let's Encryptから手動DNS-01チャレンジ方式でSSL/TLS証明書を取得し、`certs/` に配置するスクリプト。 |
-| `scripts/smoke-test.sh` | 配信サーバーへテスト用SRTストリームを送信し、正常にHLSセグメントが生成されて再生可能かを実機検証するスクリプト。 |
+| `certs/` | Certbot 経由で取得した本番用 TLS 証明書の格納先（Git 管理対象外）。 |
+| `scripts/preflight.sh` | 起動前の整合性チェック。環境変数、パスフレーズ、証明書の有無、sysctl パラメータ値、および `config.json` との整合性を自動検証します。 |
+| `scripts/get-cert.sh` | Let's Encrypt から手動 DNS-01 チャレンジ方式で TLS 証明書を取得し、`certs/` に配置するスクリプト。 |
+| `scripts/smoke-test.sh` | 配信サーバーへテスト用 SRT ストリームを送信し、正常に HLS セグメントが生成されて再生可能かを実機検証するスクリプト。 |

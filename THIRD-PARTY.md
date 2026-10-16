@@ -6,9 +6,9 @@
 
 ---
 
-## 1. 配布物に同梱しているソフトウェア
+## 配布物に同梱しているソフトウェア
 
-`web/` ディレクトリはビルド成果物の出力先であり、Gitの追跡対象として本リポジトリに含まれています。配信サーバー上のCaddyがこのディレクトリをそのまま静的配信するため、以下のソフトウェアは視聴者のブラウザ端末へ配布されます。
+`web/` ディレクトリはビルド成果物の出力先であり、Git の追跡対象として本リポジトリに含まれています。配信サーバー上の Caddy がこのディレクトリをそのまま静的配信するため、以下のソフトウェアは視聴者のブラウザ端末へ配布されます。
 
 | ソフトウェア | バージョン | ライセンス | 著作権者 | ライセンス全文へのリンク |
 | --- | --- | --- | --- | --- |
@@ -16,17 +16,3 @@
 | [Media Chrome](https://github.com/muxinc/media-chrome) | 4.19.2 | MIT | Mux, Inc. | [app/static/licenses/media-chrome-MIT.txt](app/static/licenses/media-chrome-MIT.txt) |
 | [driver.js](https://github.com/kamranahmedse/driver.js) | 1.8.0 | MIT | Kamran Ahmed | [app/static/licenses/driver.js-MIT.txt](app/static/licenses/driver.js-MIT.txt) |
 | [Noto Sans JP](https://github.com/notofonts/noto-cjk) | Fontsource 5.3 経由 | OFL-1.1 | Google Inc. | [app/static/licenses/noto-sans-jp-OFL-1.1.txt](app/static/licenses/noto-sans-jp-OFL-1.1.txt) |
-
----
-
-## 2. 動作に必要なサードパーティ製ソフトウェア
-
-以下のソフトウェアは、配信サーバーの起動時にDockerがコンテナイメージとして取得します。本リポジトリが配布しているものではないため告知義務の対象外ですが、本システムを動作させるうえで何を導入することになるかを示すために記載します。本リポジトリで管理しているのは、これらを動作させるための設定ファイル群です。
-
-| ソフトウェア | バージョン | ライセンス | 役割 |
-| --- | --- | --- | --- |
-| [MediaMTX](https://github.com/bluenviron/mediamtx) | 1.19.3 | MIT | SRT受信・HLS生成サーバー |
-| [Caddy](https://github.com/caddyserver/caddy) | 2.11.4 | Apache-2.0 | TLS終端・静的配信・リバースプロキシサーバー |
-
-> [!NOTE]
-> `rehearsal/` のローカル検証環境でテスト配信を行う際は、MediaMTXのffmpeg同梱イメージに含まれている [FFmpeg](https://ffmpeg.org/) を使用します。こちらも起動時にコンテナイメージとして取得されます。

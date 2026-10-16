@@ -2,7 +2,7 @@
 
 `docker compose` で起動します。MediaMTX と Caddy は `hosts/server/` の `mediamtx.yml` と `Caddyfile`、および `web/` をそのままマウントして使用します。本番で本部 OBS が行う SRT 送出は、カラーバーを生成する ffmpeg のコンテナ 4 つ（チャンネルごとに 1 つ）が代わりに行います。
 
-`caddy-preview` が Host ヘッダを付け替えて `caddy-origin` へ転送します（本番のCaddyfileを使用しつつプレビューしたいため）。
+`caddy-preview` が Host ヘッダを付け替えて `caddy-origin` へ転送します（本番の Caddyfile を使用しつつプレビューしたいため）。
 
 ---
 
