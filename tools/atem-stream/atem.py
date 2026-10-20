@@ -70,6 +70,8 @@ def cmd_check(atem_ip, want):
     # パスフレーズは画面に出さない
     results.append(("OK", "passphrase: 一致") if have["passphrase"] == want["passphrase"]
                    else ("NG", "passphrase: 不一致"))
+    # 品質は config.json に持たず、ATEM Software Control で設定する（hosts/obs/README.md）。表示だけ行う。
+    results.append(("OK", f"profile: {have.get('profile', '(取得できません)')}"))
     results.append(("OK", f"status: {have['status']}"))
     if not config.print_section(f"ATEM ({atem_ip})", results):
         sys.exit(1)

@@ -66,6 +66,19 @@ static void dump(IBMDSwitcherStreamRTMP* st) {
 	st->GetLowLatency(&b); printf("lowLat  : %d\n", b);
 	uint32_t lo, hi;
 	st->GetVideoBitrates(&lo, &hi); printf("vbitrate: %u / %u\n", lo, hi);
+	// 品質（ATEM Software Control の「品質」）。GetVideoBitrates とは別に保持されている。
+	// SetVideoBitrates は GetVideoBitrates の値だけを変え、この値は変えない（fw 10.3 で確認）。
+	// keyFrameInterval は単位が SDK に記載されていないため表示しない。
+	{
+		CFStringRef name;
+		uint32_t vlo, vhi, alo, ahi, keyframe;
+		bool lowLatency;
+		BMDSwitcherVideoMode mode;
+		BMDSwitcherVideoCodec codec;
+		if (st->GetProfile(&name, &vlo, &vhi, &alo, &ahi, &lowLatency, &mode, &codec, &keyframe) == S_OK)
+			printf("profile : %s video=%u/%u audio=%u/%u mode=%s codec=%s lowLat=%d\n",
+			       toStd(name).c_str(), vlo, vhi, alo, ahi, fourcc(mode).c_str(), fourcc(codec).c_str(), lowLatency);
+	}
 	BMDSwitcherStreamRTMPState state;
 	BMDSwitcherStreamRTMPError err;
 	st->GetStatus(&state, &err);
