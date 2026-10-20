@@ -60,10 +60,10 @@ else
   dup=$(for ch in ${CHANNELS}; do var="$(passphrase_var "${ch}")"; printf '%s\n' "${!var:-}"; done \
         | sort | uniq -d | grep -c . || true)
   (( dup == 0 )) && ok "Ch ごとに別のパスフレーズを使用しています" || warn "同じパスフレーズを複数 Ch で使っています"
-  # 現場に渡す値で配信サーバーへ送出できると、本部を通さずに公開 Ch へ映像を流せてしまう。
+  # ATEM・スマートフォンに設定する値で配信サーバーへ送出できると、本部 OBS を通さずに公開 Ch へ映像を流せてしまう。
   for ch in ${LISTEN_CHANNELS}; do
     pub="$(passphrase_var "${ch}")"; lis="$(listen_var "${ch}")"
-    [[ -n "${!lis:-}" && "${!lis:-}" == "${!pub:-}" ]] && ng "${lis} が ${pub} と同じ値です。現場用は別の値にしてください"
+    [[ -n "${!lis:-}" && "${!lis:-}" == "${!pub:-}" ]] && ng "${lis} が ${pub} と同じ値です。受信用は別の値にしてください"
   done
 
   echo

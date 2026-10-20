@@ -76,11 +76,11 @@ docker compose up -d
 
 | 変数 | 用途 |
 | --- | --- |
-| `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` | 本部 OBS → 配信サーバーの送出に使うパスフレーズです。**現場には渡しません。** |
-| `OBS_<Ch>_LISTEN_PASSPHRASE` | 現場 → 本部 OBS（SRT Listener）に使うパスフレーズです。現場の端末に渡すのはこちらです。`obsListenPort` を持つ Ch にだけ設定します。 |
+| `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` | 本部 OBS → 配信サーバーの送出に使うパスフレーズです。**ATEM・スマートフォンには設定しません。** |
+| `OBS_<Ch>_LISTEN_PASSPHRASE` | ATEM・スマートフォン → 本部 OBS（SRT Listener）に使うパスフレーズです。ATEM とスマートフォンに設定するのはこちらです。`obsListenPort` を持つ Ch にだけ設定します。 |
 | `HQ_IP` | 本部 PC の IPv4 アドレスです。配信サーバーへの送出は、この IP とサーバー自身からだけ受け付けます。 |
 
-現場用と送出用のパスフレーズを同じ値にすると、現場の端末を持つ人が本部を通さずに公開 Ch へ送出できてしまうため、`preflight.sh` が NG にします。
+受信用と送出用のパスフレーズを同じ値にすると、ATEM・スマートフォンを操作する人が本部 OBS を通さずに公開 Ch へ送出できてしまうため、`preflight.sh` が NG にします。
 
 ### 接続元の制限
 

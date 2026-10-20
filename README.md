@@ -144,7 +144,7 @@ pnpm build       # 成果物は web/ に出力されます
 
 ```bash
 cd hosts/server
-cp .env.example .env     # SRT パスフレーズ（送出用・現場用）と本部 PC の IP を設定します
+cp .env.example .env     # SRT パスフレーズ（送出用・受信用）と本部 PC の IP を設定します
 sudo ./scripts/get-cert.sh   # DNS-01 チャレンジで取得します
 ./scripts/preflight.sh       # 設定・証明書・カーネルパラメータの整合性を確認します
 docker compose up -d
