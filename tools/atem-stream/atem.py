@@ -97,6 +97,9 @@ def main():
         want = expected(config.load_config(), env, args.ch)
         if args.cmd == "apply":
             # 配信中（connecting を含む）は ATEM が変更を受け付けない（E_FAIL）
+            status = current(atem_ip)["status"]
+            if not status.startswith("idle"):
+                raise SystemExit(f"配信中（{status}）のため設定できません。stop してから実行してください")
             run(atem_ip, "set", want["service"], want["url"], want["key"], capture=True)
             run(atem_ip, "passphrase", want["passphrase"], capture=True)
         cmd_check(atem_ip, want)

@@ -55,4 +55,4 @@ SDK の `include` ディレクトリが既定の場所（`/Applications/Blackmag
 ## ATEM の仕様
 
 - SRT のパスフレーズは `SetAuthentication` の password に対応する。URL の `?passphrase=` と `SetSRTExtensions` は反映されない
-- 配信中（`connecting` を含む）は `SetUrl` / `SetKey` / `SetAuthentication` が `E_FAIL`（`0x80000008`）を返す。`stop` してから設定する
+- 配信中（`connecting` を含む）は `SetServiceName` / `SetUrl` / `SetKey` / `SetAuthentication` が `E_FAIL`（`0x80000008`）を返す。`stop` してから設定する。`atem.py apply` は配信中であれば設定せずに終了する
