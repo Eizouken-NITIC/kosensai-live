@@ -1,5 +1,5 @@
 // ATEM の配信設定を Blackmagic ATEM Switchers SDK 経由で読み書きする CLI。
-// usage は printUsage() を参照。
+// usage は printUsage() を参照。config.json と .env から値を決める処理は atem.py が行う。
 #include "BMDSwitcherAPI.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <cstdio>
@@ -75,11 +75,11 @@ static void dump(IBMDSwitcherStreamRTMP* st) {
 static void printUsage(const char* prog) {
 	fprintf(stderr,
 		"usage: %s <ATEM の IP> <command>\n"
-		"  get                      配信設定と状態を表示する\n"
-		"  set <service> <url>      サービス名と URL を設定する (例: \"Custom URL H.264\" srt://host:9001)\n"
-		"  passphrase <値>          SRT のパスフレーズを設定する\n"
-		"  start | stop             配信を開始・停止する\n"
-		"  watch <秒>               状態とビットレートを 1 秒ごとに表示する\n"
+		"  get                        配信設定と状態を表示する\n"
+		"  set <service> <url> <key>  サービス名・URL・キーを設定する (例: \"Custom URL H.264\" srt://host:9001 \"\")\n"
+		"  passphrase <値>            SRT のパスフレーズを設定する\n"
+		"  start | stop               配信を開始・停止する\n"
+		"  watch <秒>                 状態とビットレートを 1 秒ごとに表示する\n"
 		"配信中 (connecting を含む) は set / passphrase が E_FAIL (0x80000008) になる。\n",
 		prog);
 }
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
 	const char* ip = argv[1];
 	const char* cmd = argv[2];
 	bool ok = (!strcmp(cmd, "get") || !strcmp(cmd, "start") || !strcmp(cmd, "stop") ||
-	           !strcmp(cmd, "watch") || (!strcmp(cmd, "set") && argc >= 5) ||
+	           !strcmp(cmd, "watch") || (!strcmp(cmd, "set") && argc >= 6) ||
 	           (!strcmp(cmd, "passphrase") && argc >= 4));
 	if (!ok) { printUsage(argv[0]); return 2; }
 
@@ -116,9 +116,10 @@ int main(int argc, char** argv) {
 	if (!strcmp(cmd, "get")) {
 		dump(st);
 	} else if (!strcmp(cmd, "set")) {
-		CFStr service(argv[3]), url(argv[4]);
+		CFStr service(argv[3]), url(argv[4]), key(argv[5]);
 		check("SetServiceName", st->SetServiceName(service.ref));
 		check("SetUrl", st->SetUrl(url.ref));
+		check("SetKey", st->SetKey(key.ref));
 		pump(1.5);
 		dump(st);
 	} else if (!strcmp(cmd, "passphrase")) {
