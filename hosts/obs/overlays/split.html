@@ -51,10 +51,9 @@
 <script src="program.js"></script>
 <script src="overlay.js"></script>
 <script>
-  // ?l=第一体育館&r=遊撃 で見出しを指定する。左の会場には現在の演目を添える。
+  // 左右の見出しは program.js の panes。左の会場には現在の演目を添える。
   const $ = (id) => document.getElementById(id);
-  $('l').textContent = Overlay.params.get('l') ?? '';
-  $('r').textContent = Overlay.params.get('r') ?? '';
+  [$('l').textContent, $('r').textContent] = window.PROGRAM.panes;
   Overlay.every(1000, () => {
     const cur = Overlay.current();
     $('lsub').textContent = cur && cur.kind !== 'ng' ? (cur.kind === 'break' ? '休憩中' : cur.title) : '';
