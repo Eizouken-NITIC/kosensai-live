@@ -98,7 +98,8 @@ kosensai-live/
 ├─ tools/                     複数のマシンから使用する共通スクリプト
 │  ├─ config.sh               config.json の値をシェルから読み出す関数
 │  ├─ make-qr.py              QR コード生成スクリプト
-│  └─ analyze-access.py       アクセスログから視聴数を集計するスクリプト
+│  ├─ analyze-access.py       アクセスログから視聴数を集計するスクリプト
+│  └─ atem-stream/            ATEM の配信設定を読み書きする CLI（macOS、SDK は別途インストール）
 ├─ LICENSE
 └─ THIRD-PARTY.md
 ```

@@ -55,6 +55,7 @@ ATEM Mini Pro ISO（ファームウェア 10.3 で確認）は SRT の Caller �
 - パスフレーズ欄は複数行の入力欄で、Tab キーを押すとタブ文字が値に入ります。入力後は別の欄をクリックして確定してください。
 - SRT の latency は送受信の大きい方の値が使われるため、OBS 側の Listener の URL の `latency` で決まります。
 - 配信中（接続中を含む）は設定を変更できません。変更する場合は配信を停止してから行います。
+- GUI を使用せず、コマンドで設定値の確認と投入を行う場合は [tools/atem-stream/](../../tools/atem-stream/README.md) の CLI を使用します。
 
 OBS 側は「メディアソース」を追加し、「ローカルファイル」のチェックを外して、`srt-urls.sh` の出力 1 の Listener の URL を「入力」に、`mpegts` を「入力フォーマット」に設定します。
 
