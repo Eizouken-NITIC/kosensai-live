@@ -6,10 +6,7 @@ set -euo pipefail
 HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
 
-# shellcheck source=../../tools/config.sh
-. "${REPO_DIR}/tools/config.sh"
-
-DOMAIN="${DOMAIN:-$(config_domain)}"
+DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/config.py" get site.domain)}"
 SIGNAGE_CH="${SIGNAGE_CH:-}"
 
 URL="https://${DOMAIN}/signage/"

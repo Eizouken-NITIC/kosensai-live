@@ -82,9 +82,9 @@ kosensai-live/
 │  │  ├─ compose.yml / mediamtx.yml / Caddyfile / .env.example
 │  │  ├─ certs/               証明書格納ディレクトリ（Git 管理外）
 │  │  ├─ logs/                アクセスログ格納ディレクトリ（Git 管理外）
-│  │  └─ scripts/             preflight / get-cert / smoke-test
+│  │  └─ scripts/             get-cert / smoke-test
 │  ├─ obs/                    本部配信用 PC
-│  │  └─ srt-urls.sh          OBS に入力する SRT の URL を自動生成するスクリプト
+│  │  └─ srt-urls.py          OBS に入力する SRT の URL を自動生成するスクリプト
 │  └─ signage/                サイネージ端末
 │     └─ setup.sh / signage.service
 ├─ app/                       配信サイトのソースコード
@@ -96,7 +96,7 @@ kosensai-live/
 │
 ├─ rehearsal/                 ローカル検証
 ├─ tools/                     複数のマシンから使用する共通スクリプト
-│  ├─ config.sh               config.json の値をシェルから読み出す関数
+│  ├─ config.py               config.json と .env の読み込みと検証
 │  ├─ make-qr.py              QR コード生成スクリプト
 │  ├─ analyze-access.py       アクセスログから視聴数を集計するスクリプト
 │  └─ atem-stream/            ATEM の配信設定を読み書きする CLI（macOS、SDK は別途インストール）
@@ -145,17 +145,16 @@ pnpm build       # 成果物は web/ に出力されます
 
 ```bash
 cd hosts/server
-cp .env.example .env     # SRT パスフレーズ（送出用・受信用）と本部 PC の IP を設定します
+cp .env.example .env     # SRT パスフレーズ（送出用・受信用）と各マシンの IP を設定します
 sudo ./scripts/get-cert.sh   # DNS-01 チャレンジで取得します
-./scripts/preflight.sh       # 設定・証明書・カーネルパラメータの整合性を確認します
-docker compose up -d
+docker compose up -d         # 起動前に init サービスが設定・証明書・カーネルパラメータを検証します
 ```
 
 システム要件、SRT 用カーネルパラメータの設定、疎通テストの手順は [hosts/server/README.md](hosts/server/README.md) にあります。
 
 **3. 本部 PC（OBS）を設定する**
 
-OBS に入力する SRT の URL は `hosts/obs/srt-urls.sh` が `config.json` と `.env` から生成します。キーフレーム間隔などの設定値は [hosts/obs/README.md](hosts/obs/README.md) を参照してください。
+OBS に入力する SRT の URL は `hosts/obs/srt-urls.py` が `config.json` と `.env` から生成します。キーフレーム間隔などの設定値は [hosts/obs/README.md](hosts/obs/README.md) を参照してください。
 
 **4. サイネージ端末を用意する（任意）**
 
@@ -178,11 +177,20 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 | `signage` | サイネージページのデフォルトチャンネルおよび QR コード横のテキスト |
 | `welcome` | オンボーディング案内文 |
 
-- **適用のタイミング**: `app/` はビルド時にこの設定をインポートします。`hosts/` と `rehearsal/` の各種スクリプトは実行時に `tools/config.sh` を経由して読み込み、`tools/make-qr.py` は直接読み込みます。
+- **適用のタイミング**: `app/` はビルド時にこの設定をインポートします。`hosts/`、`rehearsal/`、`tools/` の各種スクリプトは、実行時に `tools/config.py` を経由して読み込みます。
 
-### Caddyfile
+### .env
 
-`hosts/server/Caddyfile` はホスト名を直接保持しています。`config.json` の `site.domain` を変更した場合は、Caddyfile 内のホスト名も合わせて書き換える必要があります。`preflight.sh` スクリプトが両者の整合性をチェックします。
+パスフレーズと各マシンの IP は `hosts/server/.env`（Git 管理外）に設定します。配信サーバーの compose に加えて、本部 PC の `srt-urls.py` と `tools/atem-stream/` もこのファイルを読みます。設定項目は [hosts/server/README.md](hosts/server/README.md) にあります。
+
+### 設定の検証と反映
+
+`config.json` と `.env` の値は、他の設定ファイルへ書き写しません。
+
+- `Caddyfile` のホスト名は `{$SITE_DOMAIN}` です。compose の init サービスが `config.json` から書き出した値を、Caddy が起動時に読み込みます。
+- MediaMTX のパス（Ch）は `.env` の `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から作成します。`mediamtx.yml` には Ch を書きません。
+
+init サービスは `docker compose up` のたびに `tools/config.py check --server` を実行し、`.env` の Ch と `config.json` の一致、パスフレーズ、証明書のホスト名と期限などを検証します。NG があれば MediaMTX と Caddy を起動しません。`config.json` や `.env` を変更した後は `docker compose up -d` を実行してください（`docker compose restart` では init が実行されません）。
 
 ### QR コード
 

@@ -1,2 +1,2 @@
-# init が生成する証明書と caddy-preview の Caddyfile、load-test.sh の結果
+# init が生成する証明書と Caddy 用の SITE_DOMAIN、load-test.sh の結果
 generated/

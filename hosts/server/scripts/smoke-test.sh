@@ -13,12 +13,9 @@ HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
 cd "${HOST_DIR}"
 
-# shellcheck source=../../../tools/config.sh
-. "${REPO_DIR}/tools/config.sh"
-
 SRT_HOST="${SRT_HOST:-127.0.0.1}"
 SRT_PORT="${SRT_PORT:-8890}"
-DOMAIN="${DOMAIN:-$(config_domain)}"
+DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/config.py" get site.domain)}" || exit 1
 JAR="$(mktemp)"
 
 # MediaMTX は最初のプレイリスト要求へ、セッション Cookie を付与するための 302 を返す。
@@ -39,13 +36,7 @@ check() { # check <説明> <URL>
   [[ "${code}" == "200" ]] && ok "$1" || ng "$1 (http ${code})"
 }
 
-[[ -f .env ]] || { echo ".env がありません（cp .env.example .env を実行してください）" >&2; exit 1; }
-# shellcheck disable=SC1091
-set -a; source .env; set +a
-
-var="MTX_PATHS_$(printf '%s' "${CH}" | tr '[:lower:]' '[:upper:]')_SRTPUBLISHPASSPHRASE"
-PASS="${!var:-}"
-[[ -n "${PASS}" ]] || { echo "${var} が .env にありません" >&2; exit 1; }
+PASS="$(python3 "${REPO_DIR}/tools/config.py" env "MTX_PATHS_$(printf '%s' "${CH}" | tr '[:lower:]' '[:upper:]')_SRTPUBLISHPASSPHRASE")" || exit 1
 
 command -v ffmpeg >/dev/null || { echo "ffmpeg がありません" >&2; exit 1; }
 ffmpeg -hide_banner -protocols 2>/dev/null | grep -qw srt \

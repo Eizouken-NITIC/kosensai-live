@@ -2,7 +2,7 @@
 
 本ディレクトリは、ATEM とスマートフォンから送信された SRT ストリームを受信・合成し、チャンネルごとに配信サーバー（MediaMTX）へ向けて送信する本部 PC（OBS）に関する設定とユーティリティを管理しています。本部 PC はメイン会場（第一体育館）に置き、ATEM と同じ会場のスイッチに接続します。
 
-このディレクトリ内にあるのは、SRT の接続用 URL を一括生成する `srt-urls.sh` スクリプトのみです。配信サーバーへ直接デプロイするファイルはありません。
+このディレクトリ内にあるのは、SRT の接続用 URL を一括生成する `srt-urls.py` スクリプトのみです。配信サーバーへ直接デプロイするファイルはありません。
 
 ---
 
@@ -12,18 +12,15 @@ OBS 側の**キーフレーム間隔**の設定値は、配信サーバー側の
 
 ---
 
-## 2. srt-urls.sh（URL 生成スクリプト）
+## 2. srt-urls.py（URL 生成スクリプト）
 
 各種入力・出力用の URL は手動で入力せず、本スクリプトで生成した URL をコピー＆ペーストして使用してください。
 
 ### スクリプトの実行方法
 
 ```bash
-# 配信サーバー側の .env が参照できるディレクトリで実行します
-./hosts/obs/srt-urls.sh                    # MediaMTX が同一ホストにある場合
-
-# 配信サーバー（MediaMTX）と OBS が異なるマシンにある場合
-MTX_HOST=10.1.2.3 OBS_HOST=10.1.2.4 ./hosts/obs/srt-urls.sh
+./hosts/obs/srt-urls.py                    # hosts/server/.env を読みます
+./hosts/obs/srt-urls.py --env path/to/.env # 別の .env を読む場合
 ```
 
 ### 出力される URL
@@ -32,7 +29,9 @@ MTX_HOST=10.1.2.3 OBS_HOST=10.1.2.4 ./hosts/obs/srt-urls.sh
 3. **視聴用 URL**: 視聴テスト用の動作確認用 URL
 
 各チャンネルの定義（待受ポート、レイテンシ、ビットレート等）および視聴 URL のホスト名は、すべてリポジトリ直下の `config.json` から自動的に読み込まれます。
-SRT 接続用のパスフレーズは `hosts/server/.env` の設定を読み込みます。
+SRT 接続用のパスフレーズと IP は `hosts/server/.env` の設定を読み込みます。配信サーバーと同じ `.env` を本部 PC にも配置してください。
+
+- ATEM・スマートフォンの送信先（出力 1）は `HQ_IP`、OBS の送出先（出力 2）は `SERVER_IP` です。MediaMTX が本部 PC と同じホストにある場合は `SERVER_IP=127.0.0.1` にします。
 
 - ATEM・スマートフォン → OBS（出力 1）には `OBS_<Ch>_LISTEN_PASSPHRASE` を使います。ATEM とスマートフォンに設定するのはこの値です。
 - OBS → MediaMTX（出力 2）には `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` を使います。この値は ATEM・スマートフォンには設定しないでください。
@@ -55,9 +54,9 @@ ATEM Mini Pro ISO（ファームウェア 10.3 で確認）は SRT の Caller �
 - パスフレーズ欄は複数行の入力欄で、Tab キーを押すとタブ文字が値に入ります。入力後は別の欄をクリックして確定してください。
 - SRT の latency は送受信の大きい方の値が使われるため、OBS 側の Listener の URL の `latency` で決まります。
 - 配信中（接続中を含む）は設定を変更できません。変更する場合は配信を停止してから行います。
-- GUI を使用せず、コマンドで設定値の確認と投入を行う場合は [tools/atem-stream/](../../tools/atem-stream/README.md) の CLI を使用します。
+- GUI を使用せず、`./tools/atem-stream/atem.py apply` で上の値をまとめて設定できます。`check` で設定値が `.env` と `config.json` に一致するかを確認できます。詳細は [tools/atem-stream/](../../tools/atem-stream/README.md) を参照してください。
 
-OBS 側は「メディアソース」を追加し、「ローカルファイル」のチェックを外して、`srt-urls.sh` の出力 1 の Listener の URL を「入力」に、`mpegts` を「入力フォーマット」に設定します。
+OBS 側は「メディアソース」を追加し、「ローカルファイル」のチェックを外して、`srt-urls.py` の出力 1 の Listener の URL を「入力」に、`mpegts` を「入力フォーマット」に設定します。
 
 ---
 
