@@ -16,3 +16,11 @@
 | [Media Chrome](https://github.com/muxinc/media-chrome) | 4.19.2 | MIT | Mux, Inc. | [app/static/licenses/media-chrome-MIT.txt](app/static/licenses/media-chrome-MIT.txt) |
 | [driver.js](https://github.com/kamranahmedse/driver.js) | 1.8.0 | MIT | Kamran Ahmed | [app/static/licenses/driver.js-MIT.txt](app/static/licenses/driver.js-MIT.txt) |
 | [Noto Sans JP](https://github.com/notofonts/noto-cjk) | Fontsource 5.3 経由 | OFL-1.1 | Google Inc. | [app/static/licenses/noto-sans-jp-OFL-1.1.txt](app/static/licenses/noto-sans-jp-OFL-1.1.txt) |
+
+## 本部 OBS のテロップに同梱しているソフトウェア
+
+`hosts/obs/overlays/` は本部 OBS のブラウザソースで表示するテロップです。オフラインでも表示できるように、次のフォントを同梱しています。
+
+| ソフトウェア | バージョン | ライセンス | 著作権者 | ライセンス全文へのリンク |
+| --- | --- | --- | --- | --- |
+| [Noto Sans JP](https://github.com/notofonts/noto-cjk) | Fontsource 5.3 経由 | OFL-1.1 | Google Inc. | [hosts/obs/overlays/fonts/noto-sans-jp/LICENSE](hosts/obs/overlays/fonts/noto-sans-jp/LICENSE) |

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>split</title>
+<link rel="stylesheet" href="overlay.css">
+<style>
+  /* 2 画面の背景と見出し。映像は OBS 側で 896x504 にして (48,236) と (976,236) に置く。 */
+  .pane {
+    position: absolute;
+    top: 236px;
+    width: 896px;
+    height: 504px;
+    outline: 2px solid var(--line);
+    outline-offset: 6px;
+  }
+  .pane.l { left: 48px; }
+  .pane.r { left: 976px; }
+  .pane .chip {
+    position: absolute;
+    top: calc(100% + 26px);
+    left: -6px;
+    font-size: 30px;
+  }
+  .pane .sub {
+    position: absolute;
+    top: calc(100% + 34px);
+    right: -6px;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--fg-muted);
+  }
+  header {
+    position: absolute;
+    top: 96px;
+    left: 48px;
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+  }
+  header h1 { margin: 0; font-size: 56px; font-weight: 900; }
+  .big { position: absolute; bottom: -50px; left: 0; font-size: 220px; line-height: 1; }
+</style>
+</head>
+<body class="in">
+<div class="stage-bg"></div>
+<div class="big outline">MULTI VIEW</div>
+<header data-a="fade"><span class="kicker">LIVE NOW</span><h1>各会場の様子</h1></header>
+<div class="pane l"><span class="chip" data-a="wipe" style="--d: 0.15s"><span class="dot"></span><span id="l"></span></span><span class="sub" id="lsub" data-a="fade" style="--d: 0.3s"></span></div>
+<div class="pane r"><span class="chip" data-a="wipe" style="--d: 0.25s"><span class="dot"></span><span id="r"></span></span></div>
+<script src="program.js"></script>
+<script src="overlay.js"></script>
+<script>
+  // ?l=第一体育館&r=遊撃 で見出しを指定する。左の会場には現在の演目を添える。
+  const $ = (id) => document.getElementById(id);
+  $('l').textContent = Overlay.params.get('l') ?? '';
+  $('r').textContent = Overlay.params.get('r') ?? '';
+  Overlay.every(1000, () => {
+    const cur = Overlay.current();
+    $('lsub').textContent = cur && cur.kind !== 'ng' ? (cur.kind === 'break' ? '休憩中' : cur.title) : '';
+  });
+</script>
+</body>
+</html>

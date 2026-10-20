@@ -1,0 +1,212 @@
+@import url('./fonts/noto-sans-jp/wght.css');
+
+/* 色は app/src/styles/tokens.css と同じ。 */
+:root {
+  --bg: #0a0c0f;
+  --surface: #14181d;
+  --line: #262d35;
+  --fg: #f2f5f8;
+  --fg-muted: #97a2ae;
+  --live: #ff3b30;
+  --live-deep: #b3170f;
+  --font: 'Noto Sans JP Variable', sans-serif;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --slant: 18px;
+}
+
+/* OBS のブラウザソースは 1920x1080 で作成する。 */
+html,
+body {
+  margin: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: transparent;
+  color: var(--fg);
+  font-family: var(--font);
+  font-feature-settings: 'palt';
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 部品 ---- */
+
+/* 右端を斜めに切った赤いラベル。会場名や LIVE に使用する。 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px calc(var(--slant) + 10px) 6px 14px;
+  background: var(--live);
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--slant)) 100%, 0 100%);
+}
+.chip.dark {
+  background: rgb(10 12 15 / 0.85);
+}
+.chip small {
+  font-size: 0.8em;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.dot.red {
+  background: var(--live);
+}
+
+/* 英字の小見出し。 */
+.kicker {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  color: var(--live);
+}
+
+/* 映像の上に直接置く文字の縁取りと影。 */
+.edge {
+  text-shadow:
+    0 0 2px rgb(0 0 0 / 0.9),
+    0 0 2px rgb(0 0 0 / 0.9),
+    0 3px 0 rgb(0 0 0 / 0.45),
+    0 6px 24px rgb(0 0 0 / 0.55);
+}
+
+/* 輪郭だけの大きな英字。背景の飾りに使用する。 */
+.outline {
+  color: transparent;
+  -webkit-text-stroke: 2px rgb(242 245 248 / 0.12);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* 子要素をせり上げて見せるための枠。 */
+.mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.mask > * {
+  display: block;
+}
+
+/* 経過を示す細いバー。--p に 0〜1 を入れる。 */
+.progress {
+  height: 4px;
+  background: rgb(255 255 255 / 0.15);
+}
+.progress i {
+  display: block;
+  height: 100%;
+  width: calc(var(--p, 0) * 100%);
+  background: var(--live);
+  transition: width 1s linear;
+}
+
+/* 動く背景。待機画面などの全画面に使用する。 */
+.stage-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+.stage-bg::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(40% 50% at 30% 40%, rgb(255 59 48 / 0.22), transparent 70%),
+    radial-gradient(35% 45% at 75% 65%, rgb(60 90 140 / 0.25), transparent 70%);
+  animation: drift 24s ease-in-out infinite alternate;
+}
+.stage-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    -60deg,
+    rgb(255 255 255 / 0.025) 0 2px,
+    transparent 2px 30px
+  );
+  animation: stripes 6s linear infinite;
+}
+
+/* 横に流れる文字列。中身を 2 回並べて継ぎ目を無くす。 */
+.marquee {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.marquee > div {
+  display: inline-flex;
+  animation: marquee var(--dur, 40s) linear infinite;
+}
+
+/* ---- 出入り ---- */
+/* .in を付けると子要素の data-a に応じて順に入る。--d で遅延を指定する。
+   終了後は要素自身の clip-path や opacity に戻すため、fill は backwards にしている。 */
+.in [data-a='wipe'] {
+  animation: wipe 0.55s var(--ease) var(--d, 0s) backwards;
+}
+.in [data-a='rise'] {
+  animation: rise 0.7s var(--ease) var(--d, 0s) backwards;
+}
+.in [data-a='fade'] {
+  animation: fade-up 0.6s var(--ease) var(--d, 0s) backwards;
+}
+.in [data-a='bar'] {
+  animation: bar 0.4s var(--ease) var(--d, 0s) backwards;
+  transform-origin: bottom;
+}
+.out {
+  animation: leave 0.45s var(--ease) both;
+}
+
+@keyframes wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes rise {
+  from { transform: translateY(110%); }
+  to { transform: none; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bar {
+  from { transform: scaleY(0); }
+  to { transform: none; }
+}
+@keyframes leave {
+  to { opacity: 0; transform: translateY(24px); }
+}
+@keyframes pulse {
+  50% { opacity: 0.25; }
+}
+@keyframes drift {
+  from { transform: translate(-4%, -3%) rotate(0deg); }
+  to { transform: translate(4%, 3%) rotate(6deg); }
+}
+@keyframes stripes {
+  /* 縞の間隔 30px を -60deg で横に測った長さ(30 / cos30°)。 */
+  to { background-position: 34.64px 0; }
+}
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
