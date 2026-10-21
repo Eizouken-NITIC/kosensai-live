@@ -1,8 +1,14 @@
-// program.js の進行から現在時刻の項目を求める処理と、操作パネル(control.html)との状態の受け渡し。
+// 今年の進行(../assets/program.json)から現在時刻の項目を求める処理と、操作パネル(control.html)との状態の受け渡し。
 // ?now=2026-10-24T13:35 を付けると、その時刻から時計を進めて表示する(確認用)。
 // file:// では ES モジュールが CORS で読み込めないため、通常のスクリプトにしている。
 (() => {
-  const P = window.PROGRAM;
+  // 各ページはこのスクリプトの直後に window.PROGRAM を使うので、進行は同期の XHR で読む。
+  // ローカルファイルは file:// では status 0、OBS のブラウザソース(http://absolute)では 200 になる。
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', new URL('../assets/program.json', document.currentScript.src), false);
+  xhr.send();
+  if (xhr.status !== 200 && xhr.status !== 0) throw new Error(`program.json を読めません(${xhr.status})`);
+  const P = (window.PROGRAM = JSON.parse(xhr.responseText));
   const params = new URLSearchParams(location.search);
   const offset = params.has('now') ? new Date(params.get('now')) - Date.now() : 0;
 
@@ -19,15 +25,15 @@
     const key = dayKey(d);
     const day = P[ch].days[key];
     if (!day) return [];
-    return day.items.map(([time, title, third], i) => {
-      const kind = ch === 'ch1' ? third : 'roam';
+    return day.items.map((it, i) => {
+      const kind = ch === 'ch1' ? it.kind : 'roam';
       return {
-        start: at(key, time),
-        end: at(key, day.items[i + 1]?.[0] ?? day.end),
-        title,
+        start: at(key, it.at),
+        end: at(key, day.items[i + 1]?.at ?? day.end),
+        title: it.title,
         kind,
-        place: ch === 'ch2' ? third : P.ch1.name,
-        label: ch === 'ch1' ? P.ch1.kinds[kind] : third,
+        place: ch === 'ch2' ? it.place : P.ch1.name,
+        label: ch === 'ch1' ? P.ch1.kinds[kind] : it.place,
       };
     });
   }
@@ -44,9 +50,7 @@
   // 公式のイベントスケジュールの当日分を { venue, start, end, title, ch } の配列で返す。
   function events(d = now()) {
     const key = dayKey(d);
-    return Object.entries(P.events[key] ?? {}).flatMap(([venue, list]) =>
-      list.map(([s, e, title, ch]) => ({ venue, start: at(key, s), end: at(key, e), title, ch: ch ?? null })),
-    );
+    return (P.events[key] ?? []).map((e) => ({ ...e, start: at(key, e.start), end: at(key, e.end), ch: e.ch ?? null }));
   }
 
   // d より後で最初の第一体育館の出演(休憩と配信しない時間を除く)。日をまたいで探す。
@@ -83,7 +87,7 @@
   // 遊撃の現在地。操作パネルで選んでいればそれを、無ければ予定の項目を返す。
   function ch2Now(s = state(), d = now()) {
     if (s.ch2Place != null) {
-      const [title, place] = P.ch2.places[s.ch2Place];
+      const { title, place } = P.ch2.places[s.ch2Place];
       return { title, place, label: place };
     }
     return current('ch2', d);

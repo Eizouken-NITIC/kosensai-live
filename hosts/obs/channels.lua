@@ -1,13 +1,15 @@
 -- 本部 OBS の音声の振り分けと、第一体育館の配信休止。OBS の「ツール → スクリプト」でこのファイルを追加する。
+-- ソースとシーンの名前は assets/scenes.json の audio、配信しない時間は assets/program.json から読む。
 --
--- 1. 「[音声] 常時」シーンを出力チャンネルにつなぎ、どのシーンをプログラムに出していても
+-- 1. audio.always のシーンを出力チャンネルにつなぎ、どのシーンをプログラムに出していても
 --    Ch1・Ch2 の音声がミキサーに入るようにする。obs-multi-rtmp がプログラム以外のシーンを
 --    送出しても、そのシーンにしか無いソースの音声はミキサーに入らないため。
 --    シーンの中の映像は画面の外に置いてあるので、プログラムには何も映らない。
--- 2. Ch3(トラック 1)には、プログラムのシーン(入れ子を含む)に表示されているソースのうち、
---    SOURCES の順で最初に見つかった会場の音声だけを入れる。
--- 3. 第一体育館の配信をしない時間(overlays/program.js の種類が ng の項目)は、
---    「配信休止」のソースを全シーンで表示し、Ch1 の音声を Ch1(トラック 2)と Ch3(トラック 1)から外す。
+-- 2. Ch3(トラック 1)には、プログラムのシーン(入れ子を含む)に表示されている映像のうち、
+--    audio.ch3 の順で最初に見つかった会場の音声だけを入れる。
+-- 3. audio.pause.channel の配信をしない時間(program.json の種類が ng の項目)は、
+--    audio.pause.source を全シーンで表示し、audio.pause.audio をミュートする。
+--    ミュートは音声のトラックの割り当てを変えないので、休止中に OBS を再起動しても割り当ては残る。
 --    押しや巻きに備え、ホットキーで「休止を出す」「休止を出さない」「予定どおり」を切り替えられる。
 --
 -- 休止の判定はこのスクリプトだけが行う。overlays/pause.html は再開の時刻を出すだけで、
@@ -15,24 +17,21 @@
 
 obs = obslua
 
-local ALWAYS_SCENE = "[音声] 常時"
 -- 0 はトランジション、1〜6 はグローバル音声デバイスが使用する。
 local CHANNEL = 20
--- 表示中かどうかを調べるソース → トラック 1 に入れる音声のソース
-local SOURCES = {
-  { "Ch1 ATEM", "Ch1 音声 (USB)" },
-  { "Ch2 iPhone", "Ch2 iPhone" },
-}
-local CH1_AUDIO = "Ch1 音声 (USB)"
-local PAUSE_SOURCE = "配信休止"
--- トラックのビット。OBS の Lua は LuaJIT(Lua 5.1)で、ビット演算子が無いため bit ライブラリを使用する。
+-- トラック 1 のビット。OBS の Lua は LuaJIT(Lua 5.1)で、ビット演算子が無いため bit ライブラリを使用する。
 local TRACK1 = 1
-local TRACK2 = 2
 
--- 休止の切り替え。auto は program.js の時刻に従う。on と off はホットキーで固定した状態。
+-- scenes.json の audio。
+local always_scene = nil
+local ch3 = {} -- { { video = ..., audio = ... }, ... }
+local pause = {} -- { source = ..., audio = ..., channel = ... }
+-- program.json の pause.channel の、日付 → 配信しない時間 { { "13:50", "14:15" }, ... }
+local program = nil
+local ng_cache = {}
+
+-- 休止の切り替え。auto は program.json の時刻に従う。on と off はホットキーで固定した状態。
 local mode = "auto"
--- program.js の ng の時間。{ ["2026-10-24"] = { { "13:50", "14:15" }, ... } }
-local ng_ranges = {}
 -- 確認用の時刻("2026-10-24 13:55" の形)。空なら現在の時刻を使用する。
 local test_now = ""
 local paused = false
@@ -42,51 +41,82 @@ local function script_dir()
   return script_path():gsub("[/\\]$", "")
 end
 
--- program.js の ch1 の出演順から、種類が ng の項目の開始〜次の項目の開始(最後なら end)を読む。
--- program.js は JavaScript なので、ch1 の節の各行を文字列のパターンで読む。
-local function load_program()
-  local path = script_dir() .. "/overlays/program.js"
-  local file = io.open(path, "r")
-  if file == nil then
-    obslua.script_log(obslua.LOG_WARNING, path .. " を開けません")
+local function load_json(name)
+  local path = script_dir() .. "/assets/" .. name
+  local data = obslua.obs_data_create_from_json_file(path)
+  if data == nil then
+    obslua.script_log(obslua.LOG_WARNING, path .. " を読めません")
+  end
+  return data
+end
+
+-- obs_data の配列の各要素(オブジェクト)に fn を適用する。
+local function each(data, key, fn)
+  local arr = obslua.obs_data_get_array(data, key)
+  for i = 0, obslua.obs_data_array_count(arr) - 1 do
+    local item = obslua.obs_data_array_item(arr, i)
+    fn(item)
+    obslua.obs_data_release(item)
+  end
+  obslua.obs_data_array_release(arr)
+end
+
+local function load_config()
+  local scenes = load_json("scenes.json")
+  if scenes == nil then
     return
   end
-  local days, ends, day, in_ch1 = {}, {}, nil, false
-  for line in file:lines() do
-    if line:match("^%s*ch1:%s*{") then
-      in_ch1 = true
-    elseif line:match("^%s*ch2:%s*{") then
-      in_ch1 = false
-    elseif in_ch1 then
-      local key = line:match("'(%d%d%d%d%-%d%d%-%d%d)':%s*{")
-      if key then
-        day = key
-        days[day] = {}
-      end
-      local e = line:match("end:%s*'(%d%d:%d%d)'")
-      if e and day then
-        ends[day] = e
-      end
-      local t, kind = line:match("%[%s*'(%d%d:%d%d)',%s*'.-',%s*'(%a+)'%s*%]")
-      if t and day then
-        table.insert(days[day], { t, kind })
-      end
-    end
+  local audio = obslua.obs_data_get_obj(scenes, "audio")
+  always_scene = obslua.obs_data_get_string(audio, "always")
+  ch3 = {}
+  each(audio, "ch3", function(item)
+    table.insert(ch3, { video = obslua.obs_data_get_string(item, "video"), audio = obslua.obs_data_get_string(item, "audio") })
+  end)
+  local p = obslua.obs_data_get_obj(audio, "pause")
+  pause = {
+    source = obslua.obs_data_get_string(p, "source"),
+    audio = obslua.obs_data_get_string(p, "audio"),
+    channel = obslua.obs_data_get_string(p, "channel"),
+  }
+  obslua.obs_data_release(p)
+  obslua.obs_data_release(audio)
+  obslua.obs_data_release(scenes)
+
+  if program ~= nil then
+    obslua.obs_data_release(program)
   end
-  file:close()
-  ng_ranges = {}
-  local count = 0
-  for key, items in pairs(days) do
-    ng_ranges[key] = {}
-    for i, it in ipairs(items) do
-      if it[2] == "ng" then
-        local stop = items[i + 1] and items[i + 1][1] or ends[key]
-        table.insert(ng_ranges[key], { it[1], stop })
-        count = count + 1
+  program = load_json("program.json")
+  ng_cache = {}
+end
+
+-- その日の配信しない時間。種類が ng の項目の開始〜次の項目の開始(最後なら end)。
+local function ng_ranges(key)
+  if ng_cache[key] == nil then
+    local ranges = {}
+    if program ~= nil then
+      local ch = obslua.obs_data_get_obj(program, pause.channel)
+      local days = obslua.obs_data_get_obj(ch, "days")
+      local day = obslua.obs_data_get_obj(days, key)
+      if day ~= nil then
+        local items = {}
+        each(day, "items", function(item)
+          table.insert(items, { obslua.obs_data_get_string(item, "at"), obslua.obs_data_get_string(item, "kind") })
+        end)
+        local stop_of_day = obslua.obs_data_get_string(day, "end")
+        for i, it in ipairs(items) do
+          if it[2] == "ng" then
+            table.insert(ranges, { it[1], items[i + 1] and items[i + 1][1] or stop_of_day })
+          end
+        end
+        obslua.obs_data_release(day)
       end
+      obslua.obs_data_release(days)
+      obslua.obs_data_release(ch)
     end
+    ng_cache[key] = ranges
+    obslua.script_log(obslua.LOG_INFO, key .. " の配信しない時間を " .. #ranges .. " 件読みました")
   end
-  obslua.script_log(obslua.LOG_INFO, "program.js から配信しない時間を " .. count .. " 件読みました")
+  return ng_cache[key]
 end
 
 local function now_key_hm()
@@ -102,7 +132,7 @@ end
 -- "HH:MM" の文字列は、桁が揃っているので文字列の比較で前後を判定できる。
 local function in_ng()
   local key, hm = now_key_hm()
-  for _, r in ipairs(ng_ranges[key] or {}) do
+  for _, r in ipairs(ng_ranges(key)) do
     if r[1] <= hm and hm < r[2] then
       return true
     end
@@ -111,12 +141,12 @@ local function in_ng()
 end
 
 local function attach_always_scene(warn)
-  local source = obslua.obs_get_source_by_name(ALWAYS_SCENE)
+  local source = always_scene and obslua.obs_get_source_by_name(always_scene)
   obslua.obs_set_output_source(CHANNEL, source)
   if source ~= nil then
     obslua.obs_source_release(source)
   elseif warn then
-    obslua.script_log(obslua.LOG_WARNING, ALWAYS_SCENE .. " シーンがありません")
+    obslua.script_log(obslua.LOG_WARNING, tostring(always_scene) .. " シーンがありません")
   end
 end
 
@@ -139,57 +169,61 @@ local function collect(scene_source, found)
   obslua.sceneitem_list_release(items)
 end
 
-local function set_track(name, bit_value, on)
+local function set_track1(name, on)
   local source = obslua.obs_get_source_by_name(name)
   if source == nil then
     return
   end
   local mixers = obslua.obs_source_get_audio_mixers(source)
   if on then
-    mixers = bit.bor(mixers, bit_value)
+    mixers = bit.bor(mixers, TRACK1)
   else
-    mixers = bit.band(mixers, bit.bnot(bit_value))
+    mixers = bit.band(mixers, bit.bnot(TRACK1))
   end
   obslua.obs_source_set_audio_mixers(source, mixers)
   obslua.obs_source_release(source)
 end
 
--- Ch3(トラック 1)の音声。休止中は Ch1 の音声を候補から外す。
+-- Ch3(トラック 1)の音声。休止中は休止する会場の音声を候補から外し、2 画面ではもう一方の会場の音声にする。
 local function update_track1()
-  local program = obslua.obs_frontend_get_current_scene()
-  if program == nil then
+  local scene = obslua.obs_frontend_get_current_scene()
+  if scene == nil then
     return
   end
   local found = {}
-  collect(program, found)
-  obslua.obs_source_release(program)
+  collect(scene, found)
+  obslua.obs_source_release(scene)
 
   local chosen = nil
-  for _, pair in ipairs(SOURCES) do
-    if chosen == nil and found[pair[1]] and not (paused and pair[2] == CH1_AUDIO) then
-      chosen = pair[2]
+  for _, pair in ipairs(ch3) do
+    if chosen == nil and found[pair.video] and not (paused and pair.audio == pause.audio) then
+      chosen = pair.audio
     end
   end
-  for _, pair in ipairs(SOURCES) do
-    set_track(pair[2], TRACK1, pair[2] == chosen)
+  for _, pair in ipairs(ch3) do
+    set_track1(pair.audio, pair.audio == chosen)
   end
 end
 
--- 全シーンの「配信休止」の表示と、Ch1 の音声の Ch1(トラック 2)への出し入れを、paused に合わせる。
+-- 全シーンの休止の画面の表示と、休止する会場の音声のミュートを、paused に合わせる。
 local function apply_pause()
   local scenes = obslua.obs_frontend_get_scenes()
   for _, scene_source in ipairs(scenes) do
     local scene = obslua.obs_scene_from_source(scene_source)
     local items = obslua.obs_scene_enum_items(scene)
     for _, item in ipairs(items) do
-      if obslua.obs_source_get_name(obslua.obs_sceneitem_get_source(item)) == PAUSE_SOURCE then
+      if obslua.obs_source_get_name(obslua.obs_sceneitem_get_source(item)) == pause.source then
         obslua.obs_sceneitem_set_visible(item, paused)
       end
     end
     obslua.sceneitem_list_release(items)
   end
   obslua.source_list_release(scenes)
-  set_track(CH1_AUDIO, TRACK2, not paused)
+  local audio = pause.audio and obslua.obs_get_source_by_name(pause.audio)
+  if audio ~= nil then
+    obslua.obs_source_set_muted(audio, paused)
+    obslua.obs_source_release(audio)
+  end
   update_track1()
 end
 
@@ -228,15 +262,16 @@ end
 
 function script_description()
   return "Ch1・Ch2 の音声をミキサーに常時入れ、Ch3 の音声を表示中の会場に合わせる。"
-    .. "第一体育館の配信をしない時間は「配信休止」を表示し、Ch1 の音声を外す。"
+    .. "第一体育館の配信をしない時間は休止の画面を表示し、その会場の音声をミュートする。"
 end
 
 function script_properties()
   local props = obslua.obs_properties_create()
   obslua.obs_properties_add_text(props, "test_now", "確認用の時刻(例 2026-10-24 13:55、空なら現在)", obslua.OBS_TEXT_DEFAULT)
-  obslua.obs_properties_add_button(props, "reload", "program.js を読み直す", function()
-    load_program()
-    tick()
+  obslua.obs_properties_add_button(props, "reload", "assets を読み直す", function()
+    load_config()
+    attach_always_scene(true)
+    apply_pause()
     return false
   end)
   return props
@@ -249,7 +284,7 @@ end
 
 function script_load(settings)
   test_now = obslua.obs_data_get_string(settings, "test_now")
-  load_program()
+  load_config()
   local defs = {
     { "kosensai.pause.auto", "配信休止: 予定どおり", "auto" },
     { "kosensai.pause.on", "配信休止: 出す", "on" },
@@ -280,4 +315,7 @@ end
 function script_unload()
   obslua.timer_remove(tick)
   obslua.obs_set_output_source(CHANNEL, nil)
+  if program ~= nil then
+    obslua.obs_data_release(program)
+  end
 end

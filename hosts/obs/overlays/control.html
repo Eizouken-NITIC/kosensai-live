@@ -28,7 +28,6 @@
 <div class="grid" id="notices"></div>
 <h2>遊撃の現在地</h2>
 <div class="grid" id="places"></div>
-<script src="program.js"></script>
 <script src="overlay.js"></script>
 <script>
   const { el } = Overlay;
@@ -42,7 +41,7 @@
     );
     document.getElementById('places').replaceChildren(
       button('予定どおり', s.ch2Place == null, { ch2Place: null }, true),
-      ...P.ch2.places.map(([title, place], i) => button(`${title}(${place})`, s.ch2Place === i, { ch2Place: i })),
+      ...P.ch2.places.map(({ title, place }, i) => button(`${title}(${place})`, s.ch2Place === i, { ch2Place: i })),
     );
   }
   Overlay.onState(draw);

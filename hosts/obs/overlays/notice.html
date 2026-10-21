@@ -26,10 +26,9 @@
     <span class="caption"><span class="accent">お知らせ</span><span class="sep"></span></span><span id="text"></span>
   </div>
 </div>
-<script src="program.js"></script>
 <script src="overlay.js"></script>
 <script>
-  // state.notice は program.js の notices の番号。null で消す。
+  // state.notice は program.json の notices の番号。null で消す。
   const wrap = document.getElementById('wrap');
   Overlay.onState((s) => {
     if (s.notice == null) {
