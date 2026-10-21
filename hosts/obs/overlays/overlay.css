@@ -294,6 +294,28 @@ body {
   text-align: right;
 }
 
+/* 出演の並び。局のタイルの形で、時刻の下に名前を置く。 */
+.lineup {
+  position: absolute;
+  left: var(--safe);
+  right: var(--safe);
+  display: flex;
+  gap: 16px;
+}
+.lineup .frame {
+  flex: 1;
+  min-width: 0;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 20px 16px;
+  box-sizing: border-box;
+}
+.lineup .t { font-size: 24px; color: var(--lit-2); }
+.lineup .n { font-size: 28px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-bottom: 0.15em; margin-bottom: -0.15em; }
+.lineup .hot .t { color: var(--lit); }
+
 /* 横に流れる文字列。中身を 2 回並べて継ぎ目を無くす。 */
 .marquee {
   overflow: hidden;
@@ -354,15 +376,16 @@ body {
   width: 100%;
   height: 100%;
 }
+.gauge .value {
+  text-anchor: middle;
+}
 .gauge .digits {
   fill: #eeecf3;
   font-family: 'DSEG7', monospace;
   font-size: 64px;
-  text-anchor: middle;
 }
 .gauge .unit {
   fill: var(--lit-2);
   font-size: 28px;
   font-weight: 400;
-  text-anchor: middle;
 }

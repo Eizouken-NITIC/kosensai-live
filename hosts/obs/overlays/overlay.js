@@ -126,7 +126,7 @@
 
   // 計器(MIB2 のパフォーマンスモニターの形)を container に作り、値を更新する関数を返す。
   // 目盛は左下(-150°)から右下(+150°)までの 300°。update(value, digits, unit): value は min〜max、
-  // digits は中央に出す文字列。
+  // digits は中央に出す文字列、unit はその右に出す単位。
   // 輪・目盛と針は render-gauge.py が Blender で描いた画像を使う。針の画像は 5° ごとに 61 枚あり、
   // 角度に最も近い画像を選ぶ。画像ごとに光の当たり方が角度に合っているため、画像を回転させて使わない。
   // 切り替えの時だけ、前の角度から画像の角度まで 0.8 秒で回して見せる。
@@ -148,8 +148,17 @@
       svg.append(e);
       return e;
     };
-    const digits = text('digits', 226);
-    const unit = text('unit', 272);
+    // 数字と単位は同じベースラインに並べ、2 つを合わせた幅で中央に揃える。
+    const value = text('value', 226);
+    const span = (cls) => {
+      const e = document.createElementNS(SVG, 'tspan');
+      e.setAttribute('class', cls);
+      value.append(e);
+      return e;
+    };
+    const digits = span('digits');
+    const unit = span('unit');
+    unit.setAttribute('dx', 10);
     box.append(svg);
     container.replaceChildren(box);
 

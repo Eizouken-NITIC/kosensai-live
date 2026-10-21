@@ -23,28 +23,7 @@
   .info .what { font-size: var(--fs-m); color: var(--lit-2); }
   .info .invite { font-size: var(--fs-s); color: var(--lit-2); }
 
-  /* 出演の並び。局のタイルの形。 */
-  .lineup {
-    position: absolute;
-    left: var(--safe);
-    right: var(--safe);
-    top: 648px;
-    display: flex;
-    gap: 16px;
-  }
-  .lineup .frame {
-    flex: 1;
-    min-width: 0;
-    height: 120px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 18px 20px 16px;
-    box-sizing: border-box;
-  }
-  .lineup .t { font-size: 24px; color: var(--lit-2); }
-  .lineup .n { font-size: 28px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-bottom: 0.15em; margin-bottom: -0.15em; }
-  .lineup .hot .t { color: var(--lit); }
+  .lineup { top: 648px; }
   .pager { position: absolute; left: 720px; right: 720px; top: 828px; }
 
 </style>

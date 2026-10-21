@@ -30,28 +30,31 @@
   .info .start { font-size: 44px; font-weight: 400; }
   .info .start small { margin-left: 0.5em; font-size: 26px; color: var(--lit-2); }
 
-  .after {
+  /* このあとの出演。タイムテーブルと同じ行の形で縦に並べ、日付の列の上まで使う。 */
+  .later { position: absolute; left: var(--safe); top: 600px; font-size: 26px; color: var(--lit-2); }
+  ol.after {
     position: absolute;
     left: var(--safe);
     right: var(--safe);
-    top: 720px;
-    display: flex;
-    gap: 16px;
+    top: 650px;
+    display: grid;
+    grid-template-rows: repeat(3, 96px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
-  .after .frame {
-    flex: 1;
-    min-width: 0;
-    height: 104px;
+  ol.after li {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 40px;
     padding: 0 28px;
-    box-sizing: border-box;
-    font-size: 28px;
+    font-size: 40px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
   }
-  .after .t { color: var(--lit-2); }
-  .after .n { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-bottom: 0.15em; margin-bottom: -0.15em; }
-  .after .k { flex: none; font-size: 22px; color: var(--lit-2); }
+  ol.after .t { width: 120px; color: var(--lit-2); }
+  ol.after .n { overflow: hidden; text-overflow: ellipsis; padding-bottom: 0.15em; margin-bottom: -0.15em; }
+  ol.after .k { margin-left: auto; font-size: 26px; color: var(--lit-2); }
 </style>
 </head>
 <body>
@@ -65,13 +68,15 @@
   <div class="main">
     <div class="meter" id="meter" data-a="fade"></div>
     <div class="info">
-      <div class="caption" data-a="rise"><span class="accent">つぎの出演</span><span class="sep"></span><span id="venue"></span><span class="sep"></span><span id="kind"></span></div>
+      <div class="caption" data-a="rise"><span class="accent">NEXT</span><span class="sep"></span><span id="venue"></span><span class="sep"></span><span id="kind"></span></div>
       <div class="name" data-a="rise" style="--d: 0.08s" id="name"></div>
       <div class="start time" data-a="rise" style="--d: 0.16s"><span id="start"></span><small>開始</small></div>
     </div>
   </div>
-  <div class="after" id="after"></div>
+  <div class="later" data-a="rise" style="--d: 0.2s">このあと</div>
+  <ol class="after" id="after"></ol>
 </div>
+<div class="softkeys" id="softkeys"></div>
 <script src="program.js"></script>
 <script src="overlay.js"></script>
 <script>
@@ -96,19 +101,30 @@
     $('kind').textContent = nxt.label;
     $('name').textContent = nxt.title;
     $('start').textContent = Overlay.hhmm(nxt.start);
+    // このあとの出演を 3 組、行の形で並べる。
     const later = Overlay.schedule('ch1', t)
-      .filter((it) => it.start > nxt.start && it.kind !== 'break' && it.kind !== 'ng')
+      .filter((it) => it.start > nxt.start && (it.kind === 'band' || it.kind === 'dance'))
       .slice(0, 3);
     $('after').replaceChildren(
       ...later.map((it, i) =>
-        el('div', { className: 'frame', style: `--d: ${0.24 + i * 0.06}s` },
-          el('span', { className: 'k', textContent: i === 0 ? 'そのあと' : '' }),
+        el('li', { style: `--d: ${0.24 + i * 0.06}s` },
           el('span', { className: 't time', textContent: Overlay.hhmm(it.start) }),
           el('span', { className: 'n', textContent: it.title }),
+          el('span', { className: 'k', textContent: it.label }),
         ),
       ),
     );
     for (const d of $('after').children) d.dataset.a = 'rise';
+    // 下部の列。日付ごとの見出しで、当日を点灯する。
+    const days = Object.keys(window.PROGRAM.events);
+    $('softkeys').style.setProperty('--keys', days.length);
+    $('softkeys').replaceChildren(
+      ...days.map((key) => {
+        const d = new Date(`${key}T00:00:00`);
+        return el('span', { className: d.toDateString() === t.toDateString() ? 'on' : '', textContent: Overlay.date(d) });
+      }),
+      el('span'),
+    );
     Overlay.replay($('root'));
   });
 </script>
