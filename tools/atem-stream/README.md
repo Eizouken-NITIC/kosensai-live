@@ -36,7 +36,7 @@ SDK の `include` ディレクトリが既定の場所（`/Applications/Blackmag
 | コマンド | 内容 |
 | --- | --- |
 | `apply [ch]` | サービス名・URL・キー・パスフレーズを設定する。Ch の既定は `ch1` |
-| `check [ch]` | 設定値と期待値を比較し、不一致があれば終了コード 1 で終了する。パスフレーズは一致・不一致だけを表示する |
+| `check [ch]` | 設定値と期待値を比較し、不一致があれば終了コード 1 で終了する。パスフレーズは一致・不一致だけを表示する。品質（プロファイル）は比較せずに表示する |
 | `get` | サービス名・URL・キー・authentication・SRT 拡張・状態を表示する（パスフレーズも表示する） |
 | `start` / `stop` | 配信を開始・停止する |
 | `watch [秒]` | 状態とビットレートを 1 秒ごとに表示する |
@@ -49,6 +49,8 @@ SDK の `include` ディレクトリが既定の場所（`/Applications/Blackmag
 | URL | `srt://<HQ_IP>:<config.json の obsListenPort>` |
 | キー | 空 |
 | パスフレーズ | `OBS_<Ch>_LISTEN_PASSPHRASE` |
+
+品質（`HyperDeck Low`）は `config.json` に持たず、ATEM Software Control で設定する。ATEM 本体に保存されるため、設営時に 1 回設定すればよい。`SetVideoBitrates` は `GetVideoBitrates` の値だけを変え、品質の値は変えない（fw 10.3）。品質を戻す場合も GUI で選び直す。
 
 `atem-stream` は単体でも使用できる（`./tools/atem-stream/atem-stream` を引数なしで実行すると usage を表示する）。
 
