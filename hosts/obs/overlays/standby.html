@@ -62,7 +62,7 @@
     const t = Overlay.now();
     $('clock').textContent = Overlay.hhmm(t);
     $('date').textContent = Overlay.date(t);
-    // 状態は、開始前・休憩中・配信休止中(配信しない時間)・配信中・本日の終了後の 5 つ。
+    // 状態は、開始前・休憩中・配信休止中(配信しない時間)・配信中・本日の終了後・配信の無い日の 6 つ。
     const cur = Overlay.current('ch1', t);
     const show = Overlay.nextShow(t);
     const target = show?.start ?? null;
@@ -83,6 +83,9 @@
     } else if (before && sameDay) {
       $('state').textContent = '配信開始まで';
       $('what').textContent = 'まもなく配信を開始します';
+    } else if (target && !today.length) {
+      $('state').textContent = '次の配信';
+      $('what').textContent = Overlay.date(target);
     } else if (target) {
       $('state').textContent = '本日の配信は終了しました';
       $('what').textContent = `次の配信は ${Overlay.date(target)}`;

@@ -91,10 +91,12 @@
     const t = Overlay.now();
     $('clock').textContent = Overlay.hhmm(t);
     $('date').textContent = Overlay.date(t);
-    const nxt = Overlay.next('ch1', t);
+    const nxt = Overlay.nextShow(t);
     if (!nxt) return;
     const minutes = Math.max(0, Math.ceil((nxt.start - t) / 60000));
-    meter(minutes, String(Math.min(minutes, 99)), '分');
+    // 次の出演が別の日なら、残り時間は出さない。
+    const sameDay = nxt.start.toDateString() === t.toDateString();
+    meter(sameDay ? minutes : 0, sameDay ? String(Math.min(minutes, 99)) : '--', '分');
     if (shown === `${nxt.start}`) return;
     shown = `${nxt.start}`;
     $('venue').textContent = window.PROGRAM.ch1.name;
@@ -102,7 +104,7 @@
     $('name').textContent = nxt.title;
     $('start').textContent = Overlay.hhmm(nxt.start);
     // このあとの出演を 3 組、行の形で並べる。
-    const later = Overlay.schedule('ch1', t)
+    const later = Overlay.schedule('ch1', nxt.start)
       .filter((it) => it.start > nxt.start && (it.kind === 'band' || it.kind === 'dance'))
       .slice(0, 3);
     $('after').replaceChildren(
