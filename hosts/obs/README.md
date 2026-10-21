@@ -24,7 +24,7 @@ OBS 側の**キーフレーム間隔**の設定値は、配信サーバー側の
 ```
 
 ### 出力される URL
-1. **OBS メディアソース用 URL**: OBS のメディアソース（SRT Listener）に入力する URL、および ATEM・スマートフォン（Caller）に設定する URL とパスフレーズ
+1. **OBS メディアソース用 URL**: OBS のメディアソース（SRT Listener）に入力する URL、および ATEM・スマートフォン（Caller）に設定する URL とパスフレーズ。OBS の URL の `latency` はマイクロ秒、Moblin 向けの URL の `latency` はミリ秒です（どちらも `config.json` の `srtLatencyUs` から換算します）
 2. **OBS 送出用 URL**: OBS から MediaMTX へストリームを送信する URL
 3. **視聴用 URL**: 視聴テスト用の動作確認用 URL
 

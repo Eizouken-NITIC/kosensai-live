@@ -36,15 +36,18 @@ for c in conf["channels"]:
     if not c.get("obsListenPort"):
         print(f"\n[{c['label']}] OBS 内で合成するため入力はありません")
         continue
-    port, latency = c["obsListenPort"], c["srtLatencyUs"]
+    port, latency_us = c["obsListenPort"], c["srtLatencyUs"]
     passphrase = config.require(env, config.listen_var(c["id"]))
     print(f"\n[{c['label']}]")
-    print(f"  srt://0.0.0.0:{port}?mode=listener&passphrase={passphrase}&latency={latency}")
+    # OBS のメディアソース（FFmpeg の SRT）の latency はマイクロ秒
+    print(f"  srt://0.0.0.0:{port}?mode=listener&passphrase={passphrase}&latency={latency_us}")
     print("  → 送信側(Caller)に設定する値:")
     print(f"    URL          srt://{hq_ip}:{port}")
     print(f"    パスフレーズ {passphrase}")
-    # ATEM は URL のクエリを無視するため、パスフレーズは専用の欄に入れる
-    print(f"    URL 1 本で指定する端末: srt://{hq_ip}:{port}?passphrase={passphrase}&latency={latency}")
+    # ATEM は URL のクエリを無視するため、パスフレーズは専用の欄に入れる。
+    # Moblin（libsrt の URL）の latency はミリ秒
+    print(f"    URL 1 本で指定する端末（Moblin）: srt://{hq_ip}:{port}"
+          f"?passphrase={passphrase}&latency={latency_us // 1000}")
 
 print()
 print("=" * 72)
