@@ -6,6 +6,9 @@ services:
   # docker compose logs init で確認する。起動せずに検証だけを行う場合は
   # docker compose run --rm init を実行する。
   #
+  # .env を変更すると、compose は init の完了を待たずに mediamtx を削除して作り直す。
+  # 運用中は run --rm init で OK を確認してから up -d を実行する。
+  #
   # 検証に通ると、Caddyfile の {$SITE_DOMAIN} に使用する値を generated ボリュームへ書き出す。
   init:
     image: python:3.14.8-alpine3.24

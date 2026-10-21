@@ -105,7 +105,10 @@ def check_passphrase(env, key):
 def check_channels_env(conf, env):
     ids = channel_ids(conf)
     listen_ids = channel_ids(conf, listen=True)
-    results = [check_passphrase(env, publish_var(c)) for c in ids]
+    # id を大文字にした名前を環境変数名（MTX_PATHS_<ID>_*）に使用するため、英小文字と数字に限る
+    results = [("NG", f"Ch の id {c!r} は英小文字と数字だけにしてください")
+               for c in ids if not re.fullmatch(r"[a-z0-9]+", c)]
+    results += [check_passphrase(env, publish_var(c)) for c in ids]
     results += [check_passphrase(env, listen_var(c)) for c in listen_ids]
 
     # MediaMTX は MTX_PATHS_<名前>_* からパスを作成するため、config.json に無い Ch の変数は

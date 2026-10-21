@@ -88,7 +88,7 @@ MediaMTX は `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から Ch のパスを作成�
 
 ### 起動前の検証
 
-`compose.yml` の `init` サービスが、`docker compose up` のたびに `tools/config.py check --server` を実行します。次の項目を検証し、NG があれば MediaMTX と Caddy を起動しません。
+`compose.yml` の `init` サービスが、`docker compose up` のたびに `tools/config.py check --server` を実行します。次の項目を検証し、NG があれば MediaMTX と Caddy を起動しません（稼働中の場合の動作は「4. 運用・管理コマンド」の注意を参照してください）。
 
 - `.env` の Ch と `config.json` の `channels[].id` の一致、パスフレーズの長さと重複、`HQ_IP` の形式
 - `web/` のビルド成果物とライセンス本文の有無
@@ -137,8 +137,11 @@ git pull && docker compose restart caddy
 docker compose restart mediamtx
 ```
 
-> [!TIP]
-> `.env` や `config.json` を変更した場合は、`docker compose up -d` を実行してください。init による検証を経て、コンテナを再作成します。`docker compose restart` では init が実行されません。ホストの再起動時も init は実行されず、前回の init が書き出した値で起動します。
+> [!WARNING]
+> 運用中に `.env` や `config.json` を変更した場合は、先に `docker compose run --rm init` を実行して OK を確認し、その後で `docker compose up -d` を実行してください。
+> `.env` を変更すると、compose は init の完了を待たずに MediaMTX のコンテナを削除して作り直します。init が NG の場合、新しい MediaMTX は起動せず、受信が止まります。`config.json` だけを変更した場合は、NG でも稼働中のコンテナはそのまま動作します。
+>
+> `docker compose restart` では init が実行されません。ホストの再起動時も init は実行されず、前回の init が書き出した値で起動します。
 
 ---
 
