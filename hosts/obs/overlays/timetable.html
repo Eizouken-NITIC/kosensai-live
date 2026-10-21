@@ -69,10 +69,12 @@
     $('clock').textContent = Overlay.hhmm(t);
     $('date').textContent = Overlay.date(t);
     $('title').textContent = `タイムテーブル　${window.PROGRAM.ch1.name}`;
-    const items = Overlay.schedule('ch1', t).filter((it) => it.kind !== 'ng');
+    // 予定の無い日(本番の前の日など)は、次の出演の日の予定を出す。
+    const nxt = Overlay.nextShow(t);
+    const day = Overlay.schedule('ch1', t).length || !nxt ? t : nxt.start;
+    const items = Overlay.schedule('ch1', day).filter((it) => it.kind !== 'ng');
     const cur = items.find((it) => it.start <= t && t < it.end);
-    const nxt = Overlay.next('ch1', t);
-    const key = `${t.toDateString()} ${cur?.start}`;
+    const key = `${day.toDateString()} ${cur?.start}`;
     if (key !== drawn) {
       drawn = key;
       $('list').replaceChildren(
@@ -94,7 +96,7 @@
       $('softkeys').replaceChildren(
         ...days.map((k) => {
           const d = new Date(`${k}T00:00:00`);
-          return el('span', { className: d.toDateString() === t.toDateString() ? 'on' : '', textContent: Overlay.date(d) });
+          return el('span', { className: d.toDateString() === day.toDateString() ? 'on' : '', textContent: Overlay.date(d) });
         }),
         el('span'),
       );
