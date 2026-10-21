@@ -5,7 +5,8 @@
 <title>notice</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
-  /* 操作パネルで選んだお知らせを下端に出す。選んでいない間は何も出さない。 */
+  /* 操作パネルで選んだお知らせを下端に出す。選んでいない間は何も出さない。
+     赤い線は 1 つの画面に 1 本にするため、同時に出るテロップの板に任せ、帯には付けない。 */
   #wrap:not(.in) { visibility: hidden; }
   #wrap.out { visibility: visible; }
   .band {
@@ -21,7 +22,7 @@
 </head>
 <body>
 <div id="wrap">
-  <div class="tile glow across band" data-a="rise">
+  <div class="tile across band" data-a="rise">
     <span class="caption"><span class="accent">お知らせ</span><span class="sep"></span></span><span id="text"></span>
   </div>
 </div>

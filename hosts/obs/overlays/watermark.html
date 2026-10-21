@@ -5,13 +5,15 @@
 <title>watermark</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
-  /* 視聴ページにロゴがあるため、映像の上では目立たない透かしにする。 */
+  /* 視聴ページにロゴがあるため、映像の上では目立たない透かしにする。
+     ロゴの赤は画面の赤い線と重なるので、白の単色にして半透明にする。 */
   img {
     position: absolute;
     top: 84px;
     right: var(--safe);
     height: 22px;
-    opacity: 0.4;
+    filter: brightness(0) invert(1);
+    opacity: 0.35;
   }
 </style>
 </head>

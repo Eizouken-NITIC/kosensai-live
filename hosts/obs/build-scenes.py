@@ -33,6 +33,8 @@ PANE_L, PANE_R = (80, 200), (976, 200)
 CH1_VIDEO = "Ch1 ATEM"
 CH1_AUDIO = "Ch1 音声 (USB)"
 CH2_VIDEO = "Ch2 iPhone"
+# 作成時に非表示にするソース。
+HIDDEN = {"配信休止"}
 
 
 def read_env(path: Path) -> dict[str, str]:
@@ -113,7 +115,7 @@ def main() -> None:
 
     # 入力の名前 → (種類, 設定, 音声のトラック)。トラックは 1〜6 のうち使用する番号。
     # Ch1 の音声は USB オーディオだけを使用し、ATEM の埋め込み音声はどのトラックにも入れない。
-    # Ch3(トラック 1)への出し入れは ch3-audio.lua が表示中のシーンに合わせて行う。
+    # Ch3(トラック 1)への出し入れは channels.lua が表示中のシーンに合わせて行う。
     # CM はトラック 1 だけに入れる。CM のシーンをプログラムに出した時だけミキサーに入る。
     inputs = {
         CH1_VIDEO: ("ffmpeg_source", listen("ch1"), []),
@@ -129,6 +131,8 @@ def main() -> None:
         "UP NEXT": ("browser_source", browser("upnext.html", True), []),
         "タイムテーブル": ("browser_source", browser("timetable.html", True), []),
         "2 画面 背景": ("browser_source", browser("split.html", True), []),
+        # 第一体育館の配信をしない時間に、映像の代わりに出す画面。表示は channels.lua が切り替える。
+        "配信休止": ("browser_source", browser("pause.html", True), []),
         # TODO: CM の動画が揃ったら、OBS でファイルを指定する(プレイリストにする場合は VLC ソース)。
         "CM": ("ffmpeg_source", {"is_local_file": True, "local_file": "", "looping": True, "restart_on_activate": True}, [1]),
     }
@@ -138,18 +142,19 @@ def main() -> None:
     offscreen = {"bounds": (16, 9), "pos": (W + 100, 0)}
     # シーンの名前 → 下から順に並べる (入力の名前, 配置)。
     scenes = {
-        # ch3-audio.lua が出力チャンネルにつなぎ、どのシーンを出していても音声をミキサーに入れる。
+        # channels.lua が出力チャンネルにつなぎ、どのシーンを出していても音声をミキサーに入れる。
         "[音声] 常時": [(CH1_AUDIO, None), (CH2_VIDEO, offscreen)],
         # 操作パネル。OBS でソースを右クリックし「対話」で開いて操作する。出力には使用しない。
         "[操作] パネル": [("操作パネル", full)],
-        "[出力] Ch1 第一体育館": [(CH1_VIDEO, full), ("テロップ 第一体育館", full), ("お知らせ", full), ("ウォーターマーク", full)],
+        "[出力] Ch1 第一体育館": [(CH1_VIDEO, full), ("テロップ 第一体育館", full), ("お知らせ", full), ("ウォーターマーク", full), ("配信休止", full)],
         "[出力] Ch2 遊撃": [(CH2_VIDEO, full), ("テロップ 遊撃", full), ("お知らせ", full), ("ウォーターマーク", full)],
         "Ch3 待機": [("待機画面", full)],
-        "Ch3 第一体育館": [(CH1_VIDEO, full), ("テロップ 第一体育館", full), ("時計", full), ("お知らせ", full), ("ウォーターマーク", full)],
+        "Ch3 第一体育館": [(CH1_VIDEO, full), ("テロップ 第一体育館", full), ("時計", full), ("お知らせ", full), ("ウォーターマーク", full), ("配信休止", full)],
         "Ch3 遊撃": [(CH2_VIDEO, full), ("テロップ 遊撃", full), ("時計", full), ("お知らせ", full), ("ウォーターマーク", full)],
         "Ch3 2 画面": [
             ("2 画面 背景", full),
             (CH1_VIDEO, {"bounds": (PANE_W, PANE_H), "pos": PANE_L}),
+            ("配信休止", {"bounds": (PANE_W, PANE_H), "pos": PANE_L}),
             (CH2_VIDEO, {"bounds": (PANE_W, PANE_H), "pos": PANE_R}),
             ("お知らせ", full),
         ],
@@ -176,10 +181,12 @@ def main() -> None:
         cl.create_scene(scene)
         for name, place in items:
             kind, settings, _ = inputs[name]
+            # 「配信休止」は channels.lua が必要な時だけ表示するので、非表示で作る。
+            visible = name not in HIDDEN
             if name in existing_inputs:
-                item_id = cl.create_scene_item(scene, name, True).scene_item_id
+                item_id = cl.create_scene_item(scene, name, visible).scene_item_id
             else:
-                item_id = cl.create_input(scene, name, kind, settings, True).scene_item_id
+                item_id = cl.create_input(scene, name, kind, settings, visible).scene_item_id
                 existing_inputs.add(name)
             if place:
                 bw, bh = place["bounds"]
@@ -201,7 +208,7 @@ def main() -> None:
         cl.set_current_program_scene("Ch3 待機")
         cl.remove_scene("シーン")
     cl.set_current_program_scene("Ch3 待機")
-    print("完了。ch3-audio.lua の追加、Ch1 の USB オーディオのデバイスと同期オフセットの設定は OBS で行ってください")
+    print("完了。channels.lua の追加、Ch1 の USB オーディオのデバイスと同期オフセットの設定は OBS で行ってください")
 
 
 if __name__ == "__main__":
