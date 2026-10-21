@@ -75,16 +75,26 @@ USB オーディオは SRT の映像より早く届くため、USB オーディ�
 
 | ファイル | 内容 |
 | --- | --- |
-| `lower-third.html` | 第一体育館の現在の演目と次の演目。演目が変わるたびに入れ替わる |
+| `lower-third.html` | 現在の演目のテロップ。`?ch=ch1`（既定）は第一体育館、`?ch=ch2` は遊撃 |
+| `clock.html` | 左上の時計 |
+| `notice.html` | お知らせの帯。`control.html` で選んだお知らせを出す |
 | `watermark.html` | 右上のロゴの透かし |
-| `ticker.html` | 下部に流れる帯（現在の演目・次の演目・お知らせ） |
 | `standby.html` | 待機画面（開始前のカウントダウン、休憩中、終了後） |
 | `upnext.html` | 次の演目の全画面の告知 |
 | `timetable.html` | 当日のタイムテーブル |
-| `split.html` | 2 画面の背景と見出し（見出しは `program.js` の `panes`） |
+| `split.html` | 2 画面の背景と見出し |
+| `control.html` | 操作パネル。OBS でソースを右クリックし「対話」で開いて、お知らせと遊撃の現在地を選ぶ |
 
 - 演目・時刻・お知らせは `program.js` だけに書きます。各画面は現在時刻から表示を切り替えるため、当日の操作は不要です。
 - URL に `?now=2026-10-24T13:35` を付けると、その時刻から時計を進めて表示します。ブラウザで開いて確認できます。
+- 各画面の状態（お知らせ、遊撃の現在地）は、`control.html` が localStorage と BroadcastChannel で渡します。
+- 色と線の規則は `overlay.css` の先頭に書いています。
+- 計器の画像（`gauge/`）は `render-gauge.py` で Blender の Cycles で描画します。形・材質・光源を変えた場合は、次で描き直してコミットします。
+
+  ```bash
+  /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P hosts/obs/render-gauge.py -- hosts/obs/overlays/gauge
+  ```
+
 
 ---
 

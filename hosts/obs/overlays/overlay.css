@@ -1,17 +1,44 @@
-@import url('./fonts/noto-sans-jp/wght.css');
+@import url('./fonts/line-seed-jp/400.css');
+@import url('./fonts/line-seed-jp/700.css');
 
-/* 色は app/src/styles/tokens.css と同じ。 */
+/* 計器の数字の 7 セグメントの書体。 */
+@font-face {
+  font-family: 'DSEG7';
+  src: url('./fonts/dseg/DSEG7Classic-Bold.woff2') format('woff2');
+}
+
+/*
+  テロップの共通の規則。車載のインフォテインメント Harman MIB2(VW Discover Pro)の画面を手本にする。
+  色と線は、実機の画面のスクリーンショット(1280x640)の画素の値を 1.5 倍の縮尺で使う。
+  - 文字と記号の明るさは 3 段階に固定する。強調は --lit、通常は --lit-2、消灯は --unlit。
+    見出しだけは青みのある --title にする。
+  - 消灯(--unlit)は「選ばれていない」「過ぎた」状態の表示にだけ使い、情報の軽重には使わない。
+    点灯と消灯では色だけを変え、形と大きさは変えない。
+  - 文字ににじみや影を付けない。
+  - 線: 見出しの下の線は中央が白く両端で暗くなる。行の区切りは --line の一様な線で、端は切りっぱなし。
+  - 地: 上部のバーは --bar の黒。その下の地は、バーの下端の中央から照らした光が下と左右に減衰する。
+  - 光源: 画面の上の中央の 1 つ。板の縁はこの光源に対する向きで明るさを決める。
+    計器は ../render-gauge.py の Blender のシーンに同じ位置の光源を置いて描く。
+  - 赤(--red)は、テロップの板の下端の線だけに使う。
+*/
 :root {
-  --bg: #0a0c0f;
-  --surface: #14181d;
-  --line: #262d35;
-  --fg: #f2f5f8;
-  --fg-muted: #97a2ae;
-  --live: #ff3b30;
-  --live-deep: #b3170f;
-  --font: 'Noto Sans JP Variable', sans-serif;
+  --bar: #050609;
+  --lit: #ffffff;
+  --lit-2: #bfbfbf;
+  --title: #aab3bd;
+  --unlit: #4f5052;
+  --line: #a4adb4;
+  --red: #e5281d;
+  --font: 'LINE Seed JP', sans-serif;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --slant: 18px;
+
+  --fs-xl: 76px;
+  --fs-l: 48px;
+  --fs-m: 32px;
+  --fs-s: 26px;
+
+  /* 余白は 8px 単位。画面の端からの余白は 96px。 */
+  --safe: 96px;
 }
 
 /* OBS のブラウザソースは 1920x1080 で作成する。 */
@@ -22,9 +49,11 @@ body {
   height: 1080px;
   overflow: hidden;
   background: transparent;
-  color: var(--fg);
+  color: var(--lit);
   font-family: var(--font);
+  font-weight: 400;
   font-feature-settings: 'palt';
+  line-height: 1;
 }
 
 [hidden] {
@@ -35,116 +64,234 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- 部品 ---- */
-
-/* 右端を斜めに切った赤いラベル。会場名や LIVE に使用する。 */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px calc(var(--slant) + 10px) 6px 14px;
-  background: var(--live);
-  color: #fff;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  clip-path: polygon(0 0, 100% 0, calc(100% - var(--slant)) 100%, 0 100%);
-}
-.chip.dark {
-  background: rgb(10 12 15 / 0.85);
-}
-.chip small {
-  font-size: 0.8em;
-  font-weight: 600;
-  opacity: 0.85;
+.caps {
+  letter-spacing: 0.14em;
 }
 
-.dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #fff;
-  animation: pulse 1.6s ease-in-out infinite;
-}
-.dot.red {
-  background: var(--live);
-}
+/* ---- 板 ---- */
 
-/* 英字の小見出し。 */
-.kicker {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: 0.24em;
-  color: var(--live);
-}
-
-/* 映像の上に直接置く文字の縁取りと影。 */
-.edge {
-  text-shadow:
-    0 0 2px rgb(0 0 0 / 0.9),
-    0 0 2px rgb(0 0 0 / 0.9),
-    0 3px 0 rgb(0 0 0 / 0.45),
-    0 6px 24px rgb(0 0 0 / 0.55);
-}
-
-/* 輪郭だけの大きな英字。背景の飾りに使用する。 */
-.outline {
-  color: transparent;
-  -webkit-text-stroke: 2px rgb(242 245 248 / 0.12);
-  font-weight: 900;
-  letter-spacing: 0.04em;
+/* 黒の板。面は平らな黒にし、光は縁に入れる。
+   縁は辺ごとの色で、上を明るく、左右を中間、下を暗くする。角は辺の突き合わせになる。
+   既定は縦に積む。横に並べる場合は .across を付ける。 */
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0.5em 0.75em;
+  border-radius: 4px;
+  /* 艶のある黒い面に、画面の上の中央にある光源が映る。光源に近い上端と、画面の中央の側が明るく、
+     下へ向かって暗くなる。 */
+  background:
+    radial-gradient(90% 140% at var(--light-x, 80%) -40%, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.05) 45%, transparent 75%),
+    linear-gradient(180deg, #2a2d33, #15171a 45%, #0a0b0d);
+  border-style: solid;
+  border-width: 2px;
+  border-color: #8f959c #50555c #24272b;
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 0.12),
+    inset 0 -2px 3px rgb(0 0 0 / 0.55),
+    0 2px 2px rgb(0 0 0 / 0.6),
+    0 18px 40px rgb(0 0 0 / 0.55);
   white-space: nowrap;
 }
-
-/* 子要素をせり上げて見せるための枠。 */
-.mask {
-  display: block;
-  overflow: hidden;
-  padding-bottom: 0.08em;
-}
-.mask > * {
-  display: block;
-}
-
-/* 経過を示す細いバー。--p に 0〜1 を入れる。 */
-.progress {
-  height: 4px;
-  background: rgb(255 255 255 / 0.15);
-}
-.progress i {
-  display: block;
-  height: 100%;
-  width: calc(var(--p, 0) * 100%);
-  background: var(--live);
-  transition: width 1s linear;
-}
-
-/* 動く背景。待機画面などの全画面に使用する。 */
-.stage-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: var(--bg);
-}
-.stage-bg::before {
+/* 上の縁の光。中央が明るく、両端の角に向かって弱まる。 */
+.tile::before,
+.frame::before {
   content: '';
   position: absolute;
-  inset: -20%;
+  left: 6px;
+  right: 6px;
+  top: -2px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55) 25%, rgb(255 255 255 / 0.55) 75%, transparent);
+  pointer-events: none;
+}
+.tile.across {
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+}
+/* 補助の板。縁を暗くして、主の板より一段引かせる。 */
+.tile.dim {
   background:
-    radial-gradient(40% 50% at 30% 40%, rgb(255 59 48 / 0.22), transparent 70%),
-    radial-gradient(35% 45% at 75% 65%, rgb(60 90 140 / 0.25), transparent 70%);
-  animation: drift 24s ease-in-out infinite alternate;
+    radial-gradient(90% 140% at var(--light-x, 80%) -40%, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.03) 45%, transparent 75%),
+    linear-gradient(180deg, #181a1e, #0e1012 45%, #08090a);
+  border-color: #5b6067 #383c41 #1c1e21;
 }
-.stage-bg::after {
+
+/* 板の下の縁の赤い線。物の部品ではなく発光する表示なので、光沢や陰影を付けず一様な赤にする。
+   下の縁取りに重ね、角の丸みも板に合わせる。 */
+.glow::after {
   content: '';
   position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  height: 4px;
+  border-radius: 0 0 4px 4px;
+  background: var(--red);
+}
+
+/* 金属の縁の枠。外側の辺ごとの縁、内側の 2px の黒い溝(outline)、平らな面の二重の作り。 */
+.frame {
+  position: relative;
+  border-radius: 4px;
+  background:
+    radial-gradient(140% 120% at 50% -30%, rgb(255 255 255 / 0.08), transparent 55%),
+    #121316;
+  border-style: solid;
+  border-width: 3px;
+  border-color: #c4c8ce #7a8088 #3e4349;
+  outline: 2px solid #000;
+  outline-offset: -5px;
+  box-shadow:
+    0 2px 2px rgb(0 0 0 / 0.6),
+    0 12px 26px rgb(0 0 0 / 0.55);
+}
+.frame::before {
+  top: -3px;
+}
+/* 選択中。一回り大きくし、白い縁と、下方向に広がる光(床に映る反射)で示す。 */
+.frame.hot {
+  z-index: 1;
+  transform: scale(1.06);
+  background:
+    radial-gradient(140% 120% at 50% -30%, rgb(255 255 255 / 0.12), transparent 55%),
+    #1b1d21;
+  border-color: #ffffff #e1e4e8 #a9afb6;
+  box-shadow: 0 14px 30px rgb(0 0 0 / 0.7);
+}
+.frame.hot::after {
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: calc(100% + 8px);
+  height: 56px;
+  background: radial-gradient(50% 60% at 50% 0%, rgb(255 255 255 / 0.28), transparent 100%);
+  pointer-events: none;
+}
+
+/* ---- 線 ---- */
+
+/* 見出しの下の線。中央は白く、両端の 17% で暗くなる。 */
+.hair {
+  height: 1.5px;
+  background: linear-gradient(90deg, #313e45, var(--lit) 17%, var(--lit) 83%, #313e45);
+}
+
+/* 区切られた線。.on の区切りを点灯し、他は消灯にする。経過やページの位置に使用する。 */
+.seg {
+  display: flex;
+  gap: 8px;
+  height: 3px;
+}
+.seg i {
+  flex: 1;
+  background: var(--unlit);
+}
+.seg i.on {
+  background: var(--lit);
+}
+
+/* 小さい見出し。縦の区切り線で項目を区切る。 */
+.caption {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  font-size: var(--fs-s);
+  font-weight: 400;
+  color: var(--lit-2);
+}
+.caption .accent {
+  color: var(--lit);
+  font-weight: 700;
+}
+/* 縦の区切り線。中央が明るく、上下の端で消える。 */
+.sep {
+  flex: none;
+  align-self: center;
+  width: 1.5px;
+  height: 1.2em;
+  background: linear-gradient(180deg, transparent, #c8d4e2 50%, transparent);
+}
+
+/* 全画面の地。上部のバーの下端の中央から照らした光が、下と左右に減衰する。
+   減衰の値は実機の画面の測定値(中央の直下 #48494e、高さの 6 割で #070707)。 */
+.backdrop {
+  position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    -60deg,
-    rgb(255 255 255 / 0.025) 0 2px,
-    transparent 2px 30px
-  );
-  animation: stripes 6s linear infinite;
+  background:
+    radial-gradient(75% 46% at 50% 81px,
+      #48494e 0%, #414245 20%, #393a3d 30%, #212224 53%, #101011 78%, #070707 96%),
+    #070707;
+}
+/* 全画面の上部のバー。中央に時刻、左右に補助の情報を置き、下端に暗い線を引く。
+   3 つの項目はベースラインで揃える。線は左右の端からわずかに内側で切りっぱなしにする。 */
+.statusbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 81px;
+  box-sizing: border-box;
+  padding-top: 20px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  background: var(--bar);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--lit-2);
+}
+.statusbar::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 0;
+  height: 1.5px;
+  background: #4a4d52;
+}
+.statusbar > :first-child {
+  justify-self: start;
+  padding-left: 48px;
+}
+.statusbar > :last-child {
+  justify-self: end;
+  padding-right: 48px;
+}
+.statusbar .time {
+  font-size: 42px;
+  letter-spacing: 0.04em;
+  color: var(--lit);
+}
+/* 全画面の下部の列。等幅の区画を並べ、区画ごとに上の線を引く。
+   最後の区画は残りの幅を占める。選択中の区画を点灯し、他は消灯にする。 */
+.softkeys {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  bottom: 32px;
+  display: grid;
+  grid-template-columns: repeat(var(--keys, 2), 285px) 1fr;
+  column-gap: 8px;
+  font-size: var(--fs-s);
+}
+.softkeys > * {
+  padding-top: 24px;
+  text-align: center;
+  color: var(--unlit);
+  background: linear-gradient(var(--unlit), var(--unlit)) top / 100% 2px no-repeat;
+}
+.softkeys > .on {
+  color: var(--lit);
+  background-image: linear-gradient(var(--lit), var(--lit));
+}
+.softkeys > :last-child {
+  text-align: right;
 }
 
 /* 横に流れる文字列。中身を 2 回並べて継ぎ目を無くす。 */
@@ -159,54 +306,63 @@ body {
 
 /* ---- 出入り ---- */
 /* .in を付けると子要素の data-a に応じて順に入る。--d で遅延を指定する。
-   終了後は要素自身の clip-path や opacity に戻すため、fill は backwards にしている。 */
-.in [data-a='wipe'] {
-  animation: wipe 0.55s var(--ease) var(--d, 0s) backwards;
-}
+   終了後は要素自身のスタイルに戻すため、fill は backwards にしている。 */
 .in [data-a='rise'] {
-  animation: rise 0.7s var(--ease) var(--d, 0s) backwards;
+  animation: rise 0.5s var(--ease) var(--d, 0s) backwards;
 }
 .in [data-a='fade'] {
-  animation: fade-up 0.6s var(--ease) var(--d, 0s) backwards;
+  animation: fade 0.4s ease-out var(--d, 0s) backwards;
 }
-.in [data-a='bar'] {
-  animation: bar 0.4s var(--ease) var(--d, 0s) backwards;
-  transform-origin: bottom;
+.in .glow::after {
+  animation: draw 0.6s var(--ease) calc(var(--d, 0s) + 0.15s) backwards;
+  transform-origin: left;
 }
 .out {
-  animation: leave 0.45s var(--ease) both;
+  animation: leave 0.35s ease-in both;
 }
 
-@keyframes wipe {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 0 0 0); }
-}
 @keyframes rise {
-  from { transform: translateY(110%); }
-  to { transform: none; }
-}
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: none; }
 }
-@keyframes bar {
-  from { transform: scaleY(0); }
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes draw {
+  from { transform: scaleX(0); }
   to { transform: none; }
 }
 @keyframes leave {
-  to { opacity: 0; transform: translateY(24px); }
-}
-@keyframes pulse {
-  50% { opacity: 0.25; }
-}
-@keyframes drift {
-  from { transform: translate(-4%, -3%) rotate(0deg); }
-  to { transform: translate(4%, 3%) rotate(6deg); }
-}
-@keyframes stripes {
-  /* 縞の間隔 30px を -60deg で横に測った長さ(30 / cos30°)。 */
-  to { background-position: 34.64px 0; }
+  to { opacity: 0; transform: translateY(16px); }
 }
 @keyframes marquee {
   to { transform: translateX(-50%); }
+}
+
+/* ---- 計器 ---- */
+/* Overlay.gauge() が作る計器。輪・目盛と針は Blender で描いた画像(gauge/)を重ね、
+   中央の数字と単位だけを SVG で重ねる。 */
+.gauge {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.gauge > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.gauge .digits {
+  fill: #eeecf3;
+  font-family: 'DSEG7', monospace;
+  font-size: 64px;
+  text-anchor: middle;
+}
+.gauge .unit {
+  fill: var(--lit-2);
+  font-size: 28px;
+  font-weight: 400;
+  text-anchor: middle;
 }

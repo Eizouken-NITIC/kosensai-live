@@ -7,116 +7,91 @@
 <style>
   .lt {
     position: absolute;
-    left: 80px;
-    bottom: 80px;
-    display: grid;
-    grid-template-columns: auto auto;
-    align-items: end;
-    gap: 0 0;
+    left: var(--safe);
+    bottom: var(--safe);
+    transition: bottom 0.4s var(--ease);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
   }
+  /* お知らせ(notice.html)が出ている間は、帯の高さの分だけ上げる。 */
+  .lt.lifted { bottom: calc(var(--safe) + 72px); }
   .lt:not(.in) { visibility: hidden; }
   .lt.out { visibility: visible; }
-
-  .stage { grid-column: 1 / -1; justify-self: start; margin-bottom: 10px; }
-
-  .plate {
-    position: relative;
-    min-width: 640px;
-    padding: 18px calc(var(--slant) * 2 + 40px) 0 44px;
-    background: linear-gradient(100deg, rgb(10 12 15 / 0.92) 60%, rgb(20 24 29 / 0.85));
-    clip-path: polygon(0 0, 100% 0, calc(100% - var(--slant) * 2) 100%, 0 100%);
-  }
-  .plate .bar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 10px;
-    background: var(--live);
-  }
-  .plate .title {
-    margin-top: 2px;
-    font-size: 72px;
-    font-weight: 900;
-    line-height: 1.12;
-    white-space: nowrap;
-  }
-  .plate .foot {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    margin: 10px 0 0;
-    padding-bottom: 16px;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--fg-muted);
-  }
-  .plate .progress { width: 260px; }
-
-  .next {
-    margin-left: -26px;
-    margin-bottom: 0;
-    padding: 14px calc(var(--slant) + 30px) 16px 44px;
-    background: var(--surface);
-    clip-path: polygon(var(--slant) 0, 100% 0, calc(100% - var(--slant)) 100%, 0 100%);
-    font-size: 30px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-  .next .kicker { display: block; margin-bottom: 2px; font-size: 18px; }
-  .next .time { color: var(--fg-muted); margin-right: 14px; }
+  .main { min-width: 640px; padding: 24px 32px 27px; gap: 18px; align-items: stretch; }
+  .main .caption { justify-content: flex-start; }
+  .main .caption .span { margin-left: auto; padding-left: 2em; }
+  .name { font-size: var(--fs-xl); font-weight: 700; }
+  .seg { width: 100%; }
+  .next { padding: 14px 32px 16px; gap: 0.8em; font-size: var(--fs-s); }
+  .next .k { color: var(--lit-2); }
 </style>
 </head>
 <body>
 <div class="lt" id="lt">
-  <div class="stage chip" data-a="wipe"><span class="dot"></span><span id="venue"></span><small id="kind"></small></div>
-  <div class="plate" data-a="wipe" style="--d: 0.12s">
-    <div class="bar" data-a="bar" style="--d: 0.1s"></div>
-    <div class="kicker" data-a="fade" style="--d: 0.3s" id="kicker"></div>
-    <div class="mask"><div class="title" data-a="rise" style="--d: 0.38s" id="title"></div></div>
-    <div class="foot" data-a="fade" style="--d: 0.55s">
-      <span class="time" id="span"></span>
-      <div class="progress"><i id="bar"></i></div>
+  <div class="tile glow main" data-a="rise">
+    <div class="caption">
+      <span class="accent ink" id="venue"></span><span class="sep" id="sep"></span><span class="ink" id="kind"></span>
+      <span class="span time ink" id="span"></span>
     </div>
+    <div class="name ink" id="name"></div>
+    <div class="seg" id="seg"></div>
   </div>
-  <div class="next" data-a="wipe" style="--d: 0.7s" id="next">
-    <span class="kicker">NEXT</span>
-    <span class="time" id="nextTime"></span><span id="nextTitle"></span>
+  <div class="tile dim across next" data-a="rise" style="--d: 0.08s" id="next">
+    <span class="k ink">つぎ</span><span class="sep"></span><span class="time" id="nextTime"></span><span id="nextTitle"></span>
   </div>
 </div>
 <script src="program.js"></script>
 <script src="overlay.js"></script>
 <script>
-  // 第一体育館の現在の演目と次の演目。演目が変わるたびに入りのアニメーションを再生し、
-  // 演目の無い時間と配信 NG の時間は隠す。
+  // ?ch=ch1(既定)は第一体育館の出演、?ch=ch2 は遊撃の現在地。
+  // 項目が変わるたびに入れ替え、項目の無い時間と配信しない時間は隠す。
+  const ch = Overlay.params.get('ch') ?? 'ch1';
+  const SEGMENTS = 12;
   const $ = (id) => document.getElementById(id);
   const lt = $('lt');
+  $('seg').replaceChildren(...Array.from({ length: SEGMENTS }, () => document.createElement('i')));
   let shown = null;
+  let s = Overlay.state();
+  Overlay.onState((next) => {
+    s = next;
+    shown = null;
+    lt.classList.toggle('lifted', s.notice != null);
+  });
+
   Overlay.every(1000, () => {
     const t = Overlay.now();
-    const cur = Overlay.current(t);
-    const key = cur && cur.kind !== 'ng' ? `${cur.start}` : null;
-    if (key !== shown) {
-      shown = key;
-      if (!key) {
-        lt.classList.replace('in', 'out');
-        return;
-      }
-      const nxt = Overlay.next(t);
-      const rest = cur.kind === 'break';
-      $('venue').textContent = window.PROGRAM.venue;
-      $('kind').textContent = cur.label;
-      $('kicker').textContent = rest ? 'BREAK' : 'NOW ON STAGE';
-      $('title').textContent = rest ? `${Overlay.hhmm(cur.end)} から再開します` : cur.title;
-      $('span').textContent = `${Overlay.hhmm(cur.start)} – ${Overlay.hhmm(cur.end)}`;
-      $('next').hidden = !nxt;
-      if (nxt) {
-        $('nextTime').textContent = Overlay.hhmm(nxt.start);
-        $('nextTitle').textContent = nxt.title;
-      }
-      Overlay.replay(lt);
+    const cur = ch === 'ch1' ? Overlay.current('ch1', t) : Overlay.ch2Now(s, t);
+    const visible = cur && cur.kind !== 'ng';
+    // 経過の区切りは、演目の経過の割合の分だけ明るくする。遊撃の現在地には時刻が無いため出さない。
+    const timed = visible && cur.start != null;
+    $('seg').hidden = $('span').hidden = !timed;
+    if (timed) {
+      const p = Overlay.progress(cur, t);
+      [...$('seg').children].forEach((i, n) => i.classList.toggle('on', n < Math.ceil(p * SEGMENTS)));
     }
-    if (cur) $('bar').style.setProperty('--p', Overlay.progress(cur, t));
+    const key = visible ? `${cur.title} ${cur.label} ${cur.start}` : null;
+    if (key === shown) return;
+    shown = key;
+    if (!visible) {
+      lt.classList.replace('in', 'out');
+      return;
+    }
+    const rest = cur.kind === 'break';
+    $('venue').textContent = window.PROGRAM[ch].name;
+    $('kind').textContent = cur.label;
+    $('kind').hidden = $('sep').hidden = rest || !cur.label;
+    $('name').textContent = rest ? '休憩中' : cur.title;
+    if (timed) $('span').textContent = `${Overlay.hhmm(cur.start)} – ${Overlay.hhmm(cur.end)}`;
+    const nxt = ch === 'ch1' ? Overlay.next('ch1', t) : null;
+    $('next').hidden = !nxt;
+    if (nxt) {
+      $('nextTime').textContent = Overlay.hhmm(nxt.start);
+      $('nextTitle').textContent = nxt.title;
+    }
+    Overlay.alignInk(...lt.querySelectorAll('.ink'));
+    Overlay.replay(lt);
   });
 </script>
 </body>

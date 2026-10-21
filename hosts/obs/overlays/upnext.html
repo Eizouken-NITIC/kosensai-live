@@ -5,83 +5,110 @@
 <title>upnext</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
-  .big { position: absolute; top: 40px; left: -20px; font-size: 320px; line-height: 1; }
-  .card {
+  .main {
     position: absolute;
-    left: 140px;
-    right: 140px;
-    top: 330px;
-  }
-  .card .chip { font-size: 30px; }
-  .name {
-    margin-top: 26px;
-    font-size: 150px;
-    font-weight: 900;
-    line-height: 1.1;
-    white-space: nowrap;
-  }
-  .rule { width: 520px; height: 8px; margin-top: 30px; background: var(--live); transform-origin: left; }
-  .when {
+    left: var(--safe);
+    right: var(--safe);
+    top: 200px;
     display: flex;
-    align-items: baseline;
-    gap: 30px;
-    margin-top: 28px;
-    font-size: 44px;
-    font-weight: 800;
+    align-items: center;
+    gap: 96px;
   }
-  .when .remain { color: var(--fg-muted); font-size: 34px; }
+  .meter { flex: none; width: 400px; height: 400px; }
+  .info { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 32px; }
+  .info .caption { font-size: 30px; }
+  .info .name {
+    max-width: 100%;
+    font-size: 112px;
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-bottom: 0.15em;
+    margin-bottom: -0.15em;
+  }
+  .info .start { font-size: 44px; font-weight: 400; }
+  .info .start small { margin-left: 0.5em; font-size: 26px; color: var(--lit-2); }
+
   .after {
     position: absolute;
-    right: 140px;
-    bottom: 110px;
+    left: var(--safe);
+    right: var(--safe);
+    top: 720px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-    font-size: 30px;
-    font-weight: 700;
+    gap: 16px;
   }
-  .after .time { color: var(--fg-muted); margin-right: 16px; }
-  .in [data-a='bar'] { transform-origin: left; }
-  @keyframes bar { from { transform: scaleX(0); } to { transform: none; } }
+  .after .frame {
+    flex: 1;
+    min-width: 0;
+    height: 104px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 0 28px;
+    box-sizing: border-box;
+    font-size: 28px;
+  }
+  .after .t { color: var(--lit-2); }
+  .after .n { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-bottom: 0.15em; margin-bottom: -0.15em; }
+  .after .k { flex: none; font-size: 22px; color: var(--lit-2); }
 </style>
 </head>
 <body>
-<div class="stage-bg"></div>
-<div class="big outline">UP NEXT</div>
+<div class="backdrop"></div>
+<div class="statusbar">
+  <span class="title" id="title"></span>
+  <span class="time" id="clock"></span>
+  <span class="date" id="date"></span>
+</div>
 <div id="root">
-  <div class="card">
-    <span class="chip" data-a="wipe"><span class="dot"></span><span id="venue"></span><small id="kind"></small></span>
-    <div class="mask"><div class="name" data-a="rise" style="--d: 0.2s" id="name"></div></div>
-    <div class="rule" data-a="bar" style="--d: 0.45s"></div>
-    <div class="when" data-a="fade" style="--d: 0.55s"><span class="time" id="start"></span><span class="remain" id="remain"></span></div>
+  <div class="main">
+    <div class="meter" id="meter" data-a="fade"></div>
+    <div class="info">
+      <div class="caption" data-a="rise"><span class="accent">つぎの出演</span><span class="sep"></span><span id="venue"></span><span class="sep"></span><span id="kind"></span></div>
+      <div class="name" data-a="rise" style="--d: 0.08s" id="name"></div>
+      <div class="start time" data-a="rise" style="--d: 0.16s"><span id="start"></span><small>開始</small></div>
+    </div>
   </div>
   <div class="after" id="after"></div>
 </div>
 <script src="program.js"></script>
 <script src="overlay.js"></script>
 <script>
-  // 次の演目を大きく見せる。その後に続く 2 組も右下に出す。
+  // 第一体育館の次の出演を大きく出し、開始までの残り時間を計器に出す。下にその後の 3 組を並べる。
   const $ = (id) => document.getElementById(id);
   const { el } = Overlay;
+  const meter = Overlay.gauge($('meter'), { max: 30 });
+  $('title').textContent = window.PROGRAM.title;
   let shown = null;
+
   Overlay.every(1000, () => {
     const t = Overlay.now();
-    const nxt = Overlay.next(t);
+    $('clock').textContent = Overlay.hhmm(t);
+    $('date').textContent = Overlay.date(t);
+    const nxt = Overlay.next('ch1', t);
     if (!nxt) return;
-    $('remain').textContent = Overlay.remain(nxt.start, t);
+    const minutes = Math.max(0, Math.ceil((nxt.start - t) / 60000));
+    meter(minutes, String(Math.min(minutes, 99)), '分');
     if (shown === `${nxt.start}`) return;
     shown = `${nxt.start}`;
-    $('venue').textContent = window.PROGRAM.venue;
+    $('venue').textContent = window.PROGRAM.ch1.name;
     $('kind').textContent = nxt.label;
     $('name').textContent = nxt.title;
-    $('start').textContent = `${Overlay.hhmm(nxt.start)} START`;
-    const later = Overlay.schedule(t).filter((it) => it.start > nxt.start && it.kind !== 'break' && it.kind !== 'ng').slice(0, 2);
+    $('start').textContent = Overlay.hhmm(nxt.start);
+    const later = Overlay.schedule('ch1', t)
+      .filter((it) => it.start > nxt.start && it.kind !== 'break' && it.kind !== 'ng')
+      .slice(0, 3);
     $('after').replaceChildren(
-      ...(later.length ? [el('span', { className: 'kicker', textContent: 'AND THEN' })] : []),
-      ...later.map((it, i) => el('div', { style: `--d: ${0.7 + i * 0.1}s` }, el('span', { className: 'time', textContent: Overlay.hhmm(it.start) }), it.title)),
+      ...later.map((it, i) =>
+        el('div', { className: 'frame', style: `--d: ${0.24 + i * 0.06}s` },
+          el('span', { className: 'k', textContent: i === 0 ? 'そのあと' : '' }),
+          el('span', { className: 't time', textContent: Overlay.hhmm(it.start) }),
+          el('span', { className: 'n', textContent: it.title }),
+        ),
+      ),
     );
-    for (const d of $('after').children) d.dataset.a = 'fade';
+    for (const d of $('after').children) d.dataset.a = 'rise';
     Overlay.replay($('root'));
   });
 </script>

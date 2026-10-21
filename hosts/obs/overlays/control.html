@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>control</title>
+<link rel="stylesheet" href="overlay.css">
+<style>
+  /* 操作パネル。OBS でこのブラウザソースを右クリックし「対話」で開いて操作する。
+     テロップのブラウザソースと同じ origin になるため、localStorage と BroadcastChannel で状態を渡す。 */
+  html, body { width: auto; height: auto; overflow: auto; }
+  body { padding: 24px; background: var(--bar); }
+  h2 { margin: 24px 0 12px; font-size: 22px; font-weight: 700; color: var(--lit-2); }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  button {
+    font: inherit;
+    font-size: 20px;
+    color: var(--lit);
+    text-align: left;
+    line-height: 1.4;
+    padding: 12px 16px;
+    cursor: pointer;
+  }
+  button.off { color: var(--lit-2); }
+</style>
+</head>
+<body>
+<h2>お知らせ</h2>
+<div class="grid" id="notices"></div>
+<h2>遊撃の現在地</h2>
+<div class="grid" id="places"></div>
+<script src="program.js"></script>
+<script src="overlay.js"></script>
+<script>
+  const { el } = Overlay;
+  const P = window.PROGRAM;
+  function draw(s) {
+    const button = (text, on, patch, off = false) =>
+      el('button', { className: `frame${on ? ' hot' : ''}${off ? ' off' : ''}`, textContent: text, onclick: () => Overlay.setState(patch) });
+    document.getElementById('notices').replaceChildren(
+      button('出さない', s.notice == null, { notice: null }, true),
+      ...P.notices.map((text, i) => button(text, s.notice === i, { notice: i })),
+    );
+    document.getElementById('places').replaceChildren(
+      button('予定どおり', s.ch2Place == null, { ch2Place: null }, true),
+      ...P.ch2.places.map(([title, place], i) => button(`${title}(${place})`, s.ch2Place === i, { ch2Place: i })),
+    );
+  }
+  Overlay.onState(draw);
+</script>
+</body>
+</html>

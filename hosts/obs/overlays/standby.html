@@ -5,128 +5,131 @@
 <title>standby</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
-  .big {
+  /* 中央: 左に計器、右に状態と時刻。 */
+  .main {
     position: absolute;
-    top: 120px;
     left: 0;
     right: 0;
-    font-size: 300px;
-    line-height: 1;
-    --dur: 60s;
-  }
-  main {
-    position: absolute;
-    inset: 0 0 220px;
+    top: 168px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    gap: 28px;
+    align-items: center;
+    gap: 96px;
   }
-  main img { height: 92px; }
-  .msg { font-size: 54px; font-weight: 900; }
-  .count {
-    display: flex;
-    align-items: baseline;
-    gap: 22px;
-    font-size: 30px;
-    font-weight: 700;
-    color: var(--fg-muted);
-  }
-  .count b {
-    font-size: 96px;
-    font-weight: 900;
-    color: var(--fg);
-    letter-spacing: 0.02em;
-  }
+  .meter { width: 380px; height: 380px; }
+  .info { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
+  .info .caption { font-size: 30px; }
+  .info .when { font-size: 132px; font-weight: 400; letter-spacing: -0.01em; }
+  .info .what { font-size: var(--fs-m); color: var(--lit-2); }
+  .info .invite { font-size: var(--fs-s); color: var(--lit-2); }
+
+  /* 出演の並び。局のタイルの形。 */
   .lineup {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 180px;
-    padding: 14px 0;
-    border-block: 1px solid var(--line);
-    background: rgb(10 12 15 / 0.6);
-    font-size: 30px;
-    font-weight: 700;
-    --dur: 50s;
-  }
-  .lineup span { padding: 0 28px; }
-  .lineup .kicker { font-size: 22px; padding-right: 0; }
-  footer {
-    position: absolute;
-    left: 80px;
-    right: 80px;
-    bottom: 40px;
+    left: var(--safe);
+    right: var(--safe);
+    top: 648px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    gap: 16px;
   }
-  .invite { display: flex; align-items: center; gap: 24px; font-size: 26px; font-weight: 800; }
-  .invite img { width: 110px; height: 110px; padding: 8px; border-radius: 6px; background: #fff; }
-  .invite small { display: block; margin-top: 4px; font-size: 20px; font-weight: 500; color: var(--fg-muted); }
-  .clock { font-size: 56px; font-weight: 900; }
+  .lineup .frame {
+    flex: 1;
+    min-width: 0;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 18px 20px 16px;
+    box-sizing: border-box;
+  }
+  .lineup .t { font-size: 24px; color: var(--lit-2); }
+  .lineup .n { font-size: 28px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-bottom: 0.15em; margin-bottom: -0.15em; }
+  .lineup .hot .t { color: var(--lit); }
+  .pager { position: absolute; left: 720px; right: 720px; top: 828px; }
+
 </style>
 </head>
 <body>
-<div class="stage-bg"></div>
-<div class="big outline marquee"><div><span>KOSENSAI LIVE&nbsp;</span><span>KOSENSAI LIVE&nbsp;</span></div></div>
-<main class="in">
-  <img src="../../../app/static/assets/logo-live.svg" alt="KOSENSAI-LIVE" data-a="fade">
-  <div class="msg" data-a="fade" style="--d: 0.15s" id="msg"></div>
-  <div class="count" data-a="fade" style="--d: 0.3s" id="count"></div>
-</main>
-<div class="lineup marquee" id="lineup" hidden><div id="lineupInner"></div></div>
-<footer>
-  <div class="invite">
-    <img src="../../../app/static/assets/qr-viewer.svg" alt="">
-    <div>スマホからも視聴できます<small>live.kosensai.ichinoseki.ac.jp ・ 学内 Wi-Fi 限定</small></div>
+<div class="backdrop"></div>
+<div class="statusbar">
+  <span class="title" id="title"></span>
+  <span class="time" id="clock"></span>
+  <span class="date" id="date"></span>
+</div>
+<div class="main in">
+  <div class="meter" id="meter" data-a="fade"></div>
+  <div class="info">
+    <div class="caption" data-a="rise"><span class="accent" id="state"></span><span class="sep"></span><span id="venue"></span></div>
+    <div class="when time" data-a="rise" style="--d: 0.08s" id="when"></div>
+    <div class="what" data-a="rise" style="--d: 0.16s" id="what"></div>
+    <div class="invite" data-a="rise" style="--d: 0.24s">スマホからも視聴できます　live.kosensai.ichinoseki.ac.jp</div>
   </div>
-  <div class="clock time" id="clock"></div>
-</footer>
+</div>
+<div class="lineup" id="lineup"></div>
+<div class="seg pager" id="pager"></div>
+<div class="softkeys" id="softkeys"></div>
 <script src="program.js"></script>
 <script src="overlay.js"></script>
 <script>
-  // 開始前は開始までのカウントダウン、休憩中は再開の時刻、終了後はお礼を表示する。
-  // 下の帯には次の配信日の出演者を流す。
+  // 開始前は開始までの残り時間を計器に出す。休憩中は再開まで、終了後はお礼を出す。
+  // 下には、その日の第一体育館の出演を局のタイルの形で並べ、次の出演を選択中の形にする。
   const $ = (id) => document.getElementById(id);
-  const DAYS = ['日', '月', '火', '水', '木', '金', '土'];
-  const pad = (n) => String(n).padStart(2, '0');
-  const countdown = (to, t) => {
-    const s = Math.max(0, Math.floor((to - t) / 1000));
-    const h = Math.floor(s / 3600);
-    return h ? `${h}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}` : `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
-  };
-  let lineupDay = null;
+  const { el } = Overlay;
+  const meter = Overlay.gauge($('meter'), { max: 60 });
+  const PER_PAGE = 6;
+  $('title').textContent = window.PROGRAM.title;
+
   Overlay.every(1000, () => {
     const t = Overlay.now();
-    const cur = Overlay.current(t);
-    const start = Overlay.nextStart(t);
     $('clock').textContent = Overlay.hhmm(t);
-    if (cur && cur.kind === 'break') {
-      $('msg').textContent = 'ただいま休憩中です';
-      $('count').innerHTML = `再開まで <b class="time">${countdown(cur.end, t)}</b> ${Overlay.hhmm(cur.end)} 再開`;
+    $('date').textContent = Overlay.date(t);
+    const cur = Overlay.current('ch1', t);
+    const start = Overlay.nextStart(t);
+    const resume = cur && cur.kind === 'break' ? cur.end : null;
+    const target = resume ?? start;
+    const sameDay = target && target.toDateString() === t.toDateString();
+    const minutes = target ? Math.max(0, Math.ceil((target - t) / 60000)) : 0;
+
+    if (resume) {
+      $('state').textContent = '休憩中';
+      $('what').textContent = '第一体育館の配信は、まもなく再開します';
     } else if (start) {
-      const today = start.toDateString() === t.toDateString();
-      const when = today ? Overlay.hhmm(start) : `${start.getMonth() + 1}/${start.getDate()}(${DAYS[start.getDay()]}) ${Overlay.hhmm(start)}`;
-      $('msg').textContent = 'まもなく配信を開始します';
-      $('count').innerHTML = today
-        ? `配信開始まで <b class="time">${countdown(start, t)}</b> ${when} 開始`
-        : `次の配信 <b class="time">${when}</b>`;
+      $('state').textContent = sameDay ? '配信開始まで' : '次の配信';
+      $('what').textContent = sameDay ? 'まもなく配信を開始します' : Overlay.date(start);
     } else {
-      $('msg').textContent = 'ご視聴ありがとうございました';
-      $('count').textContent = '本日の配信は終了しました';
+      $('state').textContent = '本日の配信は終了しました';
+      $('what').textContent = 'ご視聴ありがとうございました';
     }
-    const day = (cur && cur.kind === 'break') ? t : start;
-    const key = day && day.toDateString();
-    if (key !== lineupDay) {
-      lineupDay = key;
-      const names = day ? Overlay.schedule(day).filter((it) => it.kind === 'band' || it.kind === 'dance') : [];
-      $('lineup').hidden = !names.length;
-      const span = (text, className = '') => Object.assign(document.createElement('span'), { textContent: text, className });
-      const row = () => [span("TODAY'S LINE UP", 'kicker'), ...names.map((it) => span(it.title))];
-      $('lineupInner').replaceChildren(...row(), ...row());
-    }
+    $('venue').textContent = window.PROGRAM.ch1.name;
+    $('when').textContent = target ? Overlay.hhmm(target) : '';
+    meter(sameDay ? minutes : 0, sameDay ? String(Math.min(minutes, 99)) : '--', '分');
+
+    // 出演の並び。次の出演を含むページを出す。
+    const day = target ?? t;
+    const acts = Overlay.schedule('ch1', day).filter((it) => it.kind === 'band' || it.kind === 'dance');
+    const nextIdx = Math.max(0, acts.findIndex((it) => it.start >= (resume ?? t)));
+    const page = Math.floor(nextIdx / PER_PAGE);
+    const pages = Math.max(1, Math.ceil(acts.length / PER_PAGE));
+    $('lineup').replaceChildren(
+      ...acts.slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE).map((it, i) =>
+        el('div', { className: `frame${page * PER_PAGE + i === nextIdx ? ' hot' : ''}` },
+          el('span', { className: 't time', textContent: Overlay.hhmm(it.start) }),
+          el('span', { className: 'n', textContent: it.title }),
+        ),
+      ),
+    );
+    $('pager').replaceChildren(...Array.from({ length: pages }, (_, i) => el('i', { className: i === page ? 'on' : '' })));
+
+    // 下部の列。日付ごとの見出しと、視聴の案内。
+    const days = Object.keys(window.PROGRAM.events);
+    $('softkeys').style.setProperty('--keys', days.length);
+    $('softkeys').replaceChildren(
+      ...days.map((key) => {
+        const d = new Date(`${key}T00:00:00`);
+        return el('span', { className: d.toDateString() === day.toDateString() ? 'on' : '', textContent: Overlay.date(d) });
+      }),
+      el('span'),
+    );
   });
 </script>
 </body>

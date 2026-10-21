@@ -5,58 +5,62 @@
 <title>split</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
-  /* 2 画面の背景と見出し。映像は OBS 側で 896x504 にして (48,236) と (976,236) に置く。 */
+  /* 映像の枠。映像は OBS 側で 864x486 にして (80,200) と (976,200) に置く。
+     枠は映像の外側に 2px の金属の縁として描く。 */
   .pane {
     position: absolute;
-    top: 236px;
-    width: 896px;
-    height: 504px;
-    outline: 2px solid var(--line);
-    outline-offset: 6px;
+    top: 198px;
+    width: 864px;
+    height: 486px;
   }
-  .pane.l { left: 48px; }
-  .pane.r { left: 976px; }
-  .pane .chip {
+  .pane.l { left: 78px; }
+  .pane.r { left: 974px; }
+  .pane.frame { box-sizing: content-box; }
+  .label {
     position: absolute;
-    top: calc(100% + 26px);
-    left: -6px;
-    font-size: 30px;
-  }
-  .pane .sub {
-    position: absolute;
-    top: calc(100% + 34px);
-    right: -6px;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--fg-muted);
-  }
-  header {
-    position: absolute;
-    top: 96px;
-    left: 48px;
+    top: 724px;
+    width: 868px;
     display: flex;
-    align-items: baseline;
-    gap: 24px;
+    flex-direction: column;
+    gap: 20px;
   }
-  header h1 { margin: 0; font-size: 56px; font-weight: 900; }
-  .big { position: absolute; bottom: -50px; left: 0; font-size: 220px; line-height: 1; }
+  .label.l { left: 78px; }
+  .label.r { left: 974px; }
+  .label .caption { font-size: 28px; }
+  .label .n { font-size: 52px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-bottom: 0.15em; margin-bottom: -0.15em; }
 </style>
 </head>
-<body class="in">
-<div class="stage-bg"></div>
-<div class="big outline">MULTI VIEW</div>
-<header data-a="fade"><span class="kicker">LIVE NOW</span><h1>各会場の様子</h1></header>
-<div class="pane l"><span class="chip" data-a="wipe" style="--d: 0.15s"><span class="dot"></span><span id="l"></span></span><span class="sub" id="lsub" data-a="fade" style="--d: 0.3s"></span></div>
-<div class="pane r"><span class="chip" data-a="wipe" style="--d: 0.25s"><span class="dot"></span><span id="r"></span></span></div>
+<body>
+<div class="backdrop"></div>
+<div class="statusbar">
+  <span class="title">各会場の様子</span>
+  <span class="time" id="clock"></span>
+  <span class="date" id="date"></span>
+</div>
+<div class="pane frame l"></div>
+<div class="pane frame r"></div>
+<div class="label l"><div class="caption"><span class="accent" id="lVenue"></span><span class="sep"></span><span id="lKind"></span></div><div class="n" id="lName"></div></div>
+<div class="label r"><div class="caption"><span class="accent" id="rVenue"></span><span class="sep"></span><span id="rKind"></span></div><div class="n" id="rName"></div></div>
 <script src="program.js"></script>
 <script src="overlay.js"></script>
 <script>
-  // 左右の見出しは program.js の panes。左の会場には現在の演目を添える。
+  // 左に第一体育館、右に遊撃。映像の下に、それぞれの現在の内容を出す。
   const $ = (id) => document.getElementById(id);
-  [$('l').textContent, $('r').textContent] = window.PROGRAM.panes;
+  let s = Overlay.state();
+  Overlay.onState((next) => { s = next; });
+  $('lVenue').textContent = window.PROGRAM.ch1.name;
+  $('rVenue').textContent = window.PROGRAM.ch2.name;
   Overlay.every(1000, () => {
-    const cur = Overlay.current();
-    $('lsub').textContent = cur && cur.kind !== 'ng' ? (cur.kind === 'break' ? '休憩中' : cur.title) : '';
+    const t = Overlay.now();
+    $('clock').textContent = Overlay.hhmm(t);
+    $('date').textContent = Overlay.date(t);
+    const c1 = Overlay.current('ch1', t);
+    const on1 = c1 && c1.kind !== 'ng';
+    $('lKind').textContent = on1 && c1.kind !== 'break' ? c1.label : '';
+    $('lName').textContent = on1 ? (c1.kind === 'break' ? '休憩中' : c1.title) : '';
+    const c2 = Overlay.ch2Now(s, t);
+    $('rKind').textContent = c2 ? c2.label : '';
+    $('rName').textContent = c2 ? c2.title : '';
   });
 </script>
 </body>

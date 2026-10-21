@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>notice</title>
+<link rel="stylesheet" href="overlay.css">
+<style>
+  /* 操作パネルで選んだお知らせを下端に出す。選んでいない間は何も出さない。 */
+  #wrap:not(.in) { visibility: hidden; }
+  #wrap.out { visibility: visible; }
+  .band {
+    position: absolute;
+    left: var(--safe);
+    right: var(--safe);
+    bottom: 40px;
+    padding: 18px 32px 22px;
+    gap: 28px;
+    font-size: var(--fs-m);
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="tile glow across band" data-a="rise">
+    <span class="caption"><span class="accent">お知らせ</span><span class="sep"></span></span><span id="text"></span>
+  </div>
+</div>
+<script src="program.js"></script>
+<script src="overlay.js"></script>
+<script>
+  // state.notice は program.js の notices の番号。null で消す。
+  const wrap = document.getElementById('wrap');
+  Overlay.onState((s) => {
+    if (s.notice == null) {
+      wrap.classList.replace('in', 'out');
+      return;
+    }
+    document.getElementById('text').textContent = window.PROGRAM.notices[s.notice];
+    Overlay.replay(wrap);
+  });
+</script>
+</body>
+</html>

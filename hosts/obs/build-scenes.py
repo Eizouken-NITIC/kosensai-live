@@ -27,8 +27,8 @@ COLLECTION = "KOSENSAI-LIVE"
 W, H = 1920, 1080
 
 # 2 画面の映像の位置と大きさ。overlays/split.html の枠と一致させる。
-PANE_W, PANE_H = 896, 504
-PANE_L, PANE_R, PANE_Y = (48, 236), (976, 236), 236
+PANE_W, PANE_H = 864, 486
+PANE_L, PANE_R = (80, 200), (976, 200)
 
 CH1_VIDEO = "Ch1 ATEM"
 CH1_AUDIO = "Ch1 音声 (USB)"
@@ -80,11 +80,17 @@ def listener(port: int, passphrase: str, latency_us: int) -> dict:
     }
 
 
-def browser(page: str, replay: bool) -> dict:
+def browser(page: str, replay: bool, query: str = "") -> dict:
     # replay=True の画面は、表示するたびに読み込み直して入りのアニメーションを再生する。
-    return {
+    # 引数付きで開く場合は、OBS がローカルファイルに使用する http://absolute/<パス> の URL で指定する。
+    # TODO: Windows で http://absolute/C:/... の形で開けることを本番機で確認する(macOS では確認済み)。
+    path = (OVERLAYS / page).as_posix().lstrip("/")
+    source = {"is_local_file": False, "url": f"http://absolute/{path}?{query}"} if query else {
         "is_local_file": True,
         "local_file": str(OVERLAYS / page),
+    }
+    return {
+        **source,
         "width": W,
         "height": H,
         "fps": 30,
@@ -114,8 +120,11 @@ def main() -> None:
         CH1_AUDIO: (audio_input_kind(), {}, [2]),
         CH2_VIDEO: ("ffmpeg_source", listen("ch2"), [3]),
         "テロップ 第一体育館": ("browser_source", browser("lower-third.html", False), []),
+        "テロップ 遊撃": ("browser_source", browser("lower-third.html", False, "ch=ch2"), []),
+        "時計": ("browser_source", browser("clock.html", False), []),
+        "お知らせ": ("browser_source", browser("notice.html", False), []),
         "ウォーターマーク": ("browser_source", browser("watermark.html", False), []),
-        "ティッカー": ("browser_source", browser("ticker.html", False), []),
+        "操作パネル": ("browser_source", browser("control.html", False), []),
         "待機画面": ("browser_source", browser("standby.html", True), []),
         "UP NEXT": ("browser_source", browser("upnext.html", True), []),
         "タイムテーブル": ("browser_source", browser("timetable.html", True), []),
@@ -131,16 +140,18 @@ def main() -> None:
     scenes = {
         # ch3-audio.lua が出力チャンネルにつなぎ、どのシーンを出していても音声をミキサーに入れる。
         "[音声] 常時": [(CH1_AUDIO, None), (CH2_VIDEO, offscreen)],
-        "[出力] Ch1 第一体育館": [(CH1_VIDEO, full), ("テロップ 第一体育館", full), ("ウォーターマーク", full)],
-        "[出力] Ch2 遊撃": [(CH2_VIDEO, full), ("ウォーターマーク", full)],
+        # 操作パネル。OBS でソースを右クリックし「対話」で開いて操作する。出力には使用しない。
+        "[操作] パネル": [("操作パネル", full)],
+        "[出力] Ch1 第一体育館": [(CH1_VIDEO, full), ("テロップ 第一体育館", full), ("お知らせ", full), ("ウォーターマーク", full)],
+        "[出力] Ch2 遊撃": [(CH2_VIDEO, full), ("テロップ 遊撃", full), ("お知らせ", full), ("ウォーターマーク", full)],
         "Ch3 待機": [("待機画面", full)],
-        "Ch3 第一体育館": [(CH1_VIDEO, full), ("テロップ 第一体育館", full), ("ティッカー", full), ("ウォーターマーク", full)],
-        "Ch3 遊撃": [(CH2_VIDEO, full), ("ティッカー", full), ("ウォーターマーク", full)],
+        "Ch3 第一体育館": [(CH1_VIDEO, full), ("テロップ 第一体育館", full), ("時計", full), ("お知らせ", full), ("ウォーターマーク", full)],
+        "Ch3 遊撃": [(CH2_VIDEO, full), ("テロップ 遊撃", full), ("時計", full), ("お知らせ", full), ("ウォーターマーク", full)],
         "Ch3 2 画面": [
             ("2 画面 背景", full),
             (CH1_VIDEO, {"bounds": (PANE_W, PANE_H), "pos": PANE_L}),
             (CH2_VIDEO, {"bounds": (PANE_W, PANE_H), "pos": PANE_R}),
-            ("ウォーターマーク", full),
+            ("お知らせ", full),
         ],
         "Ch3 UP NEXT": [("UP NEXT", full)],
         "Ch3 タイムテーブル": [("タイムテーブル", full)],

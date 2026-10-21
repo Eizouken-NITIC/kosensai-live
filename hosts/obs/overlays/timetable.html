@@ -5,17 +5,17 @@
 <title>timetable</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
-  .big { position: absolute; right: -40px; bottom: -60px; font-size: 260px; line-height: 1; }
-  .wrap { position: absolute; inset: 80px 110px; }
-  header { display: flex; align-items: center; gap: 28px; margin-bottom: 44px; }
-  h1 { margin: 0; font-size: 64px; font-weight: 900; }
-  header .chip { font-size: 26px; }
+  /* 2 列のリスト。行の間は内側に寄せた細線で区切る。 */
   ol {
+    position: absolute;
+    left: var(--safe);
+    right: var(--safe);
+    top: 152px;
     display: grid;
     grid-auto-flow: column;
-    grid-template-rows: repeat(8, 88px);
+    grid-template-rows: repeat(8, 84px);
     grid-template-columns: 1fr 1fr;
-    gap: 12px 56px;
+    column-gap: 64px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -24,72 +24,88 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 28px;
+    gap: 32px;
     padding: 0 28px;
-    background: rgb(20 24 29 / 0.75);
-    clip-path: polygon(0 0, 100% 0, calc(100% - var(--slant)) 100%, 0 100%);
-    font-size: 36px;
-    font-weight: 800;
+    font-size: 32px;
+    border-bottom: 1px solid var(--line);
     white-space: nowrap;
   }
-  li .time { width: 96px; color: var(--fg-muted); font-weight: 700; }
-  li .tag { margin-left: auto; margin-right: var(--slant); font-size: 18px; font-weight: 900; letter-spacing: 0.2em; }
-  li.past { opacity: 0.38; }
-  li.break { color: var(--fg-muted); font-weight: 600; background: rgb(20 24 29 / 0.4); }
-  li.next .tag { color: var(--live); }
-  li.now { background: linear-gradient(100deg, var(--live), var(--live-deep)); }
-  li.now .time { color: #fff; }
-  li .progress { position: absolute; left: 0; right: 0; bottom: 0; background: rgb(0 0 0 / 0.25); }
-  li .progress i { background: #fff; }
+  li .t { width: 88px; color: var(--lit-2); }
+  li .n { overflow: hidden; text-overflow: ellipsis; padding-bottom: 0.15em; margin-bottom: -0.15em; }
+  li .k { margin-left: auto; font-size: 22px; color: var(--lit-2); }
+  /* 終わった行は消灯にする。 */
+  li.past, li.past .t { color: var(--unlit); }
+  li.break .n { color: var(--lit-2); }
+  /* 進行中の行は選択中の枠にし、下端に経過の区切りを出す。 */
+  li.now {
+    border-bottom-color: transparent;
+    box-sizing: border-box;
+  }
+  li.now .t, li.now .k { color: var(--lit); }
+  li.now { align-items: flex-start; padding-top: 18px; }
+  li.now .seg { position: absolute; left: 28px; right: 28px; bottom: 12px; }
+  li.next .k { color: var(--lit); }
 </style>
 </head>
 <body>
-<div class="stage-bg"></div>
-<div class="big outline">TIME TABLE</div>
-<div class="wrap">
-  <header>
-    <h1>タイムテーブル</h1>
-    <span class="chip"><span class="dot"></span><span id="where"></span></span>
-  </header>
-  <ol id="list"></ol>
+<div class="backdrop"></div>
+<div class="statusbar">
+  <span class="title" id="title"></span>
+  <span class="time" id="clock"></span>
+  <span class="date" id="date"></span>
 </div>
+<ol id="list"></ol>
+<div class="softkeys" id="softkeys"></div>
 <script src="program.js"></script>
 <script src="overlay.js"></script>
 <script>
-  // 当日の進行を表示し、進行中の項目に経過のバーを付ける。配信 NG の項目は載せない。
-  // 項目の並びが変わった時(進行中の項目が変わった時)だけ入りのアニメーションを再生する。
-  const DAYS = ['日', '月', '火', '水', '木', '金', '土'];
+  // 当日の第一体育館の進行。進行中の行を選択中の枠にし、経過を区切りの線で出す。配信しない時間は載せない。
+  const $ = (id) => document.getElementById(id);
   const { el } = Overlay;
+  const SEGMENTS = 10;
   let drawn = null;
+
   Overlay.every(1000, () => {
     const t = Overlay.now();
-    const items = Overlay.schedule(t).filter((it) => it.kind !== 'ng');
+    $('clock').textContent = Overlay.hhmm(t);
+    $('date').textContent = Overlay.date(t);
+    $('title').textContent = `タイムテーブル　${window.PROGRAM.ch1.name}`;
+    const items = Overlay.schedule('ch1', t).filter((it) => it.kind !== 'ng');
     const cur = items.find((it) => it.start <= t && t < it.end);
-    const nxt = Overlay.next(t);
+    const nxt = Overlay.next('ch1', t);
     const key = `${t.toDateString()} ${cur?.start}`;
     if (key !== drawn) {
       drawn = key;
-      document.getElementById('where').textContent = `${t.getMonth() + 1}/${t.getDate()}(${DAYS[t.getDay()]}) ${window.PROGRAM.venue}`;
-      const list = document.getElementById('list');
-      list.replaceChildren(
+      $('list').replaceChildren(
         ...items.map((it, i) => {
           const state = it === cur ? 'now' : it.end <= t ? 'past' : +it.start === +nxt?.start ? 'next' : '';
-          const li = el('li', { className: [it.kind, state].join(' ') },
-            el('span', { className: 'time', textContent: Overlay.hhmm(it.start) }),
-            el('span', { textContent: it.title }),
-            el('span', { className: 'tag', textContent: state === 'now' ? 'ON STAGE' : state === 'next' ? 'NEXT' : '' }),
+          const li = el('li', { className: [it.kind, state, state === 'now' ? 'frame hot' : ''].join(' ') },
+            el('span', { className: 't time', textContent: Overlay.hhmm(it.start) }),
+            el('span', { className: 'n', textContent: it.title }),
+            el('span', { className: 'k', textContent: state === 'now' ? '出演中' : state === 'next' ? 'つぎ' : '' }),
           );
-          if (state === 'now') li.append(el('div', { className: 'progress' }, el('i', { id: 'bar' })));
-          // wipe は clip-path を上書きして斜めの切り口が消えるため、行は fade で入れる。
+          if (state === 'now') li.append(el('div', { className: 'seg', id: 'seg' }, ...Array.from({ length: SEGMENTS }, () => el('i'))));
           li.dataset.a = 'fade';
-          li.style.setProperty('--d', `${i * 0.04}s`);
+          li.style.setProperty('--d', `${i * 0.03}s`);
           return li;
         }),
       );
-      Overlay.replay(list);
+      const days = Object.keys(window.PROGRAM.events);
+      $('softkeys').style.setProperty('--keys', days.length);
+      $('softkeys').replaceChildren(
+        ...days.map((k) => {
+          const d = new Date(`${k}T00:00:00`);
+          return el('span', { className: d.toDateString() === t.toDateString() ? 'on' : '', textContent: Overlay.date(d) });
+        }),
+        el('span'),
+      );
+      Overlay.replay($('list'));
     }
-    const bar = document.getElementById('bar');
-    if (bar && cur) bar.style.setProperty('--p', Overlay.progress(cur, t));
+    const seg = $('seg');
+    if (seg && cur) {
+      const p = Overlay.progress(cur, t);
+      [...seg.children].forEach((i, n) => i.classList.toggle('on', n < Math.ceil(p * SEGMENTS)));
+    }
   });
 </script>
 </body>
