@@ -8,7 +8,7 @@
     static.png         目盛、内側の輪(針を除く固定の部品)
     needle-NN.png      針。NN は 0〜60 で、角度は -150° + 5° × NN(上を 0° とした時計回り)
 
-シーン、光源、部品の作り方は scene_parts.py と共通。
+シーン、光源、部品の作り方は scene_parts.py と共通。光源は画面の光源の方向から当てる。
 """
 
 import math
@@ -35,6 +35,9 @@ DYE = float(os.environ.get('DYE', 60))
 DENSITY = float(os.environ.get('DENSITY', 1))
 GLOW = float(os.environ.get('GLOW', 600))
 ANGLES = list(range(-150, 151, STEP))
+# UP NEXT で計器を置く位置(中心 px)と大きさ(px)と、光源の強さ。時計(render-clock.py)と同じ光で描く。
+PLACE = ((296, 400), 400)
+LIGHT_LEVEL = 0.5
 
 
 def build_static():
@@ -95,12 +98,12 @@ def main():
     # 番号を指定した確認用の描画では、固定の部品の画像があれば描き直さない。
     if not (ONLY and (OUT / 'static.png').exists()):
         scene = reset()
-        stage(scene)
+        stage(scene, PLACE, LIGHT_LEVEL)
         build_static()
         render(scene, OUT / 'static.png')
 
     scene = reset()
-    stage(scene)
+    stage(scene, PLACE, LIGHT_LEVEL)
     pivot = build_needle()
     for n, deg in enumerate(ANGLES):
         if ONLY and n not in ONLY:
