@@ -19,6 +19,9 @@ KEY = float(os.environ.get('KEY', 440))
 FILL = float(os.environ.get('FILL', 314))
 # 環境の明るさ。
 ENV = float(os.environ.get('ENV', 0.3))
+# 画面の暗い位置でも残す、周りの環境の明るさの下限(光源の直下に対する比)。
+# つやのある面が、光源から外れた向きでも部屋のゆるい明るさを映し、なだらかに暗くなるようにする。
+ENV_FLOOR = float(os.environ.get('ENV_FLOOR', 0.5))
 
 
 def reset():
@@ -193,7 +196,20 @@ def tube(name, points, radius, mat):
     return obj
 
 
-def stage(scene):
+# 画面の光源。overlay.css の .backdrop と同じく、上部のバーの下端の中央(1920x1080 の画面の座標)にある。
+PAGE_LIGHT = (960, 81)
+
+
+def page_light(center, size):
+    """画面の center(px)に size(px)の大きさで置く部品から見た、画面の光源の位置(シーンの単位)を返す。"""
+    unit = size / 4.0  # シーンの 1 単位の px
+    return ((PAGE_LIGHT[0] - center[0]) / unit, (center[1] - PAGE_LIGHT[1]) / unit, 4.2)
+
+
+def stage(scene, place=None, level=1.0):
+    """カメラ、光源、環境、影を受ける面。place は部品を置く画面の (中心 px, 大きさ px) で、
+    光源をその位置から見た画面の光源の方向に、丸い面の光として置く。None なら部品の真上の手前に、
+    細長いソフトボックスとして置く。level は光源の強さで、1 は平らな塗装の面が素材の色になる強さ。"""
     # 正射影のカメラで真上から写す。
     cam = bpy.data.cameras.new('cam')
     cam.type = 'ORTHO'
@@ -207,9 +223,17 @@ def stage(scene):
     key.shape = 'RECTANGLE'
     key.size = 6.0
     key.size_y = 1.6
-    key.energy = KEY
+    location = (0, 3.2, 4.2)
+    if place:
+        # 方向だけを画面の光源に合わせる。強さを部品の位置の地の明るさまで落とすと、
+        # 暗い金属のつやが見えなくなるため、強さは level で決める。
+        location = Vector(page_light(*place)).normalized() * Vector((0, 3.2, 4.2)).length
+        # 窓や部屋の照明のような丸い面の光。細長い光源だと、映り込みが線のように細くなる。
+        key.shape = 'DISK'
+        key.size = 4.0
+    key.energy = KEY * level
     key_obj = link(bpy.data.objects.new('key', key))
-    key_obj.location = (0, 3.2, 4.2)
+    key_obj.location = location
     key_obj.rotation_euler = (Vector((0, 0, 0)) - key_obj.location).to_track_quat('-Z', 'Y').to_euler()
 
     # 視点の側の大きな反射板。金属の部品(METAL のコレクション)の映り込みにだけ効く。
@@ -217,7 +241,9 @@ def stage(scene):
     fill = bpy.data.lights.new('fill', 'AREA')
     fill.shape = 'SQUARE'
     fill.size = 10.0
-    fill.energy = FILL
+    # 反射板は見る人の側の部屋の明るさで、つやのある丸い面の稜線に光の輪として映る。
+    # 地の暗さに合わせて消してしまうと輪が無くなるので、周りの環境と同じ下限までにする。
+    fill.energy = FILL * max(level, ENV_FLOOR)
     fill_obj = link(bpy.data.objects.new('fill', fill))
     fill_obj.location = (0, 0, 9)
     fill_obj.visible_diffuse = False
@@ -254,9 +280,9 @@ def stage(scene):
         nt.links.new(a, m.inputs[0])
         nt.links.new(b, m.inputs[1])
         return m.outputs[0]
-    sky = mul(mul(ramp(xyz.outputs['Y'], -0.2, 0.8), ramp(xyz.outputs['Z'], 0.0, 0.7)), ENV)
+    sky = mul(mul(ramp(xyz.outputs['Y'], -0.2, 0.8), ramp(xyz.outputs['Z'], 0.0, 0.7)), ENV * max(level, ENV_FLOOR))
     band = mul(mul(ramp(xyz.outputs['Y'], 0.45, 0.5), ramp(xyz.outputs['Y'], 0.62, 0.57)), ramp(xyz.outputs['Z'], 0.2, 0.4))
-    window = mul(band, ENV * 4)
+    window = mul(band, ENV * 4 * max(level, ENV_FLOOR))
     bg = nt.nodes['Background']
     bg.inputs['Color'].default_value = (1, 1, 1, 1)
     base = nt.nodes.new('ShaderNodeValue')

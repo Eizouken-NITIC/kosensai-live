@@ -185,6 +185,25 @@
     };
   }
 
+  // アナログ時計を container に作り、時刻を更新する関数を返す。
+  // 部品は render-clock.py が Blender で描いた画像(clock-face/)を重ねる。長針は 6° ごと(1 分ごと)の画像、
+  // 短針は 5° ごとの画像で、短針だけは画像の角度との差(2.5° 未満)を回転で補う。
+  const HOUR_STEP = 5;
+  function clockFace(container) {
+    const img = (src) => el('img', { src: src ? `clock-face/${src}` : undefined, alt: '' });
+    const hour = img();
+    const minute = img();
+    container.replaceChildren(el('div', { className: 'clock-face' }, img('dial.png'), hour, minute, img('cap.png')));
+    return (d) => {
+      const m = d.getMinutes();
+      const deg = (d.getHours() % 12) * 30 + m * 0.5;
+      const n = Math.round(deg / HOUR_STEP) % (360 / HOUR_STEP);
+      hour.src = `clock-face/hour-${String(n).padStart(2, '0')}.png`;
+      hour.style.transform = `rotate(${deg - n * HOUR_STEP}deg)`;
+      minute.src = `clock-face/minute-${String(m).padStart(2, '0')}.png`;
+    };
+  }
+
   // 要素の .in を付け直し、入りのアニメーションを最初から再生する。
   function replay(node) {
     node.classList.remove('in', 'out');
@@ -194,6 +213,6 @@
 
   window.Overlay = {
     params, now, hhmm, date, schedule, current, next, progress, events, nextShow,
-    state, setState, onState, ch2Now, every, el, alignInk, gauge, replay,
+    state, setState, onState, ch2Now, every, el, alignInk, gauge, clockFace, replay,
   };
 })();

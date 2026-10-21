@@ -90,10 +90,11 @@ USB オーディオは SRT の映像より早く届くため、USB オーディ�
 - URL に `?now=2026-10-24T13:35` を付けると、その時刻から時計を進めて表示します。ブラウザで開いて確認できます。
 - 各画面の状態（お知らせ、遊撃の現在地）は、`control.html` が localStorage と BroadcastChannel で渡します。
 - 色と線の規則は `overlay.css` の先頭に書いています。
-- 計器の画像（`gauge/`）は `render-gauge.py` で Blender の Cycles で描画します。形・材質・光源を変えた場合は、次で描き直してコミットします。
+- 計器の画像（`gauge/`）と待機画面の時計の画像（`clock-face/`）は、`render-gauge.py` と `render-clock.py` で Blender の Cycles で描画します（シーンと部品は `scene_parts.py` で共通）。形・材質・光源を変えた場合は、次で描き直してコミットします。
 
   ```bash
   /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P hosts/obs/render-gauge.py -- hosts/obs/overlays/gauge
+  /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P hosts/obs/render-clock.py -- hosts/obs/overlays/clock-face
   ```
 
 

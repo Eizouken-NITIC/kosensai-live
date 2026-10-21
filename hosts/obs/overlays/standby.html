@@ -16,7 +16,7 @@
     align-items: center;
     gap: 96px;
   }
-  .meter { width: 380px; height: 380px; }
+  .face { width: 380px; height: 380px; }
   .info { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
   .info .caption { font-size: 30px; }
   .info .when { font-size: 132px; font-weight: 400; letter-spacing: -0.01em; }
@@ -36,7 +36,7 @@
   <span class="date" id="date"></span>
 </div>
 <div class="main in">
-  <div class="meter" id="meter" data-a="fade"></div>
+  <div class="face" id="face" data-a="fade"></div>
   <div class="info">
     <div class="caption" data-a="rise"><span class="accent" id="state"></span><span class="sep"></span><span id="venue"></span></div>
     <div class="when time" data-a="rise" style="--d: 0.08s" id="when"></div>
@@ -54,7 +54,7 @@
   // 下には、その日の第一体育館の出演を局のタイルの形で並べ、次の出演を選択中の形にする。
   const $ = (id) => document.getElementById(id);
   const { el } = Overlay;
-  const meter = Overlay.gauge($('meter'), { max: 60 });
+  const face = Overlay.clockFace($('face'));
   const PER_PAGE = 6;
   $('title').textContent = window.PROGRAM.title;
 
@@ -73,7 +73,7 @@
 
     if (cur && cur.kind === 'break') {
       $('state').textContent = '休憩中';
-      $('what').textContent = '第一体育館の配信は、まもなく再開します';
+      $('what').textContent = `あと ${minutes} 分で配信を再開します`;
     } else if (cur && cur.kind === 'ng') {
       $('state').textContent = '配信休止中';
       $('what').textContent = 'この時間は配信していません';
@@ -82,7 +82,7 @@
       $('what').textContent = cur.title;
     } else if (before && sameDay) {
       $('state').textContent = '配信開始まで';
-      $('what').textContent = 'まもなく配信を開始します';
+      $('what').textContent = `あと ${minutes} 分で配信を開始します`;
     } else if (target && !today.length) {
       $('state').textContent = '次の配信';
       $('what').textContent = Overlay.date(target);
@@ -97,7 +97,7 @@
     // 大きい時刻は、配信中は今の出演の開始、それ以外は次の出演の開始。
     const when = cur && (cur.kind === 'band' || cur.kind === 'dance') ? cur.start : target;
     $('when').textContent = when ? Overlay.hhmm(when) : '';
-    meter(sameDay ? minutes : 0, sameDay ? String(Math.min(minutes, 99)) : '--', '分');
+    face(t);
 
     // 出演の並び。次の出演を含むページを出す。
     const day = target ?? t;

@@ -377,7 +377,20 @@ body {
   height: 100%;
 }
 /* 針の画像は、値が決まって src が入るまで表示しない(空の img は壊れた画像の枠になる)。 */
-.gauge img:not([src]) {
+/* Overlay.clockFace() が作る時計。部品の画像を重ねる。 */
+.clock-face {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.clock-face > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.gauge img:not([src]),
+.clock-face img:not([src]) {
   visibility: hidden;
 }
 .gauge .value {
