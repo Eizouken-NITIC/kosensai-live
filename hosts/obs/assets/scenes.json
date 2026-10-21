@@ -17,7 +17,7 @@
     "お知らせ": {"type": "page", "page": "notice.html"},
     "ウォーターマーク": {"type": "page", "page": "watermark.html"},
     "操作パネル": {"type": "page", "page": "control.html"},
-    "待機画面": {"type": "page", "page": "standby.html", "replay": true},
+    "待機画面": {"type": "page", "page": "lobby.html", "replay": true},
     "UP NEXT": {"type": "page", "page": "upnext.html", "replay": true},
     "タイムテーブル": {"type": "page", "page": "timetable.html", "replay": true},
     "2 画面 背景": {"type": "page", "page": "split.html", "replay": true},

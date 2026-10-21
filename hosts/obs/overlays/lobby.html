@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>lobby</title>
+<link rel="stylesheet" href="overlay.css">
+<style>
+  iframe {
+    position: absolute;
+    inset: 0;
+    width: 1920px;
+    height: 1080px;
+    border: 0;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  iframe.on { opacity: 1; }
+</style>
+</head>
+<body>
+<iframe id="standby"></iframe>
+<iframe id="timetable"></iframe>
+<script src="overlay.js"></script>
+<script>
+  // 待機画面とタイムテーブルを交互に出す。次の出演の開始が近づいたら、待機画面に固定する。
+  // 仕様補完: 表示の秒数と、待機画面に固定する残り時間。
+  const SECONDS = { standby: 20, timetable: 15 };
+  const HOLD_MINUTES = 5;
+  const frames = { standby: document.getElementById('standby'), timetable: document.getElementById('timetable') };
+  // 確認用の ?now= は、中の画面にもそのまま渡す。
+  for (const [name, frame] of Object.entries(frames)) frame.src = `${name}.html${location.search}`;
+
+  let shown = null;
+  function show(name) {
+    if (name === shown) return;
+    shown = name;
+    // 出す画面を読み込み直して入りのアニメーションを再生し、読み込みが終わってから重ねを切り替える。
+    const frame = frames[name];
+    frame.onload = () => {
+      for (const [n, f] of Object.entries(frames)) f.classList.toggle('on', n === name);
+    };
+    frame.contentWindow.location.reload();
+  }
+
+  function holdStandby() {
+    const t = Overlay.now();
+    const upcoming = Overlay.nextShow(t);
+    return upcoming && upcoming.start - t < HOLD_MINUTES * 60000;
+  }
+
+  let next = 'standby';
+  function cycle() {
+    const name = holdStandby() ? 'standby' : next;
+    show(name);
+    next = name === 'standby' ? 'timetable' : 'standby';
+    setTimeout(cycle, SECONDS[name] * 1000);
+  }
+  frames.standby.addEventListener('load', () => frames.standby.classList.add('on'), { once: true });
+  shown = 'standby';
+  next = 'timetable';
+  setTimeout(cycle, SECONDS.standby * 1000);
+</script>
+</body>
+</html>

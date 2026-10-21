@@ -79,6 +79,7 @@ USB オーディオは SRT の映像より早く届くため、USB オーディ�
 | `clock.html` | 左上の時計 |
 | `notice.html` | お知らせの帯。`control.html` で選んだお知らせを出す |
 | `watermark.html` | 右上のロゴの透かし |
+| `lobby.html` | `standby.html` と `timetable.html` を交互に出す（次の出演の 5 分前からは待機画面に固定） |
 | `standby.html` | 待機画面（開始前と休憩中の残り時間、配信休止中、終了後） |
 | `upnext.html` | 次の演目の全画面の告知 |
 | `timetable.html` | 当日のタイムテーブル |
