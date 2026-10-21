@@ -62,31 +62,44 @@
     const t = Overlay.now();
     $('clock').textContent = Overlay.hhmm(t);
     $('date').textContent = Overlay.date(t);
+    // 状態は、開始前・休憩中・配信休止中(配信しない時間)・配信中・本日の終了後の 5 つ。
     const cur = Overlay.current('ch1', t);
-    const start = Overlay.nextStart(t);
-    const resume = cur && cur.kind === 'break' ? cur.end : null;
-    const target = resume ?? start;
+    const show = Overlay.nextShow(t);
+    const target = show?.start ?? null;
     const sameDay = target && target.toDateString() === t.toDateString();
     const minutes = target ? Math.max(0, Math.ceil((target - t) / 60000)) : 0;
+    const today = Overlay.schedule('ch1', t);
+    const before = today.length && t < today[0].start;
 
-    if (resume) {
+    if (cur && cur.kind === 'break') {
       $('state').textContent = '休憩中';
       $('what').textContent = '第一体育館の配信は、まもなく再開します';
-    } else if (start) {
-      $('state').textContent = sameDay ? '配信開始まで' : '次の配信';
-      $('what').textContent = sameDay ? 'まもなく配信を開始します' : Overlay.date(start);
-    } else {
+    } else if (cur && cur.kind === 'ng') {
+      $('state').textContent = '配信休止中';
+      $('what').textContent = 'この時間は配信していません';
+    } else if (cur) {
+      $('state').textContent = '配信中';
+      $('what').textContent = cur.title;
+    } else if (before && sameDay) {
+      $('state').textContent = '配信開始まで';
+      $('what').textContent = 'まもなく配信を開始します';
+    } else if (target) {
       $('state').textContent = '本日の配信は終了しました';
+      $('what').textContent = `次の配信は ${Overlay.date(target)}`;
+    } else {
+      $('state').textContent = '配信は終了しました';
       $('what').textContent = 'ご視聴ありがとうございました';
     }
     $('venue').textContent = window.PROGRAM.ch1.name;
-    $('when').textContent = target ? Overlay.hhmm(target) : '';
+    // 大きい時刻は、配信中は今の出演の開始、それ以外は次の出演の開始。
+    const when = cur && (cur.kind === 'band' || cur.kind === 'dance') ? cur.start : target;
+    $('when').textContent = when ? Overlay.hhmm(when) : '';
     meter(sameDay ? minutes : 0, sameDay ? String(Math.min(minutes, 99)) : '--', '分');
 
     // 出演の並び。次の出演を含むページを出す。
     const day = target ?? t;
     const acts = Overlay.schedule('ch1', day).filter((it) => it.kind === 'band' || it.kind === 'dance');
-    const nextIdx = Math.max(0, acts.findIndex((it) => it.start >= (resume ?? t)));
+    const nextIdx = Math.max(0, acts.findIndex((it) => +it.start === +target));
     const page = Math.floor(nextIdx / PER_PAGE);
     const pages = Math.max(1, Math.ceil(acts.length / PER_PAGE));
     $('lineup').replaceChildren(

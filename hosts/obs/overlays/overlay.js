@@ -49,12 +49,14 @@
     );
   }
 
-  // 今日以降で最初に配信を始める時刻。待機画面の「次の配信」に使用する。
-  function nextStart(d = now()) {
-    const starts = Object.entries(P.events).flatMap(([key, venues]) =>
-      Object.values(venues).flatMap((list) => list.filter((e) => e[3]).map((e) => at(key, e[0]))),
-    );
-    return starts.filter((s) => s > d).sort((a, b) => a - b)[0] ?? null;
+  // d より後で最初の第一体育館の出演(休憩と配信しない時間を除く)。日をまたいで探す。
+  // 待機画面の「次の配信」に使用する。
+  function nextShow(d = now()) {
+    for (const key of Object.keys(P.ch1.days).sort()) {
+      const it = schedule('ch1', at(key, '00:00')).find((x) => x.start > d && (x.kind === 'band' || x.kind === 'dance'));
+      if (it) return it;
+    }
+    return null;
   }
 
   // ---- 操作パネルとの状態の受け渡し ----
@@ -191,7 +193,7 @@
   }
 
   window.Overlay = {
-    params, now, hhmm, date, schedule, current, next, progress, events, nextStart,
+    params, now, hhmm, date, schedule, current, next, progress, events, nextShow,
     state, setState, onState, ch2Now, every, el, alignInk, gauge, replay,
   };
 })();
