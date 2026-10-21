@@ -1,6 +1,6 @@
 # rehearsal — ローカル検証環境
 
-`docker compose` で起動します。MediaMTX と Caddy は `hosts/server/` の `mediamtx.yml` と `Caddyfile`、および `web/` をそのままマウントして使用します。本番で本部 OBS が行う SRT 送出は、カラーバーを生成する ffmpeg のコンテナ 4 つ（チャンネルごとに 1 つ）が代わりに行います。
+`docker compose` で起動します。MediaMTX と Caddy は `hosts/server/` の `mediamtx.yml` と `Caddyfile`、および `web/` をそのままマウントして使用します。本番で本部 OBS が行う SRT 送出は、カラーバーを生成する ffmpeg のコンテナ 3 つ（チャンネルごとに 1 つ）が代わりに行います。
 
 `caddy-preview` が Host ヘッダを付け替えて `caddy-origin` へ転送します（本番の Caddyfile を使用しつつプレビューしたいため）。
 
@@ -11,7 +11,7 @@
 ```bash
 cd rehearsal
 
-# 起動（サーバーとテスト映像 4 系統）
+# 起動（サーバーとテスト映像 3 系統）
 docker compose up -d
 
 # publisher を起動せず、配信前の「待機中」表示を確認する
@@ -74,7 +74,7 @@ sudo sed -i '' "/${DOMAIN//./\\.}/d" /etc/hosts
 
 ## 3. ファイル構成
 
-- `compose.yml` … init・MediaMTX・Caddy 2 つ・テストパターン送出 4 系統のサービス定義
+- `compose.yml` … init・MediaMTX・Caddy 2 つ・テストパターン送出 3 系統のサービス定義
 - `rehearsal.env` … リハーサル専用の使い捨てのパスフレーズ。本番の `hosts/server/.env` と同じ形式で、MediaMTX と publisher が読みます
 - `containers/` … コンテナの中で動作するもの
   - `init/` … `rehearsal.env` を本番と同じ規則（`tools/config.py check`）で検証し、証明書と Caddy 用の `SITE_DOMAIN` を生成します。`preview.Caddyfile` は `caddy-preview` の設定です
