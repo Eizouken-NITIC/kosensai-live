@@ -109,7 +109,7 @@ kosensai-live/
 | 対象マシン・用途 | 参照ドキュメント |
 | --- | --- |
 | **配信サーバーの構築・管理** | [hosts/server/README.md](hosts/server/README.md) |
-| **本部 PC（OBS）の設定** | [hosts/obs/README.md](hosts/obs/README.md) |
+| **本部 PC（OBS）のユーティリティ** | [hosts/obs/README.md](hosts/obs/README.md) |
 | **サイネージ端末のセットアップ** | [hosts/signage/README.md](hosts/signage/README.md) |
 | **ローカル検証環境** | [rehearsal/README.md](rehearsal/README.md) |
 
@@ -154,7 +154,7 @@ docker compose up -d         # 起動前に init サービスが設定・証明�
 
 **3. 本部 PC（OBS）を設定する**
 
-OBS に入力する SRT の URL は `hosts/obs/srt-urls.py` が `config.json` と `.env` から生成します。キーフレーム間隔などの設定値は [hosts/obs/README.md](hosts/obs/README.md) を参照してください。
+OBS に入力する SRT の URL は `hosts/obs/srt-urls.py` が `config.json` と `.env` から生成します。ATEM の配信設定は `tools/atem-stream/` の CLI で投入します。使い方は [hosts/obs/README.md](hosts/obs/README.md) にあります。
 
 **4. サイネージ端末を用意する（任意）**
 
