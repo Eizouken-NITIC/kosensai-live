@@ -171,7 +171,7 @@ pnpm build       # 成果物は web/ に出力されます
 cd hosts/server
 cp .env.example .env     # SRT パスフレーズ（送出用・受信用）と各マシンの IP を設定します
 sudo ./scripts/get-cert.sh   # DNS-01 チャレンジで取得します
-docker compose up -d         # 起動前に init サービスが設定・証明書・カーネルパラメータを検証します
+docker compose up -d         # 起動前に init-mediamtx・init-caddy が設定・証明書・カーネルパラメータを検証します
 ```
 
 システム要件、SRT 用カーネルパラメータの設定、疎通テストの手順は [hosts/server/README.md](hosts/server/README.md) にあります。
@@ -212,10 +212,10 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 
 `config.json` と `.env` の値は、他の設定ファイルへ書き写しません。
 
-- `Caddyfile` のホスト名は `{$SITE_DOMAIN}` です。compose の init サービスが `config.json` から書き出した値を、Caddy が起動時に読み込みます。
+- `Caddyfile` のホスト名は `{$SITE_DOMAIN}` です。compose の init-caddy が `config.json` から書き出した値を、Caddy が起動時に読み込みます。
 - MediaMTX のパス（Ch）は `.env` の `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から作成します。`mediamtx.yml` には Ch を書きません。
 
-init サービスは `docker compose up` のたびに `tools/kosensai_live/config.py check --server` を実行し、`.env` の Ch と `config.json` の一致、パスフレーズ、証明書のホスト名と期限などを検証します。NG があれば MediaMTX と Caddy を起動しません。運用中に `config.json` や `.env` を変更した場合は `docker compose run --rm init` で OK を確認してから `docker compose up -d` を実行してください。`.env` を変更すると、compose は init の完了を待たずに MediaMTX を作り直すため、NG のまま `up -d` を実行すると受信が止まります（`docker compose restart` では init が実行されません）。
+`docker compose up` のたびに、init-mediamtx と init-caddy が `tools/kosensai_live/config.py check` を実行し、`.env` の Ch と `config.json` の一致、パスフレーズ、証明書のホスト名と期限などを検証します。NG があれば、MediaMTX または Caddy を起動しません。証明書は Caddy だけが使用するため、証明書が無くても MediaMTX は起動します。運用中に `config.json` や `.env` を変更した場合は `docker compose run --rm init` で OK を確認してから `docker compose up -d` を実行してください。`.env` を変更すると、compose は init-mediamtx の完了を待たずに MediaMTX を作り直すため、NG のまま `up -d` を実行すると受信が止まります（`docker compose restart` では検証が実行されません）。
 
 ### QR コード
 

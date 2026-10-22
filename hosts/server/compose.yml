@@ -1,27 +1,40 @@
 # 配信サーバー一式
 
 services:
-  # 起動前の検証。.env と config.json の整合性、証明書、web/ のビルド、sysctl を確認する。
-  # NG があれば終了コード 1 で終了し、mediamtx と caddy は起動しない。内容は
-  # docker compose logs init で確認する。起動せずに検証だけを行う場合は
-  # docker compose run --rm init を実行する。
+  # 起動前の検証。NG があれば終了コード 1 で終了し、検証の対象のサービスは起動しない。
+  #   init-mediamtx: .env と config.json の整合性、HQ_IP、sysctl。NG なら mediamtx が起動しない。
+  #   init-caddy:    web/ のビルド、証明書。NG なら caddy が起動しない。
+  # 証明書は Caddy(HTTPS)だけが使用するため、証明書が無くても MediaMTX(SRT の受信)は起動する。
+  # 内容は docker compose logs init-mediamtx(または init-caddy)で確認する。
   #
-  # .env を変更すると、compose は init の完了を待たずに mediamtx を削除して作り直す。
+  # 起動せずに全ての項目を検証する場合は docker compose run --rm init を実行する。
+  # init は profiles で up の対象から外している。
+  #
+  # .env を変更すると、compose は init-mediamtx の完了を待たずに mediamtx を削除して作り直す。
   # 運用中は run --rm init で OK を確認してから up -d を実行する。
   #
-  # 検証に通ると、Caddyfile の {$SITE_DOMAIN} に使用する値を generated ボリュームへ書き出す。
+  # init-caddy は検証に通ると、Caddyfile の {$SITE_DOMAIN} に使用する値を generated ボリュームへ書き出す。
   init:
     image: python:3.14.8-alpine3.24
-    container_name: kosensai-init
+    profiles: [check]
     # net.core.rmem_max をホストの値で確認するため
     network_mode: host
-    command:
-      - python3
-      - /repo/tools/kosensai_live/config.py
-      - check
-      - --server
-      - --write-site-env
-      - /generated/site.env
+    command: [python3, /repo/tools/kosensai_live/config.py, check, --server]
+    volumes:
+      - ../..:/repo:ro
+
+  init-mediamtx:
+    image: python:3.14.8-alpine3.24
+    container_name: kosensai-init-mediamtx
+    network_mode: host
+    command: [python3, /repo/tools/kosensai_live/config.py, check, --mediamtx]
+    volumes:
+      - ../..:/repo:ro
+
+  init-caddy:
+    image: python:3.14.8-alpine3.24
+    container_name: kosensai-init-caddy
+    command: [python3, /repo/tools/kosensai_live/config.py, check, --caddy, --write-site-env, /generated/site.env]
     volumes:
       - ../..:/repo:ro
       - generated:/generated
@@ -42,7 +55,7 @@ services:
     volumes:
       - ./mediamtx.yml:/mediamtx.yml:ro
     depends_on:
-      init:
+      init-mediamtx:
         condition: service_completed_successfully
     logging:
       driver: json-file
@@ -70,7 +83,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      init:
+      init-caddy:
         condition: service_completed_successfully
       mediamtx:
         condition: service_started

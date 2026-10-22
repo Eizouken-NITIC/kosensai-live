@@ -4,7 +4,7 @@
 # HTTP-01 チャレンジが到達しないため、Caddy の自動 ACME は使わず
 # certbot（DNS-01・手動）で取得した証明書を明示指定する。
 #
-# {$SITE_DOMAIN} は config.json の site.domain である。compose の init サービスが
+# {$SITE_DOMAIN} は config.json の site.domain である。compose の init-caddy が
 # 書き出したファイルを、caddy run --envfile で読み込む。
 {
 	# 自動 HTTPS のリダイレクトだけ有効、ACME 発行はしない

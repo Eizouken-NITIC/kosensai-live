@@ -5,7 +5,7 @@
 # compose の env_file (.env) の
 #   MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE=...
 # から、MediaMTX がパス ch1 を作成する。.env の Ch と config.json の channels[].id が
-# 一致することは、compose の init サービス（tools/kosensai_live/config.py check）が検証する。
+# 一致することは、compose の init-mediamtx（tools/kosensai_live/config.py check）が検証する。
 #
 # 本部 PC の IP もこのファイルに書かない。compose.yml が .env の HQ_IP を
 # MTX_AUTHINTERNALUSERS_0_IPS へ渡し、下の publish の許可範囲を上書きする。

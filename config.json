@@ -6,7 +6,7 @@
     "site: 配信サイトの名前・ホスト名・GitHub リポジトリの URL である。名前は各ページの",
     "  title・ロゴの代替テキスト・OS の再生通知に表示される。repository は視聴ページの",
     "  GitHub リンクに使用する。",
-    "  ホスト名は、配信サーバーの compose の init サービスが SITE_DOMAIN として Caddy に渡す。",
+    "  ホスト名は、配信サーバーの compose の init-caddy が SITE_DOMAIN として Caddy に渡す。",
     "signage: ?ch= が付かない場合に映す Ch と、QR の脇に表示する文言である。",
     "welcome: 視聴ページを初めて開いた人へ表示する案内の、最初に読ませる文である。",
     "  タブや音量といった画面の操作の説明は運用によらないため app 側が持つ。",

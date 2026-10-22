@@ -59,7 +59,7 @@ $EDITOR .env
 # 4. TLS 証明書を取得します（DNS-01 チャレンジを使用します）
 sudo ./scripts/get-cert.sh
 
-# 5. 起動前の検証だけを実行します（任意。手順 6 でも同じ検証を実行します）
+# 5. 起動前の検証だけを実行します（任意。全ての項目を検証します）
 docker compose run --rm init
 
 # 6. コンテナ群をバックグラウンドで起動します
@@ -88,16 +88,18 @@ MediaMTX は `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から Ch のパスを作成�
 
 ### 起動前の検証
 
-`compose.yml` の `init` サービスが、`docker compose up` のたびに `tools/kosensai_live/config.py check --server` を実行します。次の項目を検証し、NG があれば MediaMTX と Caddy を起動しません（稼働中の場合の動作は「4. 運用・管理コマンド」の注意を参照してください）。
+`docker compose up` のたびに、`compose.yml` の 2 つの検証のサービスが `tools/kosensai_live/config.py check` を実行します。NG があれば、そのサービスが対象とするコンテナを起動しません（稼働中の場合の動作は「4. 運用・管理コマンド」の注意を参照してください）。
 
-- `.env` の Ch と `config.json` の `channels[].id` の一致、パスフレーズの長さと重複、`HQ_IP` の形式
-- `web/` のビルド成果物とライセンス本文の有無
-- 証明書と秘密鍵の組み合わせ、証明書のホスト名が `config.json` の `site.domain` を含むこと、有効期限
-- `net.core.rmem_max`
+| サービス | 検証する項目 | NG の場合に起動しないもの |
+| --- | --- | --- |
+| `init-mediamtx` | `.env` の Ch と `config.json` の `channels[].id` の一致、パスフレーズの長さと重複、`HQ_IP` の形式、`net.core.rmem_max` | MediaMTX と Caddy |
+| `init-caddy` | `.env` の Ch とパスフレーズ、`web/` のビルド成果物とライセンス本文の有無、証明書と秘密鍵の組み合わせ、証明書のホスト名が `config.json` の `site.domain` を含むこと、有効期限 | Caddy |
 
-NG の場合、`docker compose up` は `service "init" didn't complete successfully` で終了します。内容は `docker compose logs init` で確認してください。
+証明書は Caddy（HTTPS）だけが使用するため、証明書が無い状態でも MediaMTX は起動し、本部 OBS からの送出を受信できます。
 
-検証に通ると、init は `config.json` の `site.domain` を `SITE_DOMAIN` として `generated` ボリュームへ書き出します。Caddy は起動時にこのファイルを読み、`Caddyfile` の `{$SITE_DOMAIN}` を置換します。
+NG の場合、`docker compose up` は `service "init-caddy" didn't complete successfully` のように終了します。内容は `docker compose logs init-caddy`（または `init-mediamtx`）で確認してください。`docker compose run --rm init` は、起動せずに全ての項目を検証します。
+
+検証に通ると、init-caddy は `config.json` の `site.domain` を `SITE_DOMAIN` として `generated` ボリュームへ書き出します。Caddy は起動時にこのファイルを読み、`Caddyfile` の `{$SITE_DOMAIN}` を置換します。
 
 ### 接続元の制限
 
@@ -139,9 +141,9 @@ docker compose restart mediamtx
 
 > [!WARNING]
 > 運用中に `.env` や `config.json` を変更した場合は、先に `docker compose run --rm init` を実行して OK を確認し、その後で `docker compose up -d` を実行してください。
-> `.env` を変更すると、compose は init の完了を待たずに MediaMTX のコンテナを削除して作り直します。init が NG の場合、新しい MediaMTX は起動せず、受信が止まります。`config.json` だけを変更した場合は、NG でも稼働中のコンテナはそのまま動作します。
+> `.env` を変更すると、compose は init-mediamtx の完了を待たずに MediaMTX のコンテナを削除して作り直します。init-mediamtx が NG の場合、新しい MediaMTX は起動せず、受信が止まります。`config.json` だけを変更した場合は、NG でも稼働中のコンテナはそのまま動作します。
 >
-> `docker compose restart` では init が実行されません。ホストの再起動時も init は実行されず、前回の init が書き出した値で起動します。
+> `docker compose restart` では検証のサービスが実行されません。ホストの再起動時も検証は実行されず、前回の init-caddy が書き出した値で起動します。
 
 ---
 
@@ -149,9 +151,9 @@ docker compose restart mediamtx
 
 | ファイル・ディレクトリ | 役割・設定内容 |
 | --- | --- |
-| `compose.yml` | init（起動前の検証）、MediaMTX、Caddy のコンテナ定義（`network_mode: host`） |
+| `compose.yml` | 起動前の検証（init-mediamtx・init-caddy、手で全ての項目を検証する init）、MediaMTX、Caddy のコンテナ定義（`network_mode: host`） |
 | `mediamtx.yml` | SRT ストリームの受信と HLS 生成、接続元の制限の設定。Ch のパス、パスフレーズ、本部 PC の IP は `.env` から読み込みます。 |
-| `Caddyfile` | TLS 終端、`/hls/*` パスに対する MediaMTX へのリバースプロキシ転送、および `web/` の静的配信設定。ホスト名は init が書き出した `SITE_DOMAIN` を使用します。 |
+| `Caddyfile` | TLS 終端、`/hls/*` パスに対する MediaMTX へのリバースプロキシ転送、および `web/` の静的配信設定。ホスト名は init-caddy が書き出した `SITE_DOMAIN` を使用します。 |
 | `.env.example` | 各種パスフレーズと各マシンの IP を設定するためのテンプレート。 |
 | `certs/` | Certbot 経由で取得した本番用 TLS 証明書の格納先（Git 管理対象外）。 |
 | `scripts/get-cert.sh` | Let's Encrypt から手動 DNS-01 チャレンジ方式で TLS 証明書を取得し、`certs/` に配置するスクリプト。 |

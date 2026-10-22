@@ -7,11 +7,13 @@ Python のスクリプトは import し、シェルスクリプトは CLI で値
   python3 tools/kosensai_live/config.py channels [--listen]      # Ch の id を 1 行 1 件で
   python3 tools/kosensai_live/config.py env HQ_IP                # .env の値
   python3 tools/kosensai_live/config.py check [--server]         # .env と config.json の整合性を検証する
+                                    [--mediamtx] [--caddy]       # 配信サーバーの起動条件も検証する
 
 .env は既定で hosts/server/.env を読む。--env で別のファイルを指定できる。
 標準ライブラリだけで書き、配信サーバー・サイネージ・コンテナの python3 で直接実行する。
 本部 PC と開発用の PC では kosensai-live の CLI が import する。
-配信サーバーの compose の init サービスは `check --server --write-site-env` を実行する。
+配信サーバーの compose は、MediaMTX の起動前に `check --mediamtx`、Caddy の起動前に
+`check --caddy --write-site-env` を実行する。証明書が無くても MediaMTX は起動できる。
 """
 
 import argparse
@@ -234,11 +236,12 @@ def cmd_check(args):
     conf = load_config()
     env = load_env(args.env)
     ok = print_section(".env / パスフレーズ", check_channels_env(conf, env))
-    if args.server:
+    if args.server or args.mediamtx:
         ok &= print_section(".env / 接続元の制限", [check_ipv4(env, "HQ_IP")])
+        ok &= print_section("ホスト設定", [check_rmem()])
+    if args.server or args.caddy:
         ok &= print_section("配信サイト (web/)", check_web())
         ok &= print_section("証明書", check_cert(args.certs, conf["site"]["domain"]))
-        ok &= print_section("ホスト設定", [check_rmem()])
     if not ok:
         print("==> NG があります。解消してから起動してください。")
         sys.exit(1)
@@ -264,7 +267,9 @@ def main():
     p.add_argument("key")
 
     p = sub.add_parser("check", help=".env と config.json を検証する")
-    p.add_argument("--server", action="store_true", help="配信サーバーの起動条件（HQ_IP・web/・証明書・sysctl）も検証する")
+    p.add_argument("--server", action="store_true", help="配信サーバーの起動条件を全て検証する（--mediamtx と --caddy の両方）")
+    p.add_argument("--mediamtx", action="store_true", help="MediaMTX の起動条件（HQ_IP・sysctl）も検証する")
+    p.add_argument("--caddy", action="store_true", help="Caddy の起動条件（web/・証明書）も検証する")
     p.add_argument("--certs", default=SERVER_DIR / "certs", help="証明書のディレクトリ")
     p.add_argument("--write-site-env", metavar="PATH", help="検証に通ったら Caddy 用の SITE_DOMAIN を書き出す")
 
