@@ -6,17 +6,16 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "obsws-python==1.8.0",
   "segno==1.6.6",
-  # pyatem は C 拡張を含むため、Windows では Microsoft C++ Build Tools が必要。
   "pyatem",
   # pyatem の transport が無条件に import する(ATEM の USB 接続は使用しない)
   "pyusb==1.3.1",
 ]
 
 # PyPI の pyatem(0.10.0)は 2024-03 で止まっているため、git のコミットを指定する。
-# 上流(https://git.sr.ht/~martijnbraam/pyatem)の bbded93 は MSVC で C2099 になるため、
-# 修正のコミットを加えた Eizouken-NITIC/pyatem の msvc ブランチを使用する。上流に取り込まれたら上流に戻す。
+# 上流(https://git.sr.ht/~martijnbraam/pyatem)の bbded93 は画像の変換の C 拡張をビルドするため、
+# C 拡張を外したフォークの pure-python ブランチを使用し、本部 PC に C コンパイラを不要にする。
 [tool.uv.sources]
-pyatem = { git = "https://github.com/Eizouken-NITIC/pyatem", rev = "b45f18052265e1bd12b8be43562c7a082f0642e0" }
+pyatem = { git = "https://github.com/Eizouken-NITIC/pyatem", rev = "5732116c6e9f69af43b3584a7154380013ecb3a1" }
 
 [project.scripts]
 kosensai-live = "kosensai_live.cli:main"

@@ -16,7 +16,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "obsws-python", specifier = "==1.8.0" },
-    { name = "pyatem", git = "https://github.com/Eizouken-NITIC/pyatem?rev=b45f18052265e1bd12b8be43562c7a082f0642e0" },
+    { name = "pyatem", git = "https://github.com/Eizouken-NITIC/pyatem?rev=5732116c6e9f69af43b3584a7154380013ecb3a1" },
     { name = "pyusb", specifier = "==1.3.1" },
     { name = "segno", specifier = "==1.6.6" },
 ]
@@ -36,7 +36,7 @@ wheels = [
 [[package]]
 name = "pyatem"
 version = "0.13.0"
-source = { git = "https://github.com/Eizouken-NITIC/pyatem?rev=b45f18052265e1bd12b8be43562c7a082f0642e0#b45f18052265e1bd12b8be43562c7a082f0642e0" }
+source = { git = "https://github.com/Eizouken-NITIC/pyatem?rev=5732116c6e9f69af43b3584a7154380013ecb3a1#5732116c6e9f69af43b3584a7154380013ecb3a1" }
 
 [[package]]
 name = "pyusb"

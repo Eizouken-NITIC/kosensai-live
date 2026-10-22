@@ -23,7 +23,6 @@
 | obs-multi-rtmp | 0.7.4 | <https://github.com/sorayuki/obs-multi-rtmp/releases/tag/0.7.4>。Ch ごとの送出。`kosensai-live obs build` は、このバージョンの設定ファイルを書き出します |
 | Source Record | 0.4.8 | <https://github.com/exeldro/obs-source-record/releases/tag/0.4.8>。Ch ごとのクリーンフィードの録画。無い場合、`obs build` はエラーで止まります |
 | uv、Git | ― | <https://docs.astral.sh/uv/>。`kosensai-live` を実行します。Python 3.12 は uv が用意します（`.python-version`） |
-| C コンパイラ | ― | ATEM の制御に使用する pyatem が C 拡張を含むため、初回の `uv run` でビルドします。Windows は Microsoft C++ Build Tools（`winget install Microsoft.VisualStudio.2022.BuildTools --override "--passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"`）、macOS は `xcode-select --install`、Linux は `gcc` |
 
 プラグインは、OBS を終了した状態で各リリースのインストーラー（Windows は `.exe`、macOS は `.pkg`）を実行して入れます。
 
