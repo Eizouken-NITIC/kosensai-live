@@ -14,11 +14,17 @@ OBS・ATEM の設定は、リポジトリの CLI（`kosensai-live`、[tools/kose
 
 ## 1. 準備
 
-本部 PC に次を用意します。
+本部 PC は Windows・macOS・Linux のどれでも構いません。次を用意します。
 
-- OBS Studio 32.1 と obs-multi-rtmp 0.7.4（`kosensai-live obs build` は、このバージョンの obs-multi-rtmp の設定ファイルを書き出します）
-- [uv](https://docs.astral.sh/uv/) と Git
-- Microsoft C++ Build Tools（Windows のみ）。ATEM の制御に使用する pyatem が C 拡張を含むためです
+| もの | バージョン | 入手先・用途 |
+| --- | --- | --- |
+| OBS Studio | 32.1.2 で確認 | <https://obsproject.com/>。SRT の受信と送出は OBS に含まれる FFmpeg（libsrt）で行うため、SRT のプラグインは不要です |
+| obs-multi-rtmp | 0.7.4 | <https://github.com/sorayuki/obs-multi-rtmp/releases/tag/0.7.4>。Ch ごとの送出。`kosensai-live obs build` は、このバージョンの設定ファイルを書き出します |
+| Source Record | 0.4.8 | <https://github.com/exeldro/obs-source-record/releases/tag/0.4.8>。Ch ごとのクリーンフィードの録画。無い場合、`obs build` はエラーで止まります |
+| uv、Git | ― | <https://docs.astral.sh/uv/>。`kosensai-live` を実行します |
+| C コンパイラ | ― | ATEM の制御に使用する pyatem が C 拡張を含むため、初回の `uv run` でビルドします。Windows は Microsoft C++ Build Tools（`winget install Microsoft.VisualStudio.2022.BuildTools --override "--passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"`）、macOS は `xcode-select --install`、Linux は `gcc` |
+
+プラグインは、OBS を終了した状態で各リリースのインストーラー（Windows は `.exe`、macOS は `.pkg`）を実行して入れます。
 
 リポジトリを clone した場所で作業します。
 
@@ -38,7 +44,7 @@ OBS・ATEM の設定は、リポジトリの CLI（`kosensai-live`、[tools/kose
 
 ### 2-1. OBS を設定する
 
-obs-multi-rtmp の出力を停止した状態で実行します。
+配信と録画を停止した状態で実行します。
 
 ```bash
 uv run kosensai-live obs build
@@ -47,17 +53,21 @@ uv run kosensai-live obs build
 | 設定するもの | 内容 |
 | --- | --- |
 | プロファイル | `KOSENSAI-LIVE`。映像の形式は `config.json` の `video.mode`（1080p29.97） |
-| obs-multi-rtmp の出力 | Ch1・Ch2・Ch3 の 3 つ（[3-3.](#3-3-出力obs-multi-rtmp)）。送出先の URL とパスフレーズは `.env` から作ります |
 | シーンコレクション | `KOSENSAI-LIVE`。無いシーンとソースだけを追加し、既にあるシーンには手を加えません |
 | ソース | SRT Listener の URL とパスフレーズ、ページのファイルの場所、音声のデバイスとトラック。毎回上書きします |
+| 録画 | `[録画] …` のシーンの Source Record のフィルター（[3-4.](#3-4-録画)） |
+| obs-multi-rtmp の出力 | Ch1・Ch2・Ch3 の 3 つ（[3-3.](#3-3-出力obs-multi-rtmp)）。送出先の URL とパスフレーズは `.env` から作ります |
+
+obs-multi-rtmp は設定を OBS の起動時に読み、終了時に書き戻します。そのため、出力の設定が変わる場合、`obs build` は「OBS を終了してください」と表示して OBS の終了を待ち、終了した後に設定を書き込みます。書き込んだら OBS を起動し直します。
 
 その後、OBS で次を設定します。
 
 1. 「ツール → スクリプト」で `hosts/obs/channels.lua` を追加する。
 2. 「設定 → ホットキー」で「配信休止: 予定どおり / 出す / 出さない」にキーを割り当てる。
 3. 「設定 → 音声 → 詳細設定」のモニタリングデバイスに、本部のヘッドホンをつなぐデバイスを選ぶ。
-4. `Ch1 音声 (USB)` の「オーディオの詳細プロパティ」で同期オフセットを設定する（リハーサルで実測した値）。USB オーディオは SRT の映像より早く届くためです。
-5. `CM` に動画ファイルを指定する。
+4. 「設定 → 出力 → 録画」の録画ファイルのパスに、録画を保存するディスクを選ぶ（Source Record もこのパスに保存します）。
+5. `Ch1 音声 (USB)` の「オーディオの詳細プロパティ」で同期オフセットを設定する（リハーサルで実測した値）。USB オーディオは SRT の映像より早く届くためです。
+6. `CM` に動画ファイルを指定する。
 
 ### 2-2. 音声のデバイスを指定する
 
@@ -95,6 +105,7 @@ uv run kosensai-live urls
 1. ATEM の配信を開始する（`uv run kosensai-live atem start`）。
 2. スマートフォンの配信を開始する。
 3. obs-multi-rtmp のドックで「すべて開始」を押す。
+4. OBS の「録画開始」を押す（[3-4.](#3-4-録画)）。
 
 ---
 
@@ -108,6 +119,7 @@ uv run kosensai-live urls
 | `[操作] パネル` | 操作パネル（`overlays/control.html`）。OBS でソースを右クリックし「対話」で開いて、お知らせと遊撃の現在地を選びます |
 | `[出力] Ch1 第一体育館` | obs-multi-rtmp の Ch1 の出力 |
 | `[出力] Ch2 遊撃` | obs-multi-rtmp の Ch2 の出力 |
+| `[録画] Ch1 第一体育館`・`[録画] Ch2 遊撃` | Ch ごとのクリーンフィード（テロップの無い映像）の録画 |
 | `Ch3 …` | Ch3（プログラム）で切り替えるシーン。待機・第一体育館・遊撃・2 画面・UP NEXT・タイムテーブル・CM |
 
 ### 3-2. 音声
@@ -131,13 +143,25 @@ obs-multi-rtmp でプログラム以外のシーンを送出しても、その�
 | Ch2 | `[出力] Ch2 遊撃` | 3 | 同上 |
 | Ch3 | プログラム（OBS のシーンの切り替え） | 1 | 同上 |
 
-エンコーダーは `assets/scenes.json` の `outputs.video_encoder` で OS ごとに指定します（Windows は NVENC）。CBR、キーフレーム間隔 2 秒です。キーフレーム間隔は、配信サーバーの `hosts/server/mediamtx.yml` の `hlsSegmentDuration` と同じ値にします。
+エンコーダーは `assets/scenes.json` の `video_encoder` で OS ごとに指定します（Windows は NVENC、macOS は VideoToolbox、Linux は x264）。CBR、キーフレーム間隔 2 秒です。キーフレーム間隔は、配信サーバーの `hosts/server/mediamtx.yml` の `hlsSegmentDuration` と同じ値にします。
 
-### 3-4. 配信休止
+### 3-4. 録画
+
+OBS の「録画開始」で、次の 3 つが同時に始まります。保存先は OBS の録画の設定のパスです。
+
+| ファイル | 内容 |
+| --- | --- |
+| `<日時> Ch1.mkv` | `[録画] Ch1 第一体育館`（ATEM の映像だけ）と、トラック 2（第一体育館の音声） |
+| `<日時> Ch2.mkv` | `[録画] Ch2 遊撃`（スマートフォンの映像だけ）と、トラック 3（遊撃の音声） |
+| `<日時>.mov` 等 | プログラム（Ch3）。OBS の通常の録画で、テロップを含みます |
+
+Ch1・Ch2 は Source Record のフィルターが、`assets/scenes.json` の `recordings` の設定（CBR 12 Mbps、音声 320 kbps、mkv）で録画します。配信休止の間は、録画も休止の画面になり、音声はミュートされます。
+
+### 3-5. 配信休止
 
 第一体育館の配信をしない時間（`assets/program.json` の種類が `ng` の項目）は、`channels.lua` が次の 2 つを行います。
 
-- `[出力] Ch1 第一体育館`・`Ch3 第一体育館`・`Ch3 2 画面` の `配信休止`（`overlays/pause.html`）を表示し、映像を隠す。
+- `[出力] Ch1 第一体育館`・`[録画] Ch1 第一体育館`・`Ch3 第一体育館`・`Ch3 2 画面` の `配信休止`（`overlays/pause.html`）を表示し、映像を隠す。
 - `Ch1 音声 (USB)` をミュートする。トラックの割り当ては変えません。
 
 obs-multi-rtmp の出力は開始した時点のシーンに固定されるため、プログラムのシーンの切り替えでは Ch1 の映像は変わりません。休止は出力のシーンの中のソースの表示で切り替えます。
@@ -162,7 +186,7 @@ obs-multi-rtmp の出力は開始した時点のシーンに固定されるた�
 | `timetable.html` | 当日のタイムテーブル |
 | `split.html` | 2 画面の背景と見出し |
 | `pause.html` | 配信休止の画面（第一体育館の配信をしない時間に、映像の代わりに出す） |
-| `control.html` | 操作パネル |
+| `control.html` | 操作パネル（配信に映らないため、画面のデザインを使用しない） |
 
 - 演目・時刻・お知らせは `assets/program.json` だけに書きます。各画面は現在時刻から表示を切り替えるため、当日の操作は不要です。
 - URL に `?now=2026-10-24T13:35` を付けると、その時刻から時計を進めて表示します。ブラウザで開いて確認できます。

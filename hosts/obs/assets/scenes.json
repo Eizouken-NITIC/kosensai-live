@@ -46,6 +46,13 @@
       {"source": "お知らせ", "place": "full"},
       {"source": "ウォーターマーク", "place": "full"}
     ],
+    "[録画] Ch1 第一体育館": [
+      {"source": "Ch1 ATEM", "place": "full"},
+      {"source": "配信休止", "place": "full", "hidden": true}
+    ],
+    "[録画] Ch2 遊撃": [
+      {"source": "Ch2 iPhone", "place": "full"}
+    ],
     "Ch3 待機": [
       {"source": "待機画面", "place": "full"}
     ],
@@ -81,16 +88,27 @@
       {"source": "CM", "place": "full"}
     ]
   },
+  "video_encoder": {
+    "win32": "obs_nvenc_h264_tex",
+    "darwin": "com.apple.videotoolbox.videoencoder.ave.avc",
+    "linux": "obs_x264"
+  },
   "outputs": {
-    "video_encoder": {
-      "win32": {"id": "obs_nvenc_h264_tex", "param": {"rate_control": "CBR", "keyint_sec": 2}},
-      "darwin": {"id": "com.apple.videotoolbox.videoencoder.ave.avc", "param": {"rate_control": "CBR", "keyint_sec": 2}}
-    },
+    "video_param": {"rate_control": "CBR", "keyint_sec": 2},
     "audio_bitrate": 160,
     "channels": [
       {"channel": "ch1", "scene": "[出力] Ch1 第一体育館", "track": 2},
       {"channel": "ch2", "scene": "[出力] Ch2 遊撃", "track": 3},
       {"channel": "ch3", "track": 1}
+    ]
+  },
+  "recordings": {
+    "video_param": {"rate_control": "CBR", "keyint_sec": 2, "bitrate": 12000},
+    "audio_bitrate": 320,
+    "format": "mkv",
+    "scenes": [
+      {"scene": "[録画] Ch1 第一体育館", "track": 2, "name": "Ch1"},
+      {"scene": "[録画] Ch2 遊撃", "track": 3, "name": "Ch2"}
     ]
   },
   "audio": {

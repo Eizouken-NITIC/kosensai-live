@@ -11,19 +11,25 @@ obs-websocket のパスワードは、同じ PC の OBS の設定ファイルか
 
 import json
 import os
+import socket
 import sys
 import time
 from pathlib import Path
 
 import obsws_python as obs
+from obsws_python.error import OBSSDKRequestError
 
 from . import config, urls
 
+WEBSOCKET_HOST, WEBSOCKET_PORT = "127.0.0.1", 4455
 HOST_DIR = config.REPO / "hosts/obs"
 OVERLAYS = HOST_DIR / "overlays"
 SCENES_JSON = HOST_DIR / "assets/scenes.json"
-# obs build がプロファイルを切り替える時に一時的に作るプロファイル
-TEMP_PROFILE = "kosensai-live-build"
+# obs-websocket の要求の結果のコード OutputRunning
+OBS_OUTPUT_RUNNING = 500
+SOURCE_RECORD_URL = "https://github.com/exeldro/obs-source-record/releases/tag/0.4.8"
+# Source Record の record_mode の「録画」(OBS の録画の開始・停止に合わせる)
+SOURCE_RECORD_MODE_RECORDING = 3
 # 作成したプロファイルの basic.ini が書き出されるまで待つ秒数
 PROFILE_WAIT_SEC = 5
 
@@ -43,7 +49,7 @@ def connect() -> obs.ReqClient:
         if not conf.get("server_enabled"):
             sys.exit("OBS の「ツール → WebSocket サーバー設定」でサーバーを有効にしてください")
         password = conf["server_password"]
-    return obs.ReqClient(host="127.0.0.1", port=4455, password=password, timeout=10)
+    return obs.ReqClient(host=WEBSOCKET_HOST, port=WEBSOCKET_PORT, password=password, timeout=10)
 
 
 def platform_value(spec: dict, what: str):
@@ -105,16 +111,16 @@ def profile_dir(name: str) -> Path:
 def multi_rtmp_config(conf: dict, env: dict, scenes: dict) -> dict:
     """obs-multi-rtmp(0.7.4)の設定ファイル(プロファイルの obs-multi-rtmp.json)の内容。"""
     out = scenes["outputs"]
-    encoder = platform_value(out["video_encoder"], "outputs.video_encoder")
+    encoder = platform_value(scenes["video_encoder"], "video_encoder")
     targets, videos, audios = [], [], []
     for o in out["channels"]:
         cid = o["channel"]
         c = config.channel(conf, cid)
         video = {
             "id": f"v-{cid}",
-            "encoder": encoder["id"],
+            "encoder": encoder,
             "fps-denumerator": 1,
-            "param": {**encoder["param"], "bitrate": c["bitrateKbps"]},
+            "param": {**out["video_param"], "bitrate": c["bitrateKbps"]},
         }
         # scene が無い出力は、プログラム(OBS のシーンの切り替え)をそのまま送出する。
         if "scene" in o:
@@ -138,30 +144,79 @@ def multi_rtmp_config(conf: dict, env: dict, scenes: dict) -> dict:
 
 
 def apply_profile(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict) -> None:
-    """プロファイルの映像の形式と、obs-multi-rtmp の出力を設定する。"""
-    active = [o["outputName"] for o in cl.get_output_list().outputs if o["outputActive"]]
-    if active:
-        sys.exit(f"出力中のため設定できません(停止してから実行してください): {', '.join(active)}")
-
+    """プロファイルと映像の形式を設定する。"""
     name = scenes["profile"]
-    if name not in cl.get_profile_list().profiles:
+    # プロファイルの作成と切り替えは、必要な時だけ行う(OBS 32.1.2 の macOS で、obs-websocket からの
+    # 作成・切り替え・削除を続けて行うと OBS が落ちることがあった)。
+    profiles = cl.get_profile_list()
+    if name not in profiles.profiles:
         cl.create_profile(name)
         print(f"プロファイル {name} を作成しました")
+    elif profiles.current_profile_name != name:
+        cl.set_current_profile(name)
 
-    # obs-multi-rtmp は設定ファイルをプロファイルの切り替えの時に読み、OBS の終了時に書き戻す。
-    # 書き込んだ後に読ませないと、終了時に古い設定で上書きされるため、別のプロファイルを経由して切り替え直す。
-    if TEMP_PROFILE in cl.get_profile_list().profiles:
-        cl.set_current_profile(TEMP_PROFILE)
-    else:
-        cl.create_profile(TEMP_PROFILE)
-    (profile_dir(name) / "obs-multi-rtmp.json").write_text(
-        json.dumps(multi_rtmp_config(conf, env, scenes), ensure_ascii=False, indent=1), encoding="utf-8")
-    cl.set_current_profile(name)
-    cl.remove_profile(TEMP_PROFILE)
-
+    # 出力中は obs-websocket が映像の設定の変更を断る(OutputRunning)。出力中かどうかを GetOutputList で
+    # 調べないのは、Source Record を入れた OBS 32.1.2 で、GetOutputList の出力の列挙の中で OBS が落ちたため。
     w, h, num, den, _ = config.video_mode(conf)
-    cl.set_video_settings(num, den, w, h, w, h)
-    print(f"プロファイル {name}: {conf['video']['mode']}、obs-multi-rtmp の出力 {len(scenes['outputs']['channels'])} 件")
+    try:
+        cl.set_video_settings(num, den, w, h, w, h)
+    except OBSSDKRequestError as e:
+        if e.code != OBS_OUTPUT_RUNNING:
+            raise
+        sys.exit("出力中(配信・録画)のため設定できません。停止してから実行してください")
+    print(f"プロファイル {name}: {conf['video']['mode']}")
+
+
+def write_multi_rtmp(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict) -> None:
+    """obs-multi-rtmp の出力の設定ファイルを書き込む。
+
+    obs-multi-rtmp は設定ファイルを OBS の起動時(とプロファイルの切り替え時)に読み、終了時に書き戻す。
+    OBS の起動中に書き込むと終了時に上書きされるため、OBS の終了を待ってから書き込む。
+    """
+    path = profile_dir(scenes["profile"]) / "obs-multi-rtmp.json"
+    content = json.dumps(multi_rtmp_config(conf, env, scenes), ensure_ascii=False, indent=1)
+    if path.is_file() and json.loads(path.read_text(encoding="utf-8-sig")) == json.loads(content):
+        print("obs-multi-rtmp: 変更なし")
+        return
+    print("obs-multi-rtmp の出力を書き込むため、OBS を終了してください(終了を待っています)")
+    # obs-multi-rtmp は OBS の終了の始めに設定を書き戻し、obs-websocket はその後に止まる。
+    # WebSocket のポートに接続できなくなったら、書き戻しは終わっている。
+    cl.disconnect()
+    while True:
+        try:
+            socket.create_connection((WEBSOCKET_HOST, WEBSOCKET_PORT), timeout=1).close()
+        except OSError:
+            break
+        time.sleep(1)
+    path.write_text(content, encoding="utf-8")
+    print(f"obs-multi-rtmp: 出力 {len(scenes['outputs']['channels'])} 件を書き込みました。OBS を起動してください")
+
+
+def apply_recordings(cl: obs.ReqClient, scenes: dict) -> None:
+    """録画のシーンに Source Record のフィルターを付ける。OBS の「録画開始」で、プログラムの録画と一緒に始まる。"""
+    rec = scenes["recordings"]
+    for r in rec["scenes"]:
+        settings = {
+            **rec["video_param"],
+            "encoder": platform_value(scenes["video_encoder"], "video_encoder"),
+            "record_mode": SOURCE_RECORD_MODE_RECORDING,
+            "rec_format": rec["format"],
+            # 同時に始まる録画のファイル名が重ならないよう、名前を付ける。保存先は OBS の録画の設定に従う。
+            "filename_formatting": f"%CCYY-%MM-%DD %hh-%mm-%ss {r['name']}",
+            # シーンの音声ではなく、会場の音声のトラック(配信休止のミュートも反映される)を録る。
+            "different_audio": True,
+            "audio_track": r["track"],
+            "audio_encoder": "ffmpeg_aac",
+            "audio_bitrate": rec["audio_bitrate"],
+        }
+        # Source Record は出力にフィルターの名前を付けるため、フィルターごとに別の名前にする
+        # (同じ名前の出力があると、一方しか録画されない)。
+        name = f"録画 {r['name']}"
+        if name in {f["filterName"] for f in cl.get_source_filter_list(r["scene"]).filters}:
+            cl.set_source_filter_settings(r["scene"], name, settings, True)
+        else:
+            cl.create_source_filter(r["scene"], name, "source_record_filter", settings)
+    print(f"録画: {', '.join(r['scene'] for r in rec['scenes'])}")
 
 
 def build(env_path) -> None:
@@ -169,6 +224,8 @@ def build(env_path) -> None:
     env = config.load_env(env_path)
     scenes = json.loads(SCENES_JSON.read_text(encoding="utf-8"))
     cl = connect()
+    if "source_record_filter" not in cl.get_source_filter_kind_list().source_filter_kinds:
+        sys.exit(f"Source Record のプラグインがありません。{SOURCE_RECORD_URL} からインストールしてください")
 
     # scenes.json の入力の種類 → (OBS の入力の種類, 設定)。
     def source(spec: dict) -> tuple[str, dict]:
@@ -248,12 +305,16 @@ def build(env_path) -> None:
         if spec.get("monitor"):
             cl.set_input_audio_monitor_type(name, "OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT")
 
+    apply_recordings(cl, scenes)
+
     # OBS の初期のシーン(「シーン」)は使用しないので削除する。
     program = scenes["program_scene"]
     if "シーン" in {s["sceneName"] for s in cl.get_scene_list().scenes}:
         cl.set_current_program_scene(program)
         cl.remove_scene("シーン")
     cl.set_current_program_scene(program)
+
+    write_multi_rtmp(cl, conf, env, scenes)
     print("完了")
 
 

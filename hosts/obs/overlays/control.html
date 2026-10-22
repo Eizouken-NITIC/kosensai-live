@@ -3,48 +3,33 @@
 <head>
 <meta charset="utf-8">
 <title>control</title>
-<link rel="stylesheet" href="overlay.css">
 <style>
-  /* 操作パネル。OBS でこのブラウザソースを右クリックし「対話」で開いて操作する。
-     テロップのブラウザソースと同じ origin になるため、localStorage と BroadcastChannel で状態を渡す。 */
-  html, body { width: auto; height: auto; overflow: auto; }
-  body { padding: 24px; background: var(--bar); }
-  h2 { margin: 24px 0 12px; font-size: 22px; font-weight: 700; color: var(--lit-2); }
-  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  button {
-    font: inherit;
-    font-size: 20px;
-    color: var(--lit);
-    text-align: left;
-    line-height: 1.4;
-    padding: 12px 16px;
-    cursor: pointer;
-  }
-  button.off { color: var(--lit-2); }
+  /* 操作パネル。OBS でこのブラウザソースを右クリックし「対話」で開いて操作する。配信には映らないため、
+     画面のデザインは使用しない。テロップのブラウザソースと同じ origin になるため、
+     localStorage と BroadcastChannel で状態を渡す。
+     OBS のブラウザソースが既定で入れる CSS(背景の透明、余白、overflow: hidden)を、詳細度の高いセレクターで上書きする。 */
+  html, body { background: #fff; overflow: auto; }
+  html body { margin: 16px; font: 18px system-ui, sans-serif; color: #000; }
+  fieldset { margin: 0 0 16px; }
+  label { display: block; padding: 6px 0; }
 </style>
 </head>
 <body>
-<h2>お知らせ</h2>
-<div class="grid" id="notices"></div>
-<h2>遊撃の現在地</h2>
-<div class="grid" id="places"></div>
+<fieldset><legend>お知らせ</legend><div id="notice"></div></fieldset>
+<fieldset><legend>遊撃の現在地</legend><div id="ch2Place"></div></fieldset>
 <script src="overlay.js"></script>
 <script>
   const { el } = Overlay;
   const P = window.PROGRAM;
-  function draw(s) {
-    const button = (text, on, patch, off = false) =>
-      el('button', { className: `frame${on ? ' hot' : ''}${off ? ' off' : ''}`, textContent: text, onclick: () => Overlay.setState(patch) });
-    document.getElementById('notices').replaceChildren(
-      button('出さない', s.notice == null, { notice: null }, true),
-      ...P.notices.map((text, i) => button(text, s.notice === i, { notice: i })),
-    );
-    document.getElementById('places').replaceChildren(
-      button('予定どおり', s.ch2Place == null, { ch2Place: null }, true),
-      ...P.ch2.places.map(({ title, place }, i) => button(`${title}(${place})`, s.ch2Place === i, { ch2Place: i })),
-    );
+  // key の選択肢 [表示, 値] をラジオボタンで出す。値の null は「選ばない」。
+  function radios(key, items, value) {
+    document.getElementById(key).replaceChildren(...items.map(([text, v]) =>
+      el('label', {}, el('input', { type: 'radio', name: key, checked: value === v, onchange: () => Overlay.setState({ [key]: v }) }), ` ${text}`)));
   }
-  Overlay.onState(draw);
+  Overlay.onState((s) => {
+    radios('notice', [['出さない', null], ...P.notices.map((text, i) => [text, i])], s.notice ?? null);
+    radios('ch2Place', [['予定どおり', null], ...P.ch2.places.map(({ title, place }, i) => [`${title}(${place})`, i])], s.ch2Place ?? null);
+  });
 </script>
 </body>
 </html>
