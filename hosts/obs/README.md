@@ -34,7 +34,7 @@ git clone
 cd kosensai-live
 ```
 
-kosensai-live-assets を別の場所に置いた場合は、`uv run kosensai-live --assets <場所> obs build` のように `--assets` で指定するか、環境変数 `KOSENSAI_LIVE_ASSETS` に場所を設定します。
+kosensai-live-assets を別の場所に置いた場合は、`uv run kosensai-live obs build --assets <場所>` のように `--assets` で指定するか、環境変数 `KOSENSAI_LIVE_ASSETS` に場所を設定します。
 
 1. 配信サーバーの `hosts/server/.env` を、本部 PC の同じ場所（`hosts/server/.env`）にコピーします。パスフレーズは配信サーバーと一致している必要があるため、本部 PC で値を作り直さないでください。配信サーバーをまだ用意していない場合は、`hosts/server/.env.example` をコピーして値を入れます（設定項目は [hosts/server/README.md](../server/README.md)）。
 2. `.env` の `HQ_IP` に本部 PC の IP、`SERVER_IP` に配信サーバーの IP、`ATEM_IP` に ATEM の IP を設定します。

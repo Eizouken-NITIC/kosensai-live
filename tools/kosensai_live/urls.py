@@ -5,7 +5,7 @@ OBS の SRT Listener と obs-multi-rtmp の出力は obs build が同じ関数�
 ここでの表示は確認用である。スマートフォン（Moblin）には 1. の URL を入力する。
 
   uv run kosensai-live urls
-  uv run kosensai-live --env path/to/.env urls
+  uv run kosensai-live urls --env path/to/.env
 """
 
 from . import config

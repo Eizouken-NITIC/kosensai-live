@@ -11,9 +11,9 @@
   uv run kosensai-live rehearsal reload|load-test
                                            ローカル検証環境を操作する
 
-.env は既定で hosts/server/.env を読む。--env で別のファイルを指定できる。
+.env は既定で hosts/server/.env を読む。check・obs・atem・urls の後に --env で別のファイルを指定できる。
 obs build は、その年の中身(kosensai-live-assets)を既定で同じ階層の kosensai-live-assets から読む。
---assets か環境変数 KOSENSAI_LIVE_ASSETS で別の場所を指定できる。
+obs build --assets か環境変数 KOSENSAI_LIVE_ASSETS で別の場所を指定できる。
 """
 
 import argparse
@@ -29,21 +29,23 @@ ASSETS_DIR = Path(os.environ.get("KOSENSAI_LIVE_ASSETS") or config.REPO.parent /
 def main():
     ap = argparse.ArgumentParser(prog="kosensai-live", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--env", default=config.ENV_FILE, help=".env のパス")
-    ap.add_argument("--assets", type=Path, default=ASSETS_DIR,
-                    help=f"kosensai-live-assets の場所(既定: 環境変数 KOSENSAI_LIVE_ASSETS、無ければ {ASSETS_DIR})")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    # オプションはサブコマンドの後に書く(uv run kosensai-live obs build --assets ...)。
+    env = argparse.ArgumentParser(add_help=False)
+    env.add_argument("--env", default=config.ENV_FILE, help=".env のパス")
 
-    sub.add_parser("check", help=".env と config.json を検証する")
+    sub.add_parser("check", parents=[env], help=".env と config.json を検証する")
 
-    p = sub.add_parser("obs", help="本部 OBS")
+    p = sub.add_parser("obs", parents=[env], help="本部 OBS")
     p.add_argument("action", choices=["build", "devices"])
+    p.add_argument("--assets", type=Path, default=ASSETS_DIR,
+                   help=f"build: kosensai-live-assets の場所(既定: 環境変数 KOSENSAI_LIVE_ASSETS、無ければ {ASSETS_DIR})")
 
-    p = sub.add_parser("atem", help="ATEM の映像の形式と配信を設定・確認する")
+    p = sub.add_parser("atem", parents=[env], help="ATEM の映像の形式と配信を設定・確認する")
     p.add_argument("action", choices=["apply", "check", "get", "start", "stop", "watch"])
     p.add_argument("arg", nargs="?", help="apply・check は Ch の id(既定: ch1)、watch は秒数(既定: 10)")
 
-    sub.add_parser("urls", help="SRT の URL と視聴の URL を表示する")
+    sub.add_parser("urls", parents=[env], help="SRT の URL と視聴の URL を表示する")
     sub.add_parser("qr", help="視聴ページの QR コードを生成する")
 
     p = sub.add_parser("render", help="計器と時計の画像を Blender で描画する")

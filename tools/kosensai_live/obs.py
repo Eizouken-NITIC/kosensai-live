@@ -2,7 +2,7 @@
 obs-websocket で設定する。
 
     uv run kosensai-live obs build      # シーンコレクション・プロファイル・obs-multi-rtmp の出力を設定する
-    uv run kosensai-live --assets <kosensai-live-assets の場所> obs build
+    uv run kosensai-live obs build --assets <kosensai-live-assets の場所>
     uv run kosensai-live obs devices    # 音声入力のデバイスの名前を表示する(scenes.json の device に書く)
 
 起動中の OBS に接続する。scenes.json のシーンは項目(ソース)の有無・並び・配置を scenes.json に合わせる。
@@ -308,8 +308,10 @@ def build(env_path, assets: Path) -> None:
     env = config.load_env(env_path)
     scenes = json.loads(SCENES_JSON.read_text(encoding="utf-8"))
     assets = Path(os.path.abspath(assets))
+    if not assets.is_dir():
+        sys.exit(f"{assets} がありません。kosensai-live-assets を clone するか、--assets で場所を指定してください")
     if not (assets / "program.json").is_file():
-        sys.exit(f"{assets} に program.json がありません。--assets で kosensai-live-assets の場所を指定してください")
+        sys.exit(f"{assets} に program.json がありません。--assets で kosensai-live-assets のリポジトリの最上位を指定してください")
     print(f"assets: {assets}")
     cl = connect()
     if "source_record_filter" not in cl.get_source_filter_kind_list().source_filter_kinds:

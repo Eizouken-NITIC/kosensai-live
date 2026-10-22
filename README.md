@@ -133,7 +133,7 @@ kosensai-live/
 | `uv run kosensai-live render gauge` / `clock` | 計器と時計の画像を Blender で描画する |
 | `uv run kosensai-live rehearsal reload` / `load-test` | ローカル検証環境を操作する |
 
-`.env` は既定で `hosts/server/.env` を読みます。別のファイルは `uv run kosensai-live --env <パス> ...` で指定します。
+`.env` は既定で `hosts/server/.env` を読みます。別のファイルは `uv run kosensai-live check --env <パス>` のように、サブコマンドの後に `--env` を付けて指定します。
 
 配信サーバー（Linux）とサイネージ端末（Raspberry Pi OS）のシェルスクリプト、コンテナの中の処理はそのマシンの `bash` と `python3` で実行します。
 
