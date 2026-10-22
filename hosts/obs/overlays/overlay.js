@@ -1,15 +1,17 @@
-// 今年の進行(../assets/program.json)から現在時刻の項目を求める処理と、操作パネル(control.html)との状態の受け渡し。
+// 今年の進行(kosensai-live-assets の program.json)から現在時刻の項目を求める処理と、操作パネル(control.html)との状態の受け渡し。
+// ?assets=<kosensai-live-assets の場所> で進行の場所を受け取る。kosensai-live obs build が全てのブラウザソースの URL に付ける。
 // ?now=2026-10-24T13:35 を付けると、その時刻から時計を進めて表示する(確認用)。
 // file:// では ES モジュールが CORS で読み込めないため、通常のスクリプトにしている。
 (() => {
   // 各ページはこのスクリプトの直後に window.PROGRAM を使うので、進行は同期の XHR で読む。
   // ローカルファイルは file:// では status 0、OBS のブラウザソース(http://absolute)では 200 になる。
+  const params = new URLSearchParams(location.search);
+  if (!params.has('assets')) throw new Error('URL に assets の引数がありません(kosensai-live obs build が付けます)');
   const xhr = new XMLHttpRequest();
-  xhr.open('GET', new URL('../assets/program.json', document.currentScript.src), false);
+  xhr.open('GET', new URL(`${params.get('assets')}/program.json`, location.href), false);
   xhr.send();
   if (xhr.status !== 200 && xhr.status !== 0) throw new Error(`program.json を読めません(${xhr.status})`);
   const P = (window.PROGRAM = JSON.parse(xhr.responseText));
-  const params = new URLSearchParams(location.search);
   const offset = params.has('now') ? new Date(params.get('now')) - Date.now() : 0;
 
   const now = () => new Date(Date.now() + offset);
@@ -173,14 +175,14 @@
   // 計器(MIB2 のパフォーマンスモニターの形)を container に作り、値を更新する関数を返す。
   // 目盛は左下(-150°)から右下(+150°)までの 300°。update(value, digits, unit): value は min〜max、
   // digits は中央に出す文字列、unit はその右に出す単位。
-  // 輪・目盛と針は assets/render/gauge.py が Blender で描いた画像を使う。針の画像は 5° ごとに 61 枚あり、
+  // 輪・目盛と針は design/render/gauge.py が Blender で描いた画像を使う。針の画像は 5° ごとに 61 枚あり、
   // 角度に最も近い画像を選ぶ。画像ごとに光の当たり方が角度に合っているため、画像を回転させて使わない。
   // 切り替えの時だけ、前の角度から画像の角度まで 0.8 秒で回して見せる。
   const SVG = 'http://www.w3.org/2000/svg';
   const NEEDLE_STEP = 5;
   function gauge(container, { min = 0, max = 60 } = {}) {
     const box = el('div', { className: 'gauge' },
-      el('img', { src: '../assets/gauge/static.png', alt: '' }),
+      el('img', { src: '../design/gauge/static.png', alt: '' }),
     );
     const needle = el('img', { className: 'needle', alt: '' });
     box.append(needle);
@@ -218,7 +220,7 @@
       if (n !== shown) {
         const from = shown === null ? frameDeg : -SPAN + shown * NEEDLE_STEP;
         shown = n;
-        needle.src = `../assets/gauge/needle-${String(n).padStart(2, '0')}.png`;
+        needle.src = `../design/gauge/needle-${String(n).padStart(2, '0')}.png`;
         needle.animate(
           [{ transform: `rotate(${from - frameDeg}deg)` }, { transform: 'none' }],
           { duration: 800, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
@@ -230,11 +232,11 @@
   }
 
   // アナログ時計を container に作り、時刻を更新する関数を返す。
-  // 部品は assets/render/clock.py が Blender で描いた画像(assets/clock-face/)を重ねる。長針は 6° ごと(1 分ごと)の画像、
+  // 部品は design/render/clock.py が Blender で描いた画像(design/clock-face/)を重ねる。長針は 6° ごと(1 分ごと)の画像、
   // 短針は 5° ごとの画像で、短針だけは画像の角度との差(2.5° 未満)を回転で補う。
   const HOUR_STEP = 5;
   function clockFace(container) {
-    const img = (src) => el('img', { src: src ? `../assets/clock-face/${src}` : undefined, alt: '' });
+    const img = (src) => el('img', { src: src ? `../design/clock-face/${src}` : undefined, alt: '' });
     const hour = img();
     const minute = img();
     container.replaceChildren(el('div', { className: 'clock-face' }, img('dial.png'), hour, minute, img('cap.png')));
@@ -242,9 +244,9 @@
       const m = d.getMinutes();
       const deg = (d.getHours() % 12) * 30 + m * 0.5;
       const n = Math.round(deg / HOUR_STEP) % (360 / HOUR_STEP);
-      hour.src = `../assets/clock-face/hour-${String(n).padStart(2, '0')}.png`;
+      hour.src = `../design/clock-face/hour-${String(n).padStart(2, '0')}.png`;
       hour.style.transform = `rotate(${deg - n * HOUR_STEP}deg)`;
-      minute.src = `../assets/clock-face/minute-${String(m).padStart(2, '0')}.png`;
+      minute.src = `../design/clock-face/minute-${String(m).padStart(2, '0')}.png`;
     };
   }
 

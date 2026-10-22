@@ -1,6 +1,6 @@
-"""待機画面の時計(assets/clock-face)の画像を Blender の Cycles で描画する。
+"""待機画面の時計(design/clock-face)の画像を Blender の Cycles で描画する。
 
-    uv run kosensai-live render clock            # assets/clock-face に描画する
+    uv run kosensai-live render clock            # design/clock-face に描画する
     uv run kosensai-live render clock 10:08      # 確認用に 1 枚だけ描画する
 
 出力先の後に時刻(10:08 の形)を付けると、その時刻の時計を 1 枚(preview-HHMM.png)だけ描画する(確認用)。

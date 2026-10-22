@@ -12,17 +12,26 @@
                                            ローカル検証環境を操作する
 
 .env は既定で hosts/server/.env を読む。--env で別のファイルを指定できる。
+obs build は、その年の中身(kosensai-live-assets)を既定で同じ階層の kosensai-live-assets から読む。
+--assets か環境変数 KOSENSAI_LIVE_ASSETS で別の場所を指定できる。
 """
 
 import argparse
+import os
+from pathlib import Path
 
 from . import config
+
+# その年の中身(kosensai-live-assets)の既定の場所。kosensai-live のチェックアウトと同じ階層。
+ASSETS_DIR = Path(os.environ.get("KOSENSAI_LIVE_ASSETS") or config.REPO.parent / "kosensai-live-assets")
 
 
 def main():
     ap = argparse.ArgumentParser(prog="kosensai-live", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--env", default=config.ENV_FILE, help=".env のパス")
+    ap.add_argument("--assets", type=Path, default=ASSETS_DIR,
+                    help=f"kosensai-live-assets の場所(既定: 環境変数 KOSENSAI_LIVE_ASSETS、無ければ {ASSETS_DIR})")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("check", help=".env と config.json を検証する")
@@ -54,7 +63,7 @@ def main():
     elif args.cmd == "obs":
         from . import obs
         if args.action == "build":
-            obs.build(args.env)
+            obs.build(args.env, args.assets)
         else:
             obs.devices()
     elif args.cmd == "atem":

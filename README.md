@@ -87,8 +87,9 @@ kosensai-live/
 │  │  ├─ logs/                アクセスログ格納ディレクトリ（Git 管理外）
 │  │  └─ scripts/             get-cert / smoke-test
 │  ├─ obs/                    本部配信用 PC
-│  │  ├─ channels.lua         音声の振り分け・本部のモニター・配信休止を行う OBS のスクリプト
-│  │  ├─ assets/              今年の進行・OBS の構成・フォント・画像
+│  │  ├─ channels.lua         音声の振り分け・本部のモニター・配信休止・CM の自動表示を行う OBS のスクリプト
+│  │  ├─ scenes.json          OBS の構成（シーン・出力・録画）
+│  │  ├─ design/              画面のフォント・画像と、画像を描画する Blender のスクリプト
 │  │  └─ overlays/            テロップと全画面の画面（ブラウザソース）
 │  └─ signage/                サイネージ端末
 │     └─ setup.sh / signage.service
@@ -177,7 +178,7 @@ docker compose up -d         # 起動前に init サービスが設定・証明�
 
 **3. 本部 PC（OBS）を設定する**
 
-本部 PC は Windows・macOS・Linux のどれでも構いません。OBS に obs-multi-rtmp と Source Record のプラグインをインストールし、本部 OBS（シーン・送出・録画）と ATEM は `kosensai-live` が `config.json`・`.env`・`hosts/obs/assets/scenes.json` から設定します。必要なものと手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
+本部 PC は Windows・macOS・Linux のどれでも構いません。OBS に obs-multi-rtmp と Source Record のプラグインをインストールし、本部 OBS（シーン・送出・録画）と ATEM は `kosensai-live` が `config.json`・`.env`・`hosts/obs/scenes.json` と [kosensai-live-assets]()（その年の進行と CM のスライド。非公開）から設定します。必要なものと手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
 
 **4. サイネージ端末を用意する（任意）**
 

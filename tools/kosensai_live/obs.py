@@ -1,6 +1,8 @@
-"""本部 OBS を今年の構成(hosts/obs/assets/scenes.json)と config.json・.env から obs-websocket で設定する。
+"""本部 OBS を、シーンの構成(hosts/obs/scenes.json)、config.json・.env、その年の中身(kosensai-live-assets)から
+obs-websocket で設定する。
 
     uv run kosensai-live obs build      # シーンコレクション・プロファイル・obs-multi-rtmp の出力を設定する
+    uv run kosensai-live --assets <kosensai-live-assets の場所> obs build
     uv run kosensai-live obs devices    # 音声入力のデバイスの名前を表示する(scenes.json の device に書く)
 
 起動中の OBS に接続する。scenes.json のシーンは項目(ソース)の有無・並び・配置を scenes.json に合わせる。
@@ -16,6 +18,7 @@ import socket
 import sys
 import time
 from pathlib import Path
+from urllib.parse import parse_qsl, quote, urlencode
 
 import obsws_python as obs
 from obsws_python.error import OBSSDKRequestError
@@ -25,7 +28,9 @@ from . import config, urls
 WEBSOCKET_HOST, WEBSOCKET_PORT = "127.0.0.1", 4455
 HOST_DIR = config.REPO / "hosts/obs"
 OVERLAYS = HOST_DIR / "overlays"
-SCENES_JSON = HOST_DIR / "assets/scenes.json"
+SCENES_JSON = HOST_DIR / "scenes.json"
+# スライドショーに使う画像の拡張子
+SLIDE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 # obs-websocket の要求の結果のコード OutputRunning
 OBS_OUTPUT_RUNNING = 500
 SOURCE_RECORD_URL = "https://github.com/exeldro/obs-source-record/releases/tag/0.4.8"
@@ -65,18 +70,21 @@ def audio_input_kind() -> str:
                            "linux": "pulse_input_capture"}, "音声入力の種類")
 
 
-def browser(page: str, replay: bool, query: str = "") -> dict:
+def absolute_path(path: Path) -> str:
+    """OBS がローカルファイルに使用する http://absolute/<パス> の、<パス> の部分(先頭に / を付ける)。"""
+    return "/" + path.as_posix().lstrip("/")
+
+
+def browser(page: str, replay: bool, assets: Path, query: str = "") -> dict:
     # replay=True の画面は表示するたびに読み込み直して入りのアニメーションを再生する。
-    # 引数付きで開く場合は OBS がローカルファイルに使用する http://absolute/<パス> の URL で指定する。
+    # 画面は進行を ?assets= の場所から読む(overlays/overlay.js)。引数を付けるため、全ての画面を
+    # OBS がローカルファイルに使用する http://absolute/<パス> の URL で開く。
     # TODO: Windows で http://absolute/C:/... の形で開けることを本番機で確認する(macOS では確認済み)。
     # フレームレートは指定しない(fps_custom が無効なら OBS の映像のフレームレートで描画する)。
-    path = (OVERLAYS / page).as_posix().lstrip("/")
-    source = {"is_local_file": False, "url": f"http://absolute/{path}?{query}"} if query else {
-        "is_local_file": True,
-        "local_file": str(OVERLAYS / page),
-    }
+    params = urlencode({"assets": absolute_path(assets), **dict(parse_qsl(query))})
     return {
-        **source,
+        "is_local_file": False,
+        "url": f"http://absolute{quote(absolute_path(OVERLAYS / page))}?{params}",
         "width": 1920,
         "height": 1080,
         "reroute_audio": False,
@@ -273,10 +281,36 @@ def apply_recordings(cl: obs.ReqClient, scenes: dict) -> bool:
     return changed
 
 
-def build(env_path) -> None:
+def slides(assets: Path, scenes: dict, behavior: str) -> dict:
+    """CM のスライドショー。assets の cm.folder の画像をファイル名の順に表示する。
+
+    スライドショーにフォルダを渡すと、ファイルシステムが返す順(名前の順とは限らない)になるため、
+    名前の順に並べた画像の一覧を渡す。画像を足した後は obs build を実行し直す。
+    """
+    cm = scenes["cm"]
+    folder = assets / cm["folder"]
+    if not folder.is_dir():
+        sys.exit(f"CM のスライドのフォルダ {folder} がありません")
+    files = sorted(p for p in folder.iterdir() if p.suffix.lower() in SLIDE_EXTENSIONS)
+    return {
+        "files": [{"value": str(f), "selected": False, "hidden": False} for f in files],
+        "slide_time": int(cm["slide_sec"] * 1000),
+        "transition": "fade",
+        "loop": True,
+        "slide_mode": "mode_auto",
+        "playback_behavior": behavior,
+        "use_custom_size": "1920x1080",
+    }
+
+
+def build(env_path, assets: Path) -> None:
     conf = config.load_config()
     env = config.load_env(env_path)
     scenes = json.loads(SCENES_JSON.read_text(encoding="utf-8"))
+    assets = Path(os.path.abspath(assets))
+    if not (assets / "program.json").is_file():
+        sys.exit(f"{assets} に program.json がありません。--assets で kosensai-live-assets の場所を指定してください")
+    print(f"assets: {assets}")
     cl = connect()
     if "source_record_filter" not in cl.get_source_filter_kind_list().source_filter_kinds:
         sys.exit(f"Source Record のプラグインがありません。{SOURCE_RECORD_URL} からインストールしてください")
@@ -300,7 +334,11 @@ def build(env_path) -> None:
                 # デバイスは作成後に OBS が返すデバイスの一覧から選ぶ(audio_device_id)。
                 return audio_input_kind(), {}
             case "page":
-                return "browser_source", browser(spec["page"], spec.get("replay", False), spec.get("query", ""))
+                return "browser_source", browser(spec["page"], spec.get("replay", False), assets, spec.get("query", ""))
+            case "slides":
+                # always_play: 表示していない間も進む(全画面の CM)。pause_unpause: 隠すと止まり、
+                # 次に表示すると続きから進む(自動の CM。毎回、前回の続きのスライドから出す)。
+                return "slideshow_v2", slides(assets, scenes, spec["behavior"])
             case "media":
                 # 動画・音楽のファイルは OBS で指定する。ファイルが無ければ何も出ない(BGM の既定は無音)。
                 # restart が false の入力(BGM)は、同じ入力を持つシーンの間で切り替えても続きから再生する。
@@ -359,7 +397,7 @@ def build(env_path) -> None:
         after = [i["source"] for i in items]
         print(f"{'作成' if created else '更新' if before != after else '変更なし'}: {scene}")
 
-    # 設定は今の値に重ねて書く(overlay)ので、OBS で指定した CM の動画のファイルは消えない。
+    # 設定は今の値に重ねて書く(overlay)ので、OBS で指定した BGM の音楽のファイルは消えない。
     for name, spec in scenes["inputs"].items():
         _, settings = inputs[name]
         if spec["type"] == "audio":
@@ -368,8 +406,13 @@ def build(env_path) -> None:
                 settings = {"device_id": device_id}
         if settings:
             cl.set_input_settings(name, settings, True)
-        tracks = spec.get("tracks", [])
-        cl.set_input_audio_tracks(name, {str(t): t in tracks for t in range(1, 7)})
+        # URL が変わらない場合、ブラウザソースは読み込み直さない。program.json の変更を反映するため読み込み直す。
+        if spec["type"] == "page":
+            cl.press_input_properties_button(name, "refreshnocache")
+        # スライドショーには音声が無い(obs-websocket が音声のトラックの設定を断る)。
+        if spec["type"] != "slides":
+            tracks = spec.get("tracks", [])
+            cl.set_input_audio_tracks(name, {str(t): t in tracks for t in range(1, 7)})
         # 会場の音声のモニターは channels.lua が Ch3 に合わせて切り替える。ここでは固定のものだけを設定する。
         if spec.get("monitor"):
             cl.set_input_audio_monitor_type(name, "OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT")

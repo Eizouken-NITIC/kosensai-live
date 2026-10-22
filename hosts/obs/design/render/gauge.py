@@ -1,6 +1,6 @@
-"""計器(assets/gauge)の画像を Blender の Cycles で描画する。
+"""計器(design/gauge)の画像を Blender の Cycles で描画する。
 
-    uv run kosensai-live render gauge            # assets/gauge に描画する
+    uv run kosensai-live render gauge            # design/gauge に描画する
     uv run kosensai-live render gauge 30         # 確認用に 30 番の針だけ描画する
 
 出力先の後に番号(0〜60)を続けると、その番号の針だけを描画する(確認用)。

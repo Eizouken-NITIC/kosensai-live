@@ -27,7 +27,7 @@
   const SECONDS = { standby: 20, timetable: 15 };
   const HOLD_MINUTES = 5;
   const frames = { standby: document.getElementById('standby'), timetable: document.getElementById('timetable') };
-  // 確認用の ?now= は中の画面にもそのまま渡す。
+  // URL の引数(?assets=、確認用の ?now=)は中の画面にもそのまま渡す。
   for (const [name, frame] of Object.entries(frames)) frame.src = `${name}.html${location.search}`;
 
   let shown = null;

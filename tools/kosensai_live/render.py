@@ -14,11 +14,11 @@ import sys
 
 from . import config
 
-ASSETS = config.REPO / "hosts/obs/assets"
+DESIGN = config.REPO / "hosts/obs/design"
 # 描画するもの → (Blender のスクリプト, 出力先)
 TARGETS = {
-    "gauge": (ASSETS / "render/gauge.py", ASSETS / "gauge"),
-    "clock": (ASSETS / "render/clock.py", ASSETS / "clock-face"),
+    "gauge": (DESIGN / "render/gauge.py", DESIGN / "gauge"),
+    "clock": (DESIGN / "render/clock.py", DESIGN / "clock-face"),
 }
 
 

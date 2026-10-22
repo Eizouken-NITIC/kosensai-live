@@ -25,9 +25,10 @@
     "2 画面 背景": {"type": "page", "page": "split.html", "replay": true},
     "配信休止": {"type": "page", "page": "pause.html", "replay": true},
     "遊撃 休止": {"type": "page", "page": "pause.html", "query": "ch=ch2"},
-    "CM": {"type": "media", "tracks": [1], "monitor": true},
+    "CM": {"type": "slides", "behavior": "always_play"},
     "BGM": {"type": "media", "tracks": [1], "monitor": true, "restart": false},
-    "CM 小窓": {"type": "media", "tracks": [], "loop": false}
+    "CM 自動": {"type": "slides", "behavior": "pause_unpause"},
+    "CM 小窓": {"type": "slides", "behavior": "pause_unpause"}
   },
   "scenes": {
     "[音声] 常時": [
@@ -75,7 +76,7 @@
       {"source": "Ch2 iPhone", "place": "full"},
       {"source": "テロップ 遊撃", "place": "full"},
       {"source": "CM 小窓", "place": "corner", "hidden": true},
-      {"source": "CM", "place": "full", "hidden": true},
+      {"source": "CM 自動", "place": "full", "hidden": true},
       {"source": "時計", "place": "full"},
       {"source": "お知らせ", "place": "full"},
       {"source": "ウォーターマーク", "place": "full"}
@@ -124,7 +125,8 @@
       {"scene": "[録画] Ch2 遊撃", "track": 3, "name": "Ch2"}
     ]
   },
-  "cm_corner": {"scene": "Ch3 遊撃", "source": "CM 小窓", "file_from": "CM", "lost_video": "Ch2 iPhone", "every_min": 5},
+  "cm": {"folder": "cm/out", "slide_sec": 6},
+  "cm_corner": {"scene": "Ch3 遊撃", "source": "CM 小窓", "full_source": "CM 自動", "lost_video": "Ch2 iPhone", "every_min": 5, "show_sec": 30},
   "signal_lost": [
     {"video": "Ch2 iPhone", "hide": [{"source": "テロップ 遊撃"}]}
   ],

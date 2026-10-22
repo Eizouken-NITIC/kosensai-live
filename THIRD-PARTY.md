@@ -19,9 +19,9 @@
 
 ## 本部 OBS のテロップに同梱しているソフトウェア
 
-`hosts/obs/overlays/` は本部 OBS のブラウザソースで表示するテロップです。オフラインでも表示できるように、次のフォントを `hosts/obs/assets/fonts/` に同梱しています。
+`hosts/obs/overlays/` は本部 OBS のブラウザソースで表示するテロップです。オフラインでも表示できるように、次のフォントを `hosts/obs/design/fonts/` に同梱しています。
 
 | ソフトウェア | バージョン | ライセンス | 著作権者 | ライセンス全文へのリンク |
 | --- | --- | --- | --- | --- |
-| [LINE Seed JP](https://seed.line.me/) | Fontsource 5.3.2 経由 | OFL-1.1 | LY Corporation | [hosts/obs/assets/fonts/line-seed-jp/LICENSE](hosts/obs/assets/fonts/line-seed-jp/LICENSE) |
-| [DSEG7 Classic Bold](https://github.com/keshikan/DSEG) | 0.46 | OFL-1.1 | keshikan | [hosts/obs/assets/fonts/dseg/LICENSE](hosts/obs/assets/fonts/dseg/LICENSE) |
+| [LINE Seed JP](https://seed.line.me/) | Fontsource 5.3.2 経由 | OFL-1.1 | LY Corporation | [hosts/obs/design/fonts/line-seed-jp/LICENSE](hosts/obs/design/fonts/line-seed-jp/LICENSE) |
+| [DSEG7 Classic Bold](https://github.com/keshikan/DSEG) | 0.46 | OFL-1.1 | keshikan | [hosts/obs/design/fonts/dseg/LICENSE](hosts/obs/design/fonts/dseg/LICENSE) |

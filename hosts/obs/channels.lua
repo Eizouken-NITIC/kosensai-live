@@ -1,5 +1,5 @@
 -- 本部 OBS の音声の振り分けと、第一体育館の配信休止。OBS の「ツール → スクリプト」でこのファイルを追加する。
--- ソースとシーンの名前は assets/scenes.json の audio・signal_lost・cm_corner から読む。
+-- ソースとシーンの名前は scenes.json(このファイルと同じフォルダ)の audio・signal_lost・cm_corner から読む。
 --
 -- 1. audio.always のシーンを出力チャンネルに接続し、どのシーンをプログラムに出していても
 --    Ch1・Ch2 の音声がミキサーに入るようにする。obs-multi-rtmp がプログラム以外のシーンを
@@ -16,9 +16,9 @@
 -- 4. signal_lost の映像(遊撃のスマートフォン)の SRT が切れて映像が消えている間は、hide のソース
 --    (遊撃のテロップ)を全シーンで隠す。映像の下に配置した休止の画面が表示されるため、その上に演目を出さない。
 --    SRT は数秒の途切れでは切断と判断しないため、短い途切れでは切り替わらない。
--- 5. cm_corner の scene に、毎時 every_min 分ごとに CM を表示し、再生が終わったら隠す。
---    普段は右下の小窓(source、音なし)を出し、lost_video(遊撃)の映像が消えて休止の画面が出ている間は、
---    全画面の CM(file_from、音あり)を出す。小窓の動画のファイルは file_from と同じものに合わせる。ホットキーの
+-- 5. cm_corner の scene に、毎時 every_min 分ごとに CM のスライドショーを show_sec 秒だけ表示する。
+--    普段は右下の小窓(source)を出し、lost_video(遊撃)の映像が消えて休止の画面が出ている間は、
+--    全画面(full_source)を出す。スライドショーは隠すと止まり、次に表示すると続きのスライドから進む。ホットキーの
 --    「CM 小窓: 自動で出す」「CM 小窓: 出さない」で切り替え、状態はスクリプトの設定に保存する。
 --
 -- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
@@ -35,7 +35,7 @@ local always_scene = nil
 local ch3 = {} -- { { video = ..., audio = ... }, ... }
 local pause = {} -- { source = ..., audio = ... }
 local signal_lost = {} -- { { video = ..., hide = { ... }, lost = nil }, ... }
-local cm_corner = nil -- { scene = ..., source = ..., file_from = ..., lost_video = ..., every_min = ... }
+local cm_corner = nil -- { scene = ..., source = ..., full_source = ..., lost_video = ..., every_min = ..., show_sec = ... }
 local paused = false
 -- 右下の CM。cm_auto は自動で出すかどうか、cm_shown_at は表示を始めた時刻(表示していなければ nil)、
 -- cm_slot は最後に表示した回(毎時 every_min 分ごとの区切りの番号)。
@@ -43,8 +43,6 @@ local cm_auto = true
 local cm_shown_at = nil
 local cm_shown_source = nil
 local cm_slot = nil
--- 再生の終わりを検出できない場合に、小窓を隠すまでの秒数
-local CM_MAX_SEC = 180
 local hotkeys = {}
 
 local function script_dir()
@@ -52,7 +50,7 @@ local function script_dir()
 end
 
 local function load_json(name)
-  local path = script_dir() .. "/assets/" .. name
+  local path = script_dir() .. "/" .. name
   local data = obslua.obs_data_create_from_json_file(path)
   if data == nil then
     obslua.script_log(obslua.LOG_WARNING, path .. " を読み込めない")
@@ -103,9 +101,10 @@ local function load_config()
     cm_corner = {
       scene = obslua.obs_data_get_string(cm, "scene"),
       source = obslua.obs_data_get_string(cm, "source"),
-      file_from = obslua.obs_data_get_string(cm, "file_from"),
+      full_source = obslua.obs_data_get_string(cm, "full_source"),
       lost_video = obslua.obs_data_get_string(cm, "lost_video"),
       every_min = obslua.obs_data_get_int(cm, "every_min"),
+      show_sec = obslua.obs_data_get_int(cm, "show_sec"),
     }
     obslua.obs_data_release(cm)
   end
@@ -232,27 +231,6 @@ local function apply_pause()
   update_track1()
 end
 
--- 小窓の動画のファイルを、全画面の CM のファイルに合わせる。ファイルが無ければ空の文字列を返す。
-local function sync_cm_file()
-  local from = obslua.obs_get_source_by_name(cm_corner.file_from)
-  local to = obslua.obs_get_source_by_name(cm_corner.source)
-  local file = ""
-  if from ~= nil and to ~= nil then
-    local fs = obslua.obs_source_get_settings(from)
-    local ts = obslua.obs_source_get_settings(to)
-    file = obslua.obs_data_get_string(fs, "local_file")
-    if obslua.obs_data_get_string(ts, "local_file") ~= file then
-      obslua.obs_data_set_string(ts, "local_file", file)
-      obslua.obs_source_update(to, ts)
-    end
-    obslua.obs_data_release(fs)
-    obslua.obs_data_release(ts)
-  end
-  if from ~= nil then obslua.obs_source_release(from) end
-  if to ~= nil then obslua.obs_source_release(to) end
-  return file
-end
-
 -- scene_name のシーンの name のソースの表示を切り替える。全画面の CM は Ch3 CM のシーンにもあるため、
 -- 全シーンではなく cm_corner.scene だけを切り替える。
 local function set_visible_in(scene_name, name, visible)
@@ -271,40 +249,27 @@ local function hide_cm()
   cm_shown_at = nil
   cm_shown_source = nil
   set_visible_in(cm_corner.scene, cm_corner.source, false)
-  set_visible_in(cm_corner.scene, cm_corner.file_from, false)
+  set_visible_in(cm_corner.scene, cm_corner.full_source, false)
 end
 
 local function update_cm()
   if cm_corner == nil then
     return
   end
-  local file = sync_cm_file()
   if cm_shown_at ~= nil then
-    local source = obslua.obs_get_source_by_name(cm_shown_source)
-    local elapsed = os.time() - cm_shown_at
-    local ended, duration = false, 0
-    if source ~= nil then
-      ended = obslua.obs_source_media_get_state(source) == obslua.OBS_MEDIA_STATE_ENDED
-      duration = obslua.obs_source_media_get_duration(source) / 1000
-      obslua.obs_source_release(source)
-    end
-    -- 再生を始めた直後は前回の終了の状態が残っているため、2 秒は終了と見なさない。
-    -- 全画面の CM は Ch3 CM のシーンのためにループするので、終了の状態にならない。動画の長さでも判定する。
-    if (ended and elapsed >= 2) or (duration > 0 and elapsed >= duration) or elapsed > CM_MAX_SEC then
+    if os.time() - cm_shown_at >= cm_corner.show_sec then
       hide_cm()
     end
-  elseif cm_auto and file ~= "" then
+  elseif cm_auto then
     local slot = math.floor(os.time() / (cm_corner.every_min * 60))
     if slot ~= cm_slot then
       cm_slot = slot
-      -- 遊撃の映像が消えて休止の画面が出ている間は、全画面の CM を音ありで出す。
-      cm_shown_source = video_lost(cm_corner.lost_video) and cm_corner.file_from or cm_corner.source
-      local source = obslua.obs_get_source_by_name(cm_shown_source)
-      if source ~= nil then
+      -- 遊撃の映像が消えて休止の画面が出ている間は、全画面で出す。
+      cm_shown_source = video_lost(cm_corner.lost_video) and cm_corner.full_source or cm_corner.source
+      -- スライドの画像が無ければ(幅が 0)出さない。
+      if not video_lost(cm_shown_source) then
         cm_shown_at = os.time()
         set_visible_in(cm_corner.scene, cm_shown_source, true)
-        obslua.obs_source_media_restart(source)
-        obslua.obs_source_release(source)
       end
     end
   end
@@ -363,7 +328,7 @@ end
 
 function script_properties()
   local props = obslua.obs_properties_create()
-  obslua.obs_properties_add_button(props, "reload", "assets を読み直す", function()
+  obslua.obs_properties_add_button(props, "reload", "scenes.json を読み直す", function()
     load_config()
     attach_always_scene(true)
     apply_pause()
