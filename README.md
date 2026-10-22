@@ -2,7 +2,7 @@
 
 映像研究部が、高専祭のライブ配信のために作った配信システムです！
 
-実運用では、メイン会場にカメラ、スイッチャー、本部 PC（OBS）を配置します。スイッチングした映像を SRT で、音響の音声を USB オーディオで本部 PC へ入力し、移動中継のスマートフォンの映像も SRT で本部 PC へ集約します。本部 PC でテロップ等を合成し、配信サーバー（MediaMTX + Caddy）へ送出します。
+実運用では、メイン会場にカメラ、スイッチャー、本部 PC（OBS）を配置します。スイッチングした映像を SRT で、音響の音声を USB オーディオで本部 PC へ入力し、移動中継のスマートフォンの映像も SRT で本部 PC へ集約します。本部 PC でテロップ等を合成し、配信サーバー（MediaMTX + Caddy）へ送出します。本部 PC では、各チャンネルの録画も行います。
 その後 MediaMTX で HLS に remux し、視聴ページに配信します。
 
 外部サービスには映像を送出せず、イベント会場内で配信が完結しているのが大きな特徴です。
@@ -11,6 +11,8 @@
 | 領域 | 技術 |
 | --- | --- |
 | 映像伝送 | SRT |
+| 本部 PC | OBS Studio + obs-multi-rtmp（チャンネルごとの送出）+ Source Record（録画） |
+| 本部 PC の設定 | `kosensai-live`（Python、uv で Windows・macOS・Linux 共通） |
 | 配信 | HLS（MediaMTX が SRT → HLS に remux） |
 | Web サーバー / TLS 終端 | Caddy |
 | 視聴ページ / サイネージ | SvelteKit + TypeScript（静的プリレンダリング） |
@@ -33,6 +35,7 @@
    ▼                                                ▼
 本部の PC (OBS)  ← hosts/obs/
    │  チャンネルごとにエンコードし、SRT Caller で送信
+   │  （Ch1・Ch2 はテロップの無い映像、Ch3 はプログラムを録画）
    │  streamid=publish:chN
    ▼
 配信サーバー (MediaMTX + Caddy)             ← hosts/server/
@@ -174,7 +177,7 @@ docker compose up -d         # 起動前に init サービスが設定・証明�
 
 **3. 本部 PC（OBS）を設定する**
 
-本部 OBS と ATEM は、`kosensai-live` が `config.json`・`.env`・`hosts/obs/assets/scenes.json` から設定します。手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
+本部 PC は Windows・macOS・Linux のどれでも構いません。OBS に obs-multi-rtmp と Source Record のプラグインを入れ、本部 OBS（シーン・送出・録画）と ATEM は `kosensai-live` が `config.json`・`.env`・`hosts/obs/assets/scenes.json` から設定します。必要なものと手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
 
 **4. サイネージ端末を用意する（任意）**
 
