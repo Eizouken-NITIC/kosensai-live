@@ -51,7 +51,7 @@ echo 'net.core.rmem_max=26214400' | sudo tee /etc/sysctl.d/99-srt.conf
 # 2. 本リポジトリをクローンし、作業ディレクトリへ移動します
 git clone <本リポジトリのURL> && cd kosensai-live/hosts/server
 
-# 3. .env ファイルを作成し、パスフレーズと各マシンの IP を記述します（パスフレーズは 10〜79 文字）
+# 3. .env ファイルを作成し、パスフレーズと各マシンの IP を記述します（パスフレーズは 10〜79 文字。`OBS_<Ch>_LISTEN_PASSPHRASE` は 10〜63 文字）
 cp .env.example .env
 for i in 1 2 3 4 5; do openssl rand -base64 24; done   # パスフレーズは 1 つずつ別の値にします
 $EDITOR .env
@@ -77,7 +77,7 @@ docker compose up -d
 | 変数 | 用途 |
 | --- | --- |
 | `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` | 本部 OBS → 配信サーバーの送出に使うパスフレーズです。**ATEM・スマートフォンには設定しません。** |
-| `OBS_<Ch>_LISTEN_PASSPHRASE` | ATEM・スマートフォン → 本部 OBS（SRT Listener）に使うパスフレーズです。ATEM とスマートフォンに設定するのはこちらです。`obsListenPort` を持つ Ch にだけ設定します。 |
+| `OBS_<Ch>_LISTEN_PASSPHRASE` | ATEM・スマートフォン → 本部 OBS（SRT Listener）に使うパスフレーズです。ATEM とスマートフォンに設定するのはこちらです。`obsListenPort` を持つ Ch にだけ設定します。ATEM のパスフレーズの欄は 63 文字までのため、10〜63 文字にします。 |
 | `HQ_IP` | 本部 PC の IPv4 アドレスです。配信サーバーへの送出は、この IP とサーバー自身からだけ受け付けます。ATEM・スマートフォンの送信先もこの IP です。 |
 | `SERVER_IP` | 本部 PC から見た配信サーバーの IPv4 アドレスです。`kosensai-live obs build` が obs-multi-rtmp の送出先の URL に使用します。 |
 | `ATEM_IP` | ATEM の IPv4 アドレスです。`kosensai-live atem` が使用します。 |
