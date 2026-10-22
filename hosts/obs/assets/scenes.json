@@ -23,6 +23,7 @@
     "タイムテーブル": {"type": "page", "page": "timetable.html", "replay": true},
     "2 画面 背景": {"type": "page", "page": "split.html", "replay": true},
     "配信休止": {"type": "page", "page": "pause.html", "replay": true},
+    "遊撃 休止": {"type": "page", "page": "pause.html", "query": "ch=ch2"},
     "CM": {"type": "media", "tracks": [1], "monitor": true}
   },
   "scenes": {
@@ -41,6 +42,7 @@
       {"source": "配信休止", "place": "full", "hidden": true}
     ],
     "[出力] Ch2 遊撃": [
+      {"source": "遊撃 休止", "place": "full"},
       {"source": "Ch2 iPhone", "place": "full"},
       {"source": "テロップ 遊撃", "place": "full"},
       {"source": "お知らせ", "place": "full"},
@@ -65,6 +67,7 @@
       {"source": "配信休止", "place": "full", "hidden": true}
     ],
     "Ch3 遊撃": [
+      {"source": "遊撃 休止", "place": "full"},
       {"source": "Ch2 iPhone", "place": "full"},
       {"source": "テロップ 遊撃", "place": "full"},
       {"source": "時計", "place": "full"},
@@ -75,6 +78,7 @@
       {"source": "2 画面 背景", "place": "full"},
       {"source": "Ch1 ATEM", "place": "pane-left"},
       {"source": "配信休止", "place": "pane-left", "hidden": true},
+      {"source": "遊撃 休止", "place": "pane-right"},
       {"source": "Ch2 iPhone", "place": "pane-right"},
       {"source": "お知らせ", "place": "full"}
     ],
@@ -111,12 +115,15 @@
       {"scene": "[録画] Ch2 遊撃", "track": 3, "name": "Ch2"}
     ]
   },
+  "signal_lost": [
+    {"video": "Ch2 iPhone", "hide": [{"source": "テロップ 遊撃"}]}
+  ],
   "audio": {
     "always": "[音声] 常時",
     "ch3": [
       {"video": "Ch1 ATEM", "audio": "Ch1 音声 (USB)"},
       {"video": "Ch2 iPhone", "audio": "Ch2 iPhone"}
     ],
-    "pause": {"source": "配信休止", "audio": "Ch1 音声 (USB)", "channel": "ch1"}
+    "pause": {"source": "配信休止", "audio": "Ch1 音声 (USB)"}
   }
 }

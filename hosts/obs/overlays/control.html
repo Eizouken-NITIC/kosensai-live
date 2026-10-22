@@ -8,28 +8,135 @@
      画面のデザインは使用しない。テロップのブラウザソースと同じ origin になるため、
      localStorage と BroadcastChannel で状態を渡す。
      OBS のブラウザソースが既定で入れる CSS(背景の透明、余白、overflow: hidden)を、詳細度の高いセレクターで上書きする。 */
-  html, body { background: #fff; overflow: auto; }
-  html body { margin: 16px; font: 18px system-ui, sans-serif; color: #000; }
-  fieldset { margin: 0 0 16px; }
-  label { display: block; padding: 6px 0; }
+  html, body { background: #f4f4f5; overflow: auto; }
+  html body { margin: 0; padding: 20px; font: 18px/1.5 system-ui, sans-serif; color: #111; }
+  section { background: #fff; border: 1px solid #d4d4d8; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
+  h2 { margin: 0 0 12px; font-size: 20px; }
+  table { border-collapse: collapse; width: 100%; }
+  td { padding: 6px 8px; border-top: 1px solid #e4e4e7; vertical-align: middle; }
+  td.time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tr.now td { background: #fef9c3; }
+  tr.past td { color: #a1a1aa; }
+  button { font: inherit; font-size: 16px; padding: 6px 14px; border: 1px solid #a1a1aa; border-radius: 6px; background: #fafafa; cursor: pointer; }
+  button.on { background: #111; color: #fff; border-color: #111; }
+  input[type=text] { font: inherit; padding: 6px 10px; border: 1px solid #a1a1aa; border-radius: 6px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .status { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; }
+  .status dt { color: #52525b; }
+  .status dd { margin: 0; font-weight: 600; }
+  .warn { background: #fee2e2; border-color: #f87171; }
+  .muted { color: #71717a; font-size: 15px; }
 </style>
 </head>
 <body>
-<fieldset><legend>お知らせ</legend><div id="notice"></div></fieldset>
-<fieldset><legend>遊撃の現在地</legend><div id="ch2Place"></div></fieldset>
+<section>
+  <dl class="status" id="status"></dl>
+</section>
+<section class="warn" id="ng" hidden></section>
+<section>
+  <h2>第一体育館の遅れ</h2>
+  <p class="muted">演目が始まったら「始まった」を押すと、その演目と後の演目の時刻をずらす。</p>
+  <table id="acts"></table>
+  <p class="row"><button id="clearDelay">遅れをなくす</button></p>
+</section>
+<section>
+  <h2>お知らせ</h2>
+  <p class="muted">ループに入れたお知らせを 1 分ごとに 1 件ずつ、15 秒出す。固定は解除するまで出し続ける。</p>
+  <table id="notices"></table>
+  <p class="row"><input type="text" id="newNotice" size="50" placeholder="お知らせの文言"><button id="addNotice">追加</button></p>
+</section>
+<section>
+  <h2>遊撃の現在地</h2>
+  <p class="muted">選んだ場所は、次の発表の枠が始まるまで出す。発表の枠の間は、枠の演目を出す。</p>
+  <p class="row" id="places"></p>
+  <p class="row"><input type="text" id="placeTitle" placeholder="内容(例: 屋台)"><input type="text" id="placeWhere" placeholder="場所(例: 校内各所)"><button id="setPlace">出す</button><button id="autoPlace">自動に戻す</button></p>
+</section>
 <script src="overlay.js"></script>
 <script>
-  const { el } = Overlay;
+  const { el, hhmm } = Overlay;
   const P = window.PROGRAM;
-  // key の選択肢 [表示, 値] をラジオボタンで出す。値の null は「選ばない」。
-  function radios(key, items, value) {
-    document.getElementById(key).replaceChildren(...items.map(([text, v]) =>
-      el('label', {}, el('input', { type: 'radio', name: key, checked: value === v, onchange: () => Overlay.setState({ [key]: v }) }), ` ${text}`)));
+  const $ = (id) => document.getElementById(id);
+  let s = Overlay.state();
+  const button = (text, onclick, on = false) => el('button', { textContent: text, onclick, className: on ? 'on' : '' });
+
+  // ---- 遅れ ----
+  // 押した演目の予定の開始から、今までの差を遅れとする。その演目より後の指定は消す。
+  function started(it) {
+    const t = Overlay.now();
+    const key = Overlay.dayKey(t);
+    const scheduled = Overlay.schedule('ch1', t, {}).find((x) => x.at === it.at);
+    const min = Math.round((t - scheduled.start) / 60000);
+    const kept = (s.delays?.[key] ?? []).filter((d) => d.from < it.at);
+    Overlay.setState({ delays: { ...s.delays, [key]: [...kept, { from: it.at, min }] } });
   }
-  Overlay.onState((s) => {
-    radios('notice', [['出さない', null], ...P.notices.map((text, i) => [text, i])], s.notice ?? null);
-    radios('ch2Place', [['予定どおり', null], ...P.ch2.places.map(({ title, place }, i) => [`${title}(${place})`, i])], s.ch2Place ?? null);
-  });
+  $('clearDelay').onclick = () => Overlay.setState({ delays: { ...s.delays, [Overlay.dayKey(Overlay.now())]: [] } });
+
+  // ---- お知らせ ----
+  const setNotices = (list) => Overlay.setState({ notices: list });
+  $('addNotice').onclick = () => {
+    const text = $('newNotice').value.trim();
+    if (!text) return;
+    setNotices([...Overlay.notices(s), { text, loop: true }]);
+    $('newNotice').value = '';
+  };
+
+  // ---- 遊撃 ----
+  const place = (title, where) => Overlay.setState({ ch2Place: { title, place: where, since: Overlay.now().toISOString() } });
+  $('setPlace').onclick = () => {
+    if ($('placeTitle').value.trim()) place($('placeTitle').value.trim(), $('placeWhere').value.trim());
+  };
+  $('autoPlace').onclick = () => Overlay.setState({ ch2Place: null });
+
+  function draw() {
+    const t = Overlay.now();
+    const items = Overlay.schedule('ch1', t, s);
+    const plan = Overlay.schedule('ch1', t, {});
+    const delays = s.delays?.[Overlay.dayKey(t)] ?? [];
+    const delay = delays.length ? delays[delays.length - 1].min : 0;
+    const cur = Overlay.current('ch1', t, s);
+    const ch2 = Overlay.ch2Now(s, t);
+    const notice = Overlay.noticeText(s, t);
+
+    $('status').replaceChildren(
+      el('dt', {}, '時刻'), el('dd', {}, hhmm(t)),
+      el('dt', {}, '第一体育館'), el('dd', {}, cur ? `${cur.title}(${hhmm(cur.start)}〜${hhmm(cur.end)})` : 'なし'),
+      el('dt', {}, '遅れ'), el('dd', {}, delay ? `${delay > 0 ? '+' : ''}${delay} 分` : 'なし'),
+      el('dt', {}, 'お知らせ'), el('dd', {}, s.noticePin ? `固定: ${s.noticePin}` : (notice ?? '(次のループまで出さない)')),
+      el('dt', {}, '遊撃'), el('dd', {}, ch2 ? `${ch2.title}(${ch2.place})` : 'なし'),
+    );
+
+    // 配信しない演目の予告。休止の画面はホットキーで出す。
+    const ng = items.find((it) => it.kind === 'ng' && it.end > t);
+    $('ng').hidden = !ng;
+    if (ng) {
+      const on = ng.start <= t;
+      $('ng').replaceChildren(el('h2', {}, on ? `配信しない演目の時間です: ${ng.title}` : `次は配信しない演目: ${ng.title}`),
+        el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。始まったらホットキーの「配信休止: 出す」、終わったら「配信休止: 消す」を押す。`));
+    }
+
+    $('acts').replaceChildren(...items.map((it, i) => el('tr', { className: it === cur ? 'now' : it.end <= t ? 'past' : '' },
+      el('td', { className: 'time' }, `予定 ${plan[i].at}`),
+      el('td', { className: 'time' }, plan[i].start.getTime() === it.start.getTime() ? '' : `→ ${hhmm(it.start)}`),
+      el('td', {}, it.kind === 'break' ? '休憩' : it.title, it.kind === 'ng' ? '(配信しない)' : ''),
+      el('td', {}, button('始まった', () => started(it))),
+    )));
+
+    const list = Overlay.notices(s);
+    $('notices').replaceChildren(...list.map((n, i) => el('tr', {},
+      el('td', {}, el('label', {}, el('input', { type: 'checkbox', checked: n.loop, onchange: (e) => setNotices(list.map((m, j) => (j === i ? { ...m, loop: e.target.checked } : m))) }), ' ループ')),
+      el('td', {}, n.text),
+      el('td', { className: 'row' },
+        button('今すぐ', () => Overlay.setState({ noticeNow: { text: n.text, at: Overlay.now().toISOString() } })),
+        button(s.noticePin === n.text ? '固定を解除' : '固定', () => Overlay.setState({ noticePin: s.noticePin === n.text ? null : n.text }), s.noticePin === n.text),
+        button('削除', () => setNotices(list.filter((_, j) => j !== i)))),
+    )));
+
+    $('places').replaceChildren(...P.ch2.places.map(({ title, place: where }) =>
+      button(`${title}(${where})`, () => place(title, where), s.ch2Place?.title === title && s.ch2Place?.place === where)));
+  }
+
+  Overlay.onState((next) => { s = next; draw(); });
+  Overlay.every(1000, draw);
 </script>
 </body>
 </html>

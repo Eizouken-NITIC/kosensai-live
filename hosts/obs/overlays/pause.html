@@ -18,6 +18,8 @@
   .main .caption { font-size: 30px; }
   .main .when { font-size: 132px; font-weight: 400; letter-spacing: -0.01em; }
   .main .what { font-size: var(--fs-m); color: var(--lit-2); }
+  /* 遊撃の映像の下に敷く場合は、上に重なる時計と重ならないよう、ステータスバーを出さない。 */
+  body.under .statusbar { display: none; }
 </style>
 </head>
 <body>
@@ -34,15 +36,23 @@
 </div>
 <script src="overlay.js"></script>
 <script>
-  // 第一体育館の配信をしない時間に、映像の代わりに出す画面。
-  // 表示するかどうかは channels.lua が決める。このページは再開の時刻だけを出す。
+  // 映像の代わりに出す休止の画面。
+  // ?ch=ch1(既定): 第一体育館の配信をしない時間に出す。表示するかどうかは channels.lua が決め、
+  //                 このページは再開の時刻だけを出す。
+  // ?ch=ch2: 遊撃の映像の下に置き、スマートフォンからの SRT が切れて映像が消えた時に見える。
   const $ = (id) => document.getElementById(id);
+  const ch = Overlay.params.get('ch') ?? 'ch1';
+  document.body.classList.toggle('under', ch === 'ch2');
   $('title').textContent = window.PROGRAM.title;
-  $('venue').textContent = window.PROGRAM.ch1.name;
+  $('venue').textContent = window.PROGRAM[ch].name;
   Overlay.every(1000, () => {
     const t = Overlay.now();
     $('clock').textContent = Overlay.hhmm(t);
     $('date').textContent = Overlay.date(t);
+    if (ch === 'ch2') {
+      $('what').textContent = '中継を一時休止しています。再開までお待ちください';
+      return;
+    }
     const show = Overlay.nextShow(t);
     const sameDay = show && show.start.toDateString() === t.toDateString();
     $('when').textContent = show && sameDay ? Overlay.hhmm(show.start) : '';

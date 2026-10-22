@@ -20,29 +20,49 @@
   const DAYS = ['日', '月', '火', '水', '木', '金', '土'];
   const date = (d) => `${d.getMonth() + 1}月${d.getDate()}日(${DAYS[d.getDay()]})`;
 
-  // チャンネル(ch1 / ch2)の当日の項目を { start, end, title, kind, place, label } の配列で返す。
-  function schedule(ch, d = now()) {
+  const MINUTE = 60000;
+
+  // 第一体育館の遅れ。state.delays[日付] は [{ from: 予定の開始 "HH:MM", min: 遅れの分 }, ...] で、
+  // 操作パネルの「始まった」で追加する。各項目には、予定の開始が from 以降で最も新しい from の遅れを足す。
+  function delayAt(delays, time) {
+    let min = 0;
+    for (const d of delays) if (d.from <= time) min = d.min;
+    return min;
+  }
+
+  // チャンネルの当日の項目を { start, end, title, kind, place, label, at } の配列で返す。at は予定の開始。
+  // ch1: 出演順。終了は次の項目の開始(最後は end)。時刻には遅れ(s.delays)を足す。
+  // ch2: 遊撃の発表の枠(公式のイベントスケジュールの ch が ch2 の項目)。枠の外は ch2Now が返す。
+  function schedule(ch, d = now(), s = state()) {
     const key = dayKey(d);
-    const day = P[ch].days[key];
+    if (ch === 'ch2') {
+      return events(d).filter((e) => e.ch === 'ch2').map((e) => ({
+        start: e.start, end: e.end, title: e.title, kind: 'roam', place: e.venue, label: e.venue, at: hhmm(e.start),
+      }));
+    }
+    const day = P.ch1.days[key];
     if (!day) return [];
+    const delays = s.delays?.[key] ?? [];
+    const shifted = (time) => new Date(at(key, time).getTime() + delayAt(delays, time) * MINUTE);
     return day.items.map((it, i) => {
-      const kind = ch === 'ch1' ? it.kind : 'roam';
+      const nextAt = day.items[i + 1]?.at;
       return {
-        start: at(key, it.at),
-        end: at(key, day.items[i + 1]?.at ?? day.end),
+        start: shifted(it.at),
+        end: nextAt ? shifted(nextAt) : new Date(at(key, day.end).getTime() + delayAt(delays, it.at) * MINUTE),
         title: it.title,
-        kind,
-        place: ch === 'ch2' ? it.place : P.ch1.name,
-        label: ch === 'ch1' ? P.ch1.kinds[kind] : it.place,
+        kind: it.kind,
+        place: P.ch1.name,
+        label: P.ch1.kinds[it.kind],
+        at: it.at,
       };
     });
   }
 
-  const current = (ch, d = now()) => schedule(ch, d).find((it) => it.start <= d && d < it.end) ?? null;
+  const current = (ch, d = now(), s = state()) => schedule(ch, d, s).find((it) => it.start <= d && d < it.end) ?? null;
 
   // 次に配信する項目。休憩と配信しない時間は飛ばす。
-  const next = (ch, d = now()) =>
-    schedule(ch, d).find((it) => it.start > d && it.kind !== 'break' && it.kind !== 'ng') ?? null;
+  const next = (ch, d = now(), s = state()) =>
+    schedule(ch, d, s).find((it) => it.start > d && it.kind !== 'break' && it.kind !== 'ng') ?? null;
 
   // 項目の経過の割合(0〜1)。
   const progress = (it, d = now()) => Math.min(1, Math.max(0, (d - it.start) / (it.end - it.start)));
@@ -66,7 +86,7 @@
   // ---- 操作パネルとの状態の受け渡し ----
   // ローカルファイルのブラウザソースとドックは同じ origin(http://absolute)になるため、
   // localStorage に状態を置き、変更を BroadcastChannel で知らせる。
-  const KEY = 'kosensai-overlay';
+  const KEY = 'kosensai-live';
   const bus = new BroadcastChannel(KEY);
   const state = () => JSON.parse(localStorage.getItem(KEY) ?? '{}');
   // BroadcastChannel は送ったページ自身には届かないため、同じページの受け手には直接知らせる。
@@ -84,14 +104,34 @@
     fn(state());
   }
 
-  // 遊撃の現在地。操作パネルで選んでいればそれを、無ければ予定の項目を返す。
+  // 遊撃の現在地。発表の枠の間はその枠を返す。操作パネルで場所を選ぶと、次の枠が始まるまでそれを返す。
+  // 何も無ければ program.json の ch2.default を返す。
   function ch2Now(s = state(), d = now()) {
-    if (s.ch2Place != null) {
-      const { title, place } = P.ch2.places[s.ch2Place];
-      return { title, place, label: place };
-    }
-    return current('ch2', d);
+    const slot = current('ch2', d, s);
+    const manual = s.ch2Place && { ...s.ch2Place, label: s.ch2Place.place };
+    if (manual && (!slot || slot.start < new Date(s.ch2Place.since))) return manual;
+    if (slot) return slot;
+    return manual ?? { ...P.ch2.default, label: P.ch2.default.place };
   }
+
+  // 今出すお知らせの文言。出さない時は null。
+  // 固定(s.noticePin)があればそれを、「今すぐ」(s.noticeNow)から NOTICE_SHOW 秒の間はそれを出す。
+  // それ以外は、ループに入れたお知らせを NOTICE_CYCLE 秒ごとに 1 件ずつ、最初の NOTICE_SHOW 秒だけ出す。
+  // 時刻だけで決まるため、お知らせの帯とテロップ(帯の分だけ上げる)が同じ判定になる。
+  // 仕様補完: 表示 15 秒、間隔 60 秒。
+  const NOTICE_SHOW = 15000;
+  const NOTICE_CYCLE = 60000;
+  function noticeText(s = state(), d = now()) {
+    if (s.noticePin) return s.noticePin;
+    if (s.noticeNow && d - new Date(s.noticeNow.at) < NOTICE_SHOW) return s.noticeNow.text;
+    const loop = notices(s).filter((n) => n.loop);
+    if (!loop.length) return null;
+    const slot = Math.floor(d / NOTICE_CYCLE);
+    return d % NOTICE_CYCLE < NOTICE_SHOW ? loop[slot % loop.length].text : null;
+  }
+
+  // 登録したお知らせ [{ text, loop }]。操作パネルで登録するまでは program.json の notices を使う。
+  const notices = (s = state()) => s.notices ?? P.notices.map((text) => ({ text, loop: false }));
 
   function every(ms, fn) {
     fn();
@@ -216,7 +256,7 @@
   }
 
   window.Overlay = {
-    params, now, hhmm, date, schedule, current, next, progress, events, nextShow,
-    state, setState, onState, ch2Now, every, el, alignInk, gauge, clockFace, replay,
+    params, now, hhmm, date, dayKey, schedule, current, next, progress, events, nextShow,
+    state, setState, onState, ch2Now, notices, noticeText, every, el, alignInk, gauge, clockFace, replay,
   };
 })();

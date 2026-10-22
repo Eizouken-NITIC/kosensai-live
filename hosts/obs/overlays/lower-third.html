@@ -56,11 +56,11 @@
   Overlay.onState((next) => {
     s = next;
     shown = null;
-    lt.classList.toggle('lifted', s.notice != null);
   });
 
-  Overlay.every(1000, () => {
+  Overlay.every(250, () => {
     const t = Overlay.now();
+    lt.classList.toggle('lifted', Overlay.noticeText(s, t) != null);
     const cur = ch === 'ch1' ? Overlay.current('ch1', t) : Overlay.ch2Now(s, t);
     const visible = cur && cur.kind !== 'ng';
     // 経過の区切りは、演目の経過の割合の分だけ明るくする。遊撃の現在地には時刻が無いため出さない。

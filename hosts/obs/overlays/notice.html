@@ -5,7 +5,7 @@
 <title>notice</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
-  /* 操作パネルで選んだお知らせを下端に出す。選んでいない間は何も出さない。
+  /* お知らせを下端に出す。出すお知らせと時間は Overlay.noticeText が決める(固定・今すぐ・ループ)。
      赤い線は 1 つの画面に 1 本にするため、同時に出るテロップの板に任せ、帯には付けない。 */
   #wrap:not(.in) { visibility: hidden; }
   #wrap.out { visibility: visible; }
@@ -28,14 +28,19 @@
 </div>
 <script src="overlay.js"></script>
 <script>
-  // state.notice は program.json の notices の番号。null で消す。
   const wrap = document.getElementById('wrap');
-  Overlay.onState((s) => {
-    if (s.notice == null) {
+  let s = Overlay.state();
+  let shown = null;
+  Overlay.onState((next) => { s = next; });
+  Overlay.every(250, () => {
+    const text = Overlay.noticeText(s);
+    if (text === shown) return;
+    shown = text;
+    if (text == null) {
       wrap.classList.replace('in', 'out');
       return;
     }
-    document.getElementById('text').textContent = window.PROGRAM.notices[s.notice];
+    document.getElementById('text').textContent = text;
     Overlay.replay(wrap);
   });
 </script>
