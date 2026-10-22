@@ -3,18 +3,21 @@
 # 配信サーバーはプライベートネットワーク上にあり、外部からの
 # HTTP-01 チャレンジが到達しないため、Caddy の自動 ACME は使わず
 # certbot（DNS-01・手動）で取得した証明書を明示指定する。
+#
+# {$SITE_DOMAIN} は config.json の site.domain である。compose の init サービスが
+# 書き出したファイルを、caddy run --envfile で読み込む。
 {
 	# 自動 HTTPS のリダイレクトだけ有効、ACME 発行はしない
 	auto_https disable_redirects
 	admin off
 }
 
-live.kosensai.ichinoseki.ac.jp {
+{$SITE_DOMAIN} {
 	# --- TLS（certbot 取得済み証明書を直指定） ---
 	tls /etc/caddy/certs/fullchain.pem /etc/caddy/certs/privkey.pem
 
 	# --- HLS リバースプロキシ ---
-	# https://live.../hls/ch1/index.m3u8 → http://127.0.0.1:8888/ch1/index.m3u8
+	# https://<SITE_DOMAIN>/hls/ch1/index.m3u8 → http://127.0.0.1:8888/ch1/index.m3u8
 	handle_path /hls/* {
 		reverse_proxy 127.0.0.1:8888 {
 			# MediaMTX は最初のプレイリスト要求を、セッション Cookie を張るために
@@ -89,5 +92,5 @@ live.kosensai.ichinoseki.ac.jp {
 
 # IP 直打ち・名前違いで来た場合の受け皿（TLS なし）
 :80 {
-	redir https://live.kosensai.ichinoseki.ac.jp{uri} permanent
+	redir https://{$SITE_DOMAIN}{uri} permanent
 }

@@ -22,6 +22,12 @@ recordings/
 # 一度きりの切り分けに使う実験コード
 scratch/
 
+# tools/atem-stream のビルド成果物
+tools/atem-stream/atem-stream
+
+# tools/config.py を import するスクリプトの実行で生成される
+__pycache__/
+
 # OS
 .DS_Store
 Thumbs.db

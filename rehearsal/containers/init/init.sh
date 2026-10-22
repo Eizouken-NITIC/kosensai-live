@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# リハーサル環境の前準備。compose が 2 つの Caddy より先に一度だけ実行する。
+# リハーサル環境の前準備。compose が MediaMTX と 2 つの Caddy より先に一度だけ実行する。
 
 set -euo pipefail
 
-# shellcheck source=../../tools/config.sh
-. /repo/tools/config.sh
+# rehearsal.env を本番と同じ規則で検証し、Caddy 用の SITE_DOMAIN を書き出す。
+python3 /repo/tools/config.py --env /repo/rehearsal/rehearsal.env check --write-site-env /caddy/site.env
 
-DOMAIN="$(config_domain)"
+DOMAIN="$(python3 /repo/tools/config.py get site.domain)"
 CERT=/certs/fullchain.pem
 KEY=/certs/privkey.pem
 
@@ -25,7 +25,3 @@ else
   chmod 644 "${CERT}"
   chmod 640 "${KEY}"
 fi
-
-# caddy-preview の Caddyfile はホスト名を含むため、config.json の値を反映して生成する。
-sed "s|@@DOMAIN@@|${DOMAIN}|g" /repo/rehearsal/containers/init/preview.Caddyfile > /caddy/preview.Caddyfile
-echo "caddy-preview の Caddyfile を生成した（${DOMAIN}）"

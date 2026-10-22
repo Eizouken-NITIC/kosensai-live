@@ -1,7 +1,9 @@
 #!/bin/sh
 # テストパターンを 1 チャンネル分 SRT で送出する。
 #
-#   publish.sh <チャンネル名> <パスフレーズ>
+#   publish.sh <チャンネル名>
+#
+# パスフレーズは環境変数 MTX_PATHS_<チャンネル名>_SRTPUBLISHPASSPHRASE から読む。
 #
 # 映像のカラーバーと音声の 1kHz は全チャンネルで共通であるため、チャンネルの識別は
 # 映像へ焼き込んだテキストで行う。
@@ -9,7 +11,8 @@
 set -eu
 
 CH="$1"
-PASS="$2"
+VAR="MTX_PATHS_$(echo "${CH}" | tr 'a-z' 'A-Z')_SRTPUBLISHPASSPHRASE"
+PASS="$(printenv "${VAR}")" || { echo "${VAR} が設定されていません" >&2; exit 1; }
 
 SIZE="${REH_SIZE:-640x360}"
 FPS="${REH_FPS:-15}"

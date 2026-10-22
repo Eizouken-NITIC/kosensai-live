@@ -51,7 +51,7 @@ echo 'net.core.rmem_max=26214400' | sudo tee /etc/sysctl.d/99-srt.conf
 # 2. 本リポジトリをクローンし、作業ディレクトリへ移動します
 git clone <本リポジトリのURL> && cd kosensai-live/hosts/server
 
-# 3. .env ファイルを作成し、パスフレーズと本部 PC の IP を記述します（パスフレーズは 10〜79 文字）
+# 3. .env ファイルを作成し、パスフレーズと各マシンの IP を記述します（パスフレーズは 10〜79 文字）
 cp .env.example .env
 for i in 1 2 3 4 5; do openssl rand -base64 24; done   # パスフレーズは 1 つずつ別の値にします
 $EDITOR .env
@@ -59,8 +59,8 @@ $EDITOR .env
 # 4. TLS 証明書を取得します（DNS-01 チャレンジを使用します）
 sudo ./scripts/get-cert.sh
 
-# 5. 起動前のシステムチェックを実行します
-./scripts/preflight.sh
+# 5. 起動前の検証だけを実行します（任意。手順 6 でも同じ検証を実行します）
+docker compose run --rm init
 
 # 6. コンテナ群をバックグラウンドで起動します
 docker compose up -d
@@ -78,9 +78,26 @@ docker compose up -d
 | --- | --- |
 | `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` | 本部 OBS → 配信サーバーの送出に使うパスフレーズです。**ATEM・スマートフォンには設定しません。** |
 | `OBS_<Ch>_LISTEN_PASSPHRASE` | ATEM・スマートフォン → 本部 OBS（SRT Listener）に使うパスフレーズです。ATEM とスマートフォンに設定するのはこちらです。`obsListenPort` を持つ Ch にだけ設定します。 |
-| `HQ_IP` | 本部 PC の IPv4 アドレスです。配信サーバーへの送出は、この IP とサーバー自身からだけ受け付けます。 |
+| `HQ_IP` | 本部 PC の IPv4 アドレスです。配信サーバーへの送出は、この IP とサーバー自身からだけ受け付けます。ATEM・スマートフォンの送信先もこの IP です。 |
+| `SERVER_IP` | 本部 PC から見た配信サーバーの IPv4 アドレスです。`hosts/obs/srt-urls.py` が OBS の送出先の URL に使用します。 |
+| `ATEM_IP` | ATEM の IPv4 アドレスです。`tools/atem-stream/` が使用します。 |
 
-受信用と送出用のパスフレーズを同じ値にすると、ATEM・スマートフォンを操作する人が本部 OBS を通さずに公開 Ch へ送出できてしまうため、`preflight.sh` が NG にします。
+MediaMTX は `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から Ch のパスを作成します。`config.json` に無い Ch の変数があると、公開されないパスを作成するため NG にします。
+
+受信用と送出用のパスフレーズを同じ値にすると、ATEM・スマートフォンを操作する人が本部 OBS を通さずに公開 Ch へ送出できてしまうため、NG にします。
+
+### 起動前の検証
+
+`compose.yml` の `init` サービスが、`docker compose up` のたびに `tools/config.py check --server` を実行します。次の項目を検証し、NG があれば MediaMTX と Caddy を起動しません（稼働中の場合の動作は「4. 運用・管理コマンド」の注意を参照してください）。
+
+- `.env` の Ch と `config.json` の `channels[].id` の一致、パスフレーズの長さと重複、`HQ_IP` の形式
+- `web/` のビルド成果物とライセンス本文の有無
+- 証明書と秘密鍵の組み合わせ、証明書のホスト名が `config.json` の `site.domain` を含むこと、有効期限
+- `net.core.rmem_max`
+
+NG の場合、`docker compose up` は `service "init" didn't complete successfully` で終了します。内容は `docker compose logs init` で確認してください。
+
+検証に通ると、init は `config.json` の `site.domain` を `SITE_DOMAIN` として `generated` ボリュームへ書き出します。Caddy は起動時にこのファイルを読み、`Caddyfile` の `{$SITE_DOMAIN}` を置換します。
 
 ### 接続元の制限
 
@@ -120,8 +137,11 @@ git pull && docker compose restart caddy
 docker compose restart mediamtx
 ```
 
-> [!TIP]
-> パスフレーズなどの環境変数（`.env` ファイルの内容）を変更・修正した場合は、`docker compose up -d` を実行してコンテナを再構築（再作成）してください。
+> [!WARNING]
+> 運用中に `.env` や `config.json` を変更した場合は、先に `docker compose run --rm init` を実行して OK を確認し、その後で `docker compose up -d` を実行してください。
+> `.env` を変更すると、compose は init の完了を待たずに MediaMTX のコンテナを削除して作り直します。init が NG の場合、新しい MediaMTX は起動せず、受信が止まります。`config.json` だけを変更した場合は、NG でも稼働中のコンテナはそのまま動作します。
+>
+> `docker compose restart` では init が実行されません。ホストの再起動時も init は実行されず、前回の init が書き出した値で起動します。
 
 ---
 
@@ -129,12 +149,11 @@ docker compose restart mediamtx
 
 | ファイル・ディレクトリ | 役割・設定内容 |
 | --- | --- |
-| `compose.yml` | MediaMTX および Caddy のコンテナ定義（`network_mode: host`） |
-| `mediamtx.yml` | SRT ストリームの受信と HLS 生成、接続元の制限の設定。パスフレーズと本部 PC の IP は `.env` から読み込みます。 |
-| `Caddyfile` | TLS 終端、`/hls/*` パスに対する MediaMTX へのリバースプロキシ転送、および `web/` の静的配信設定。 |
-| `.env.example` | 各種パスフレーズと本部 PC の IP を設定するためのテンプレート。 |
+| `compose.yml` | init（起動前の検証）、MediaMTX、Caddy のコンテナ定義（`network_mode: host`） |
+| `mediamtx.yml` | SRT ストリームの受信と HLS 生成、接続元の制限の設定。Ch のパス、パスフレーズ、本部 PC の IP は `.env` から読み込みます。 |
+| `Caddyfile` | TLS 終端、`/hls/*` パスに対する MediaMTX へのリバースプロキシ転送、および `web/` の静的配信設定。ホスト名は init が書き出した `SITE_DOMAIN` を使用します。 |
+| `.env.example` | 各種パスフレーズと各マシンの IP を設定するためのテンプレート。 |
 | `certs/` | Certbot 経由で取得した本番用 TLS 証明書の格納先（Git 管理対象外）。 |
-| `scripts/preflight.sh` | 起動前の整合性チェック。環境変数、パスフレーズ、証明書の有無、sysctl パラメータ値、および `config.json` との整合性を自動検証します。 |
 | `scripts/get-cert.sh` | Let's Encrypt から手動 DNS-01 チャレンジ方式で TLS 証明書を取得し、`certs/` に配置するスクリプト。 |
 | `scripts/smoke-test.sh` | 配信サーバーへテスト用 SRT ストリームを送信し、正常に HLS セグメントが生成されて再生可能かを実機検証するスクリプト。 |
 | `logs/` | Caddy が出力するアクセスログの格納先（Git 管理対象外）。`compose.yml` でホストにマウントされます。 |

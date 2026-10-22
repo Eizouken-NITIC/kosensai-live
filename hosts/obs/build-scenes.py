@@ -7,12 +7,13 @@
 起動中の OBS に接続し、無いシーンとソースだけを作る。既にあるシーンには手を加えない。
 ソースの設定(SRT の URL とパスフレーズ、テロップのファイルの場所)と音声のトラックは毎回上書きする。
 
-    uv run hosts/obs/build-scenes.py              # hosts/server/.env を読む
-    ENV_FILE=/path/to/.env uv run hosts/obs/build-scenes.py
+    uv run hosts/obs/build-scenes.py                    # hosts/server/.env を読む
+    uv run hosts/obs/build-scenes.py --env path/to/.env
 
 obs-websocket のパスワードは、同じ PC の OBS の設定ファイルから読む。
 """
 
+import argparse
 import json
 import os
 import sys
@@ -21,20 +22,12 @@ from pathlib import Path
 import obsws_python as obs
 
 HOST_DIR = Path(__file__).resolve().parent
-REPO_DIR = HOST_DIR.parents[1]
+sys.path.insert(0, str(HOST_DIR.parents[1] / "tools"))
+import config  # noqa: E402
+
 OVERLAYS = HOST_DIR / "overlays"
 ASSETS = HOST_DIR / "assets"
 W, H = 1920, 1080
-
-
-def read_env(path: Path) -> dict[str, str]:
-    env = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            key, value = line.split("=", 1)
-            env[key.strip()] = value.strip().strip('"').strip("'")
-    return env
 
 
 def obs_config_dir() -> Path:
@@ -93,16 +86,17 @@ def browser(page: str, replay: bool, query: str = "") -> dict:
 
 
 def main() -> None:
-    env = read_env(Path(os.environ.get("ENV_FILE", REPO_DIR / "hosts/server/.env")))
-    channels = {c["id"]: c for c in json.loads((REPO_DIR / "config.json").read_text(encoding="utf-8"))["channels"]}
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--env", default=config.ENV_FILE, help=".env のパス")
+    args = ap.parse_args()
+
+    channels = config.load_config()
+    env = config.load_env(args.env)
     conf = json.loads((ASSETS / "scenes.json").read_text(encoding="utf-8"))
 
     def listen(cid: str) -> dict:
-        key = f"OBS_{cid.upper()}_LISTEN_PASSPHRASE"
-        if not env.get(key):
-            sys.exit(f"{key} が .env にありません")
-        c = channels[cid]
-        return listener(c["obsListenPort"], env[key], c["srtLatencyUs"])
+        c = config.channel(channels, cid)
+        return listener(c["obsListenPort"], config.require(env, config.listen_var(cid)), c["srtLatencyUs"])
 
     # scenes.json の入力の種類 → (OBS の入力の種類, 設定)。
     def source(spec: dict) -> tuple[str, dict]:

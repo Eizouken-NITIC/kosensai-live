@@ -1,75 +1,64 @@
 # hosts/obs — 本部配信 PC（OBS 設定・ユーティリティ）
 
-本ディレクトリは、ATEM とスマートフォンから送信された SRT ストリームを受信・合成し、チャンネルごとに配信サーバー（MediaMTX）へ向けて送信する本部 PC（OBS）に関する設定とユーティリティを管理しています。本部 PC はメイン会場（第一体育館）に置き、ATEM と同じ会場のスイッチに接続します。
+本ディレクトリは、ATEM とスマートフォンから送信された SRT ストリームを受信・合成し、チャンネルごとに配信サーバー（MediaMTX）へ向けて送信する本部 PC（OBS）で実行するユーティリティを管理しています。
 
-このディレクトリ内にあるのは、SRT の接続用 URL を一括生成する `srt-urls.sh` スクリプトのみです。配信サーバーへ直接デプロイするファイルはありません。
-
----
-
-## 1. キーフレーム間隔の設定
-
-OBS 側の**キーフレーム間隔**の設定値は、配信サーバー側の設定ファイル `hosts/server/mediamtx.yml` 内の `hlsSegmentDuration` の値（デフォルトは **2 秒**）と同一に設定してください。
+このディレクトリには、SRT の接続用 URL を一括生成する `srt-urls.py`、テロップの画面（`overlays/`）、今年の構成（`assets/`）、シーンを作成する `build-scenes.py`、音声と配信休止を切り替える `channels.lua` があります。配信サーバーへ直接デプロイするファイルはありません。
 
 ---
 
-## 2. srt-urls.sh（URL 生成スクリプト）
+## 1. 準備（.env）
+
+本部 PC の作業は、リポジトリを clone した場所で行います。Python のスクリプトは `uv run` で実行します（Windows でも同じです）。
+
+1. 配信サーバーの `hosts/server/.env` を、本部 PC の同じ場所（`hosts/server/.env`）にコピーします。パスフレーズは配信サーバーと一致している必要があるため、本部 PC で値を作り直さないでください。配信サーバーをまだ用意していない場合は、`hosts/server/.env.example` をコピーして値を入れます（設定項目は [hosts/server/README.md](../server/README.md)）。
+2. 本部 PC の IP を `HQ_IP`、配信サーバーの IP を `SERVER_IP`、ATEM の IP を `ATEM_IP` に設定します。
+3. 次を実行し、NG が無いことを確認します。
+
+   ```bash
+   uv run tools/config.py check
+   ```
+
+`.env` は Git の管理外です。本部 PC の後の作業は、[5. シーンの作成](#5-シーンの作成build-scenespy)（OBS の SRT Listener を作成）、[3. ATEM](#3-atemch1の設定)、スマートフォン（[2.](#2-srt-urlspyurl-生成スクリプト) の出力 1）、obs-multi-rtmp（2. の出力 2）の順に行います。
+
+---
+
+## 2. srt-urls.py（URL 生成スクリプト）
 
 各種入力・出力用の URL は手動で入力せず、本スクリプトで生成した URL をコピー＆ペーストして使用してください。
 
 ### スクリプトの実行方法
 
 ```bash
-# 配信サーバー側の .env が参照できるディレクトリで実行します
-./hosts/obs/srt-urls.sh                    # MediaMTX が同一ホストにある場合
-
-# 配信サーバー（MediaMTX）と OBS が異なるマシンにある場合
-MTX_HOST=10.1.2.3 OBS_HOST=10.1.2.4 ./hosts/obs/srt-urls.sh
+uv run hosts/obs/srt-urls.py                    # hosts/server/.env を読みます
+uv run hosts/obs/srt-urls.py --env path/to/.env # 別の .env を読む場合
 ```
 
 ### 出力される URL
-1. **OBS メディアソース用 URL**: OBS のメディアソース（SRT Listener）に入力する URL、および ATEM・スマートフォン（Caller）に設定する URL とパスフレーズ
+1. **OBS メディアソース用 URL**: OBS のメディアソース（SRT Listener）に入力する URL、および ATEM・スマートフォン（Caller）に設定する URL とパスフレーズ。OBS の URL の `latency` はマイクロ秒、Moblin 向けの URL の `latency` はミリ秒です（どちらも `config.json` の `srtLatencyUs` から換算します）
 2. **OBS 送出用 URL**: OBS から MediaMTX へストリームを送信する URL
 3. **視聴用 URL**: 視聴テスト用の動作確認用 URL
 
 各チャンネルの定義（待受ポート、レイテンシ、ビットレート等）および視聴 URL のホスト名は、すべてリポジトリ直下の `config.json` から自動的に読み込まれます。
-SRT 接続用のパスフレーズは `hosts/server/.env` の設定を読み込みます。
+SRT 接続用のパスフレーズと IP は `hosts/server/.env`（[1.](#1-準備env)）の設定を読み込みます。
+
+- ATEM・スマートフォンの送信先（出力 1）は `HQ_IP`、OBS の送出先（出力 2）は `SERVER_IP` です。MediaMTX が本部 PC と同じホストにある場合は `SERVER_IP=127.0.0.1` にします。
 
 - ATEM・スマートフォン → OBS（出力 1）には `OBS_<Ch>_LISTEN_PASSPHRASE` を使います。ATEM とスマートフォンに設定するのはこの値です。
 - OBS → MediaMTX（出力 2）には `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` を使います。この値は ATEM・スマートフォンには設定しないでください。
 - 配信サーバーは、`.env` の `HQ_IP` からの送出だけを受け付けます。OBS を動かす PC の IP を `HQ_IP` に設定してください。
+- SRT の latency は送受信の大きい方の値が使われるため、ATEM・スマートフォンからの区間は OBS 側の Listener の URL の `latency`（`config.json` の `srtLatencyUs`）で決まります。
+
+OBS のメディアソース（SRT Listener）は `build-scenes.py`（[5.](#5-シーンの作成build-scenespy)）が出力 1 と同じ URL で作成します。
 
 ---
 
 ## 3. ATEM（Ch1）の設定
 
-ATEM Mini Pro ISO（ファームウェア 10.3 で確認）は SRT の Caller として本部 PC へ送信します。ATEM Software Control の「出力」タブの「ライブ配信」で、次のように設定します。
-
-| 項目 | 値 |
-| --- | --- |
-| 配信サービス | `Custom URL H.264` |
-| サーバー | `srt://<本部 PC の IP>:9001`（クエリを付けません） |
-| キー | 空欄 |
-| パスフレーズ | `OBS_CH1_LISTEN_PASSPHRASE` の値 |
-| 品質 | `HyperDeck Low`（1080p29.97 で 12Mbps。USB-C の収録にも同じ品質が適用されます） |
-
-- ATEM は URL の `?passphrase=` を無視します。パスフレーズは専用の欄に入力してください。
-- パスフレーズ欄は複数行の入力欄で、Tab キーを押すとタブ文字が値に入ります。入力後は別の欄をクリックして確定してください。
-- SRT の latency は送受信の大きい方の値が使われるため、OBS 側の Listener の URL の `latency` で決まります。
-- 配信中（接続中を含む）は設定を変更できません。変更する場合は配信を停止してから行います。
-
-OBS 側は「メディアソース」を追加し、「ローカルファイル」のチェックを外して、`srt-urls.sh` の出力 1 の Listener の URL を「入力」に、`mpegts` を「入力フォーマット」に設定します。
+ATEM の配信設定（サービス名・URL・キー・パスフレーズ）は、`./tools/atem-stream/atem.py apply` で `.env` と `config.json` から設定し、`check` で確認します。詳細は [tools/atem-stream/](../../tools/atem-stream/README.md) を参照してください。
 
 ---
 
-## 4. Ch1 の音声
-
-Ch1 の音声は、配信用ミキサーの USB オーディオを本部 PC に入力して使用します。ATEM のメディアソースの音声はミュートします。
-
-USB オーディオは SRT の映像より早く届くため、USB オーディオのソースの「同期オフセット」で遅らせて映像に合わせます。オフセットの値はリハーサルで実測して設定してください。
-
----
-
-## 5. テロップ（overlays/）
+## 4. テロップ（overlays/）
 
 テロップと全画面の画面は、OBS の「ブラウザソース」で `overlays/` の HTML を「ローカルファイル」として読み込みます。サイズはすべて 1920x1080 です。
 
@@ -98,10 +87,9 @@ USB オーディオは SRT の映像より早く届くため、USB オーディ�
   /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P hosts/obs/render-clock.py -- hosts/obs/overlays/clock-face
   ```
 
-
 ---
 
-## 6. シーンの作成（build-scenes.py）
+## 5. シーンの作成（build-scenes.py）
 
 本部 PC で OBS を起動し、「ツール → WebSocket サーバー設定」でサーバーを有効にしてから、リポジトリを clone した場所で実行します。`assets/scenes.json` のシーンコレクションを作り、無いシーンとソースだけを追加します。SRT のパスフレーズは `hosts/server/.env` から読み込むため、リポジトリには入りません。
 
@@ -125,7 +113,7 @@ uv run hosts/obs/build-scenes.py
 
 | 出力 | プロトコル | URL | 映像のシーン | 音声のトラック |
 | --- | --- | --- | --- | --- |
-| Ch1 | SRT/RIST | `srt-urls.sh` の出力 2 の Ch1 | `[出力] Ch1 第一体育館` | 2 |
+| Ch1 | SRT/RIST | `srt-urls.py` の出力 2 の Ch1 | `[出力] Ch1 第一体育館` | 2 |
 | Ch2 | SRT/RIST | 出力 2 の Ch2 | `[出力] Ch2 遊撃` | 3 |
 | Ch3 | SRT/RIST | 出力 2 の Ch3 | OBS のシーンと同じ | 1 |
 

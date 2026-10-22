@@ -4,7 +4,8 @@
 # 追記が必要になる。追記を削除し忘れると本番のホスト名を名前解決できなくなるため、
 # Host ヘッダを付け替えて caddy-origin へ転送するこのエントリポイントを経由させる。
 #
-# @@DOMAIN@@ は init.sh が config.json の値へ置換する。
+# {$SITE_DOMAIN} は config.json の site.domain である。init.sh が書き出したファイルを
+# caddy run --envfile で読み込む。
 
 {
 	auto_https off
@@ -24,12 +25,12 @@ https://:8444 {
 	}
 
 	reverse_proxy https://127.0.0.1:443 {
-		header_up Host @@DOMAIN@@
+		header_up Host {$SITE_DOMAIN}
 
 		transport http {
 			tls
 			tls_insecure_skip_verify
-			tls_server_name @@DOMAIN@@
+			tls_server_name {$SITE_DOMAIN}
 		}
 	}
 

@@ -9,19 +9,16 @@ REH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "${REH_DIR}/.." && pwd)"
 cd "${REH_DIR}"
 
-# shellcheck source=../../tools/config.sh
-. "${REPO_DIR}/tools/config.sh"
-
 CLIENTS="${1:-10}"
 CH="${2:-ch1}"
 DURATION="${3:-30}"
-DOMAIN="${DOMAIN:-$(config_domain)}"
+DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/config.py" get site.domain)}"
 
 docker inspect rehearsal-mediamtx >/dev/null 2>&1 ||
   { echo "リハーサル環境が起動していません。先に docker compose up -d を実行してください" >&2; exit 1; }
 
 if [[ "${CH}" == "all" ]]; then
-  CHANNELS=$(config_channel_ids | tr '\n' ' ')
+  CHANNELS=$(python3 "${REPO_DIR}/tools/config.py" channels | tr '\n' ' ')
 else
   CHANNELS="${CH}"
 fi
