@@ -26,6 +26,7 @@
   tr.past td { color: var(--dim); }
   button { font: inherit; font-size: 0.9rem; padding: 0.25rem 0.6rem; border: 1px solid var(--line); border-radius: 0.25rem; background: var(--button); color: var(--text); cursor: pointer; }
   button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  input[type=checkbox] { zoom: 1.6; vertical-align: -0.1em; }
   input[type=text] { font: inherit; padding: 0.25rem 0.4rem; border: 1px solid var(--line); border-radius: 0.25rem; background: var(--bg); color: var(--text); }
   .row { display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap; }
   .status { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 0.6rem; }
@@ -41,22 +42,22 @@
 </section>
 <section class="warn" id="ng" hidden></section>
 <section>
-  <h2>第一体育館の遅れ</h2>
-  <p class="muted">演目が始まったら「始まった」を押すと、その演目と後の演目の時刻をずらす。</p>
+  <h2>第一体育館の遅延</h2>
+  <p class="muted">演目が始まったら「開始」を押すと、その演目以降の時刻をずらす。</p>
   <table id="acts"></table>
-  <p class="row"><button id="clearDelay">遅れをなくす</button></p>
+  <p class="row"><button id="clearDelay">遅延を削除</button></p>
 </section>
 <section>
   <h2>お知らせ</h2>
-  <p class="muted">ループに入れたお知らせを 1 分ごとに 1 件ずつ、15 秒出す。固定は解除するまで出し続ける。</p>
+  <p class="muted">ループ対象のお知らせを 1 分ごとに 1 件ずつ 15 秒表示する。固定は解除するまで表示し続ける。</p>
   <table id="notices"></table>
   <p class="row"><input type="text" id="newNotice" size="50" placeholder="お知らせの文言"><button id="addNotice">追加</button></p>
 </section>
 <section>
   <h2>遊撃の現在地</h2>
-  <p class="muted">選んだ場所は次の発表の枠が始まるまで出す。発表の枠の間は枠の演目を出す。</p>
+  <p class="muted">選択した場所を次の発表枠の開始まで表示する。発表枠の間は枠の演目を表示する。</p>
   <p class="row" id="places"></p>
-  <p class="row"><input type="text" id="placeTitle" placeholder="内容(例: 屋台)"><input type="text" id="placeWhere" placeholder="場所(例: 校内各所)"><button id="setPlace">出す</button><button id="autoPlace">自動に戻す</button></p>
+  <p class="row"><input type="text" id="placeTitle" placeholder="内容(例: 屋台)"><input type="text" id="placeWhere" placeholder="場所(例: 校内各所)"><button id="setPlace">表示</button><button id="autoPlace">自動に戻す</button></p>
 </section>
 <script src="overlay.js"></script>
 <script>
@@ -107,8 +108,8 @@
     $('status').replaceChildren(
       el('dt', {}, '時刻'), el('dd', {}, hhmm(t)),
       el('dt', {}, '第一体育館'), el('dd', {}, cur ? `${cur.title}(${hhmm(cur.start)}〜${hhmm(cur.end)})` : 'なし'),
-      el('dt', {}, '遅れ'), el('dd', {}, delay ? `${delay > 0 ? '+' : ''}${delay} 分` : 'なし'),
-      el('dt', {}, 'お知らせ'), el('dd', {}, s.noticePin ? `固定: ${s.noticePin}` : (notice ?? '(次のループまで出さない)')),
+      el('dt', {}, '遅延'), el('dd', {}, delay ? `${delay > 0 ? '+' : ''}${delay} 分` : 'なし'),
+      el('dt', {}, 'お知らせ'), el('dd', {}, s.noticePin ? `固定: ${s.noticePin}` : (notice ?? '(ループ待機中)')),
       el('dt', {}, '遊撃'), el('dd', {}, ch2 ? `${ch2.title}(${ch2.place})` : 'なし'),
     );
 
@@ -117,15 +118,15 @@
     $('ng').hidden = !ng;
     if (ng) {
       const on = ng.start <= t;
-      $('ng').replaceChildren(el('h2', {}, on ? `配信しない演目の時間: ${ng.title}` : `次は配信しない演目: ${ng.title}`),
-        el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。始まったらホットキーの「配信休止: 出す」、終わったら「配信休止: 消す」を押す。`));
+      $('ng').replaceChildren(el('h2', {}, on ? `配信休止の時間: ${ng.title}` : `次の配信休止: ${ng.title}`),
+        el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。開始時にホットキー「配信休止: 出す」、終了時に「配信休止: 消す」を押す。`));
     }
 
     $('acts').replaceChildren(...items.map((it, i) => el('tr', { className: it === cur ? 'now' : it.end <= t ? 'past' : '' },
       el('td', { className: 'time' }, `予定 ${plan[i].at}`),
       el('td', { className: 'time' }, plan[i].start.getTime() === it.start.getTime() ? '' : `→ ${hhmm(it.start)}`),
-      el('td', {}, it.kind === 'break' ? '休憩' : it.title, it.kind === 'ng' ? '(配信しない)' : ''),
-      el('td', {}, button('始まった', () => started(it))),
+      el('td', {}, it.kind === 'break' ? '休憩' : it.title, it.kind === 'ng' ? '(配信休止)' : ''),
+      el('td', {}, button('開始', () => started(it))),
     )));
 
     const list = Overlay.notices(s);
@@ -133,7 +134,7 @@
       el('td', {}, el('label', {}, el('input', { type: 'checkbox', checked: n.loop, onchange: (e) => setNotices(list.map((m, j) => (j === i ? { ...m, loop: e.target.checked } : m))) }), ' ループ')),
       el('td', {}, n.text),
       el('td', { className: 'row' },
-        button('今すぐ', () => Overlay.setState({ noticeNow: { text: n.text, at: Overlay.now().toISOString() } })),
+        button('即時', () => Overlay.setState({ noticeNow: { text: n.text, at: Overlay.now().toISOString() } })),
         button(s.noticePin === n.text ? '固定を解除' : '固定', () => Overlay.setState({ noticePin: s.noticePin === n.text ? null : n.text }), s.noticePin === n.text),
         button('削除', () => setNotices(list.filter((_, j) => j !== i)))),
     )));

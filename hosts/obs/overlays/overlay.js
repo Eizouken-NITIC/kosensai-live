@@ -25,7 +25,7 @@
   const MINUTE = 60000;
 
   // 第一体育館の遅れ。state.delays[日付] は [{ from: 予定の開始 "HH:MM", min: 遅れの分 }, ...] で、
-  // 操作パネルの「始まった」で追加する。各項目には予定の開始が from 以降で最も新しい from の遅れを足す。
+  // 操作パネルの「開始」で追加する。各項目には予定の開始が from 以降で最も新しい from の遅れを足す。
   function delayAt(delays, time) {
     let min = 0;
     for (const d of delays) if (d.from <= time) min = d.min;
@@ -117,7 +117,7 @@
   }
 
   // 今出すお知らせの文言。出さない時は null。
-  // 固定(s.noticePin)があればそれを、「今すぐ」(s.noticeNow)から NOTICE_SHOW 秒の間はそれを出す。
+  // 固定(s.noticePin)があればそれを、「即時」(s.noticeNow)から NOTICE_SHOW 秒の間はそれを出す。
   // それ以外はループに入れたお知らせを NOTICE_CYCLE 秒ごとに 1 件ずつ、最初の NOTICE_SHOW 秒だけ出す。
   // 時刻だけで決まるため、お知らせの帯とテロップ(帯の分だけ上げる)が同じ判定になる。
   // 仕様補完: 表示 15 秒、間隔 60 秒。
