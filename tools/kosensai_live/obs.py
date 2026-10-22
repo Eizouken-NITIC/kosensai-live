@@ -168,18 +168,60 @@ def apply_profile(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict) -> Non
     print(f"プロファイル {name}: {conf['video']['mode']}")
 
 
-def write_multi_rtmp(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict) -> None:
-    """obs-multi-rtmp の出力の設定ファイルを書き込む。
+def profile_parameters(scenes: dict) -> list[tuple[str, str, str]]:
+    """プロファイル(basic.ini)に書く (セクション, キー, 値)。
+
+    プログラム(Ch3)の録画は OBS の通常の録画で、出力の「シンプル」の配信のエンコーダーの設定を使う
+    (録画の品質「配信と同じ」)。配信は obs-multi-rtmp が行うため、この設定は録画だけに使われる。
+    """
+    rec = scenes["recordings"]
+    return [
+        ("Output", "Mode", "Simple"),
+        ("SimpleOutput", "StreamEncoder", platform_value(rec["program_encoder"], "recordings.program_encoder")),
+        ("SimpleOutput", "VBitrate", str(rec["video_param"]["bitrate"])),
+        ("SimpleOutput", "ABitrate", str(rec["audio_bitrate"])),
+        ("SimpleOutput", "RecQuality", "Stream"),
+        ("SimpleOutput", "RecFormat2", rec["format"]),
+    ]
+
+
+def set_ini(path: Path, values: list[tuple[str, str, str]]) -> None:
+    """INI ファイルの値を、他の行の並びと書式を変えずに書き換える。"""
+    lines = path.read_text(encoding="utf-8-sig").splitlines()
+    for section, key, value in values:
+        if f"[{section}]" not in lines:
+            lines += ["", f"[{section}]", f"{key}={value}"]
+            continue
+        start = lines.index(f"[{section}]")
+        end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("[")), len(lines))
+        for i in range(start + 1, end):
+            if lines[i].startswith(f"{key}="):
+                lines[i] = f"{key}={value}"
+                break
+        else:
+            lines.insert(start + 1, f"{key}={value}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, filters_changed: bool) -> None:
+    """プロファイルと obs-multi-rtmp の設定を、OBS の終了後に書き込む。
 
     obs-multi-rtmp は設定ファイルを OBS の起動時(とプロファイルの切り替え時)に読み、終了時に書き戻す。
-    OBS の起動中に書き込むと終了時に上書きされるため、OBS の終了を待ってから書き込む。
+    プロファイルの出力の設定は、起動中に obs-websocket で変えると録画の出力と食い違う(拡張子だけが
+    変わり、エンコーダーは変わらなかった)。どちらも OBS の終了後に書き込み、起動し直して読ませる。
+    録画のフィルターの設定を変えた場合も、起動中に録画を始めると OBS が落ちたため、起動し直す。
     """
-    path = profile_dir(scenes["profile"]) / "obs-multi-rtmp.json"
-    content = json.dumps(multi_rtmp_config(conf, env, scenes), ensure_ascii=False, indent=1)
-    if path.is_file() and json.loads(path.read_text(encoding="utf-8-sig")) == json.loads(content):
-        print("obs-multi-rtmp: 変更なし")
+    profile = profile_dir(scenes["profile"])
+    rtmp_path = profile / "obs-multi-rtmp.json"
+    rtmp = json.dumps(multi_rtmp_config(conf, env, scenes), ensure_ascii=False, indent=1)
+    rtmp_changed = not rtmp_path.is_file() or json.loads(rtmp_path.read_text(encoding="utf-8-sig")) != json.loads(rtmp)
+    params = [(c, k, v) for c, k, v in profile_parameters(scenes) if cl.get_profile_parameter(c, k).parameter_value != v]
+    reasons = (["obs-multi-rtmp の出力"] if rtmp_changed else []) + (["Ch3 の録画の設定"] if params else []) \
+        + (["Ch1・Ch2 の録画のフィルター"] if filters_changed else [])
+    if not reasons:
+        print("OBS の再起動: 不要")
         return
-    print("obs-multi-rtmp の出力を書き込むため、OBS を終了してください(終了を待っています)")
+    print(f"{'・'.join(reasons)}を反映するため、OBS を終了してください(終了を待っています)")
     # obs-multi-rtmp は OBS の終了の始めに設定を書き戻し、obs-websocket はその後に止まる。
     # WebSocket のポートに接続できなくなったら、書き戻しは終わっている。
     cl.disconnect()
@@ -189,13 +231,20 @@ def write_multi_rtmp(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict) -> 
         except OSError:
             break
         time.sleep(1)
-    path.write_text(content, encoding="utf-8")
-    print(f"obs-multi-rtmp: 出力 {len(scenes['outputs']['channels'])} 件を書き込みました。OBS を起動してください")
+    if rtmp_changed:
+        rtmp_path.write_text(rtmp, encoding="utf-8")
+    if params:
+        set_ini(profile / "basic.ini", params)
+    print("書き込みました。OBS を起動してください")
 
 
-def apply_recordings(cl: obs.ReqClient, scenes: dict) -> None:
-    """録画のシーンに Source Record のフィルターを付ける。OBS の「録画開始」で、プログラムの録画と一緒に始まる。"""
+def apply_recordings(cl: obs.ReqClient, scenes: dict) -> bool:
+    """録画のシーンに Source Record のフィルターを付ける。OBS の「録画開始」で、プログラムの録画と一緒に始まる。
+
+    フィルターを作成・変更したら True を返す。
+    """
     rec = scenes["recordings"]
+    changed = False
     for r in rec["scenes"]:
         settings = {
             **rec["video_param"],
@@ -213,11 +262,15 @@ def apply_recordings(cl: obs.ReqClient, scenes: dict) -> None:
         # Source Record は出力にフィルターの名前を付けるため、フィルターごとに別の名前にする
         # (同じ名前の出力があると、一方しか録画されない)。
         name = f"録画 {r['name']}"
-        if name in {f["filterName"] for f in cl.get_source_filter_list(r["scene"]).filters}:
-            cl.set_source_filter_settings(r["scene"], name, settings, True)
-        else:
+        current = {f["filterName"]: f["filterSettings"] for f in cl.get_source_filter_list(r["scene"]).filters}
+        if name not in current:
             cl.create_source_filter(r["scene"], name, "source_record_filter", settings)
-    print(f"録画: {', '.join(r['scene'] for r in rec['scenes'])}")
+            changed = True
+        elif any(current[name].get(k) != v for k, v in settings.items()):
+            cl.set_source_filter_settings(r["scene"], name, settings, True)
+            changed = True
+    print(f"録画: {', '.join(r['scene'] for r in rec['scenes'])}{'(変更あり)' if changed else ''}")
+    return changed
 
 
 def build(env_path) -> None:
@@ -249,8 +302,10 @@ def build(env_path) -> None:
             case "page":
                 return "browser_source", browser(spec["page"], spec.get("replay", False), spec.get("query", ""))
             case "media":
-                # 動画のファイルは OBS で指定する。
-                return "ffmpeg_source", {"is_local_file": True, "looping": True, "restart_on_activate": True}
+                # 動画・音楽のファイルは OBS で指定する。ファイルが無ければ何も出ない(BGM の既定は無音)。
+                # restart が false の入力(BGM)は、同じ入力を持つシーンの間で切り替えても続きから再生する。
+                return "ffmpeg_source", {"is_local_file": True, "looping": True,
+                                         "restart_on_activate": spec.get("restart", True)}
         sys.exit(f"scenes.json の入力の種類 {spec['type']} は使用できません")
 
     inputs = {name: source(spec) for name, spec in scenes["inputs"].items()}
@@ -319,7 +374,7 @@ def build(env_path) -> None:
         if spec.get("monitor"):
             cl.set_input_audio_monitor_type(name, "OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT")
 
-    apply_recordings(cl, scenes)
+    filters_changed = apply_recordings(cl, scenes)
 
     # OBS の初期のシーン(「シーン」)は使用しないので削除する。
     program = scenes["program_scene"]
@@ -328,7 +383,7 @@ def build(env_path) -> None:
         cl.remove_scene("シーン")
     cl.set_current_program_scene(program)
 
-    write_multi_rtmp(cl, conf, env, scenes)
+    write_while_closed(cl, conf, env, scenes, filters_changed)
     print("完了")
 
 

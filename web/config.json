@@ -57,7 +57,7 @@
       "id": "ch2",
       "label": "遊撃",
       "obsListenPort": 9002,
-      "srtLatencyUs": 500000,
+      "srtLatencyUs": 2000000,
       "bitrateKbps": 4500
     },
     {

@@ -24,7 +24,8 @@
     "2 画面 背景": {"type": "page", "page": "split.html", "replay": true},
     "配信休止": {"type": "page", "page": "pause.html", "replay": true},
     "遊撃 休止": {"type": "page", "page": "pause.html", "query": "ch=ch2"},
-    "CM": {"type": "media", "tracks": [1], "monitor": true}
+    "CM": {"type": "media", "tracks": [1], "monitor": true},
+    "BGM": {"type": "media", "tracks": [1], "monitor": true, "restart": false}
   },
   "scenes": {
     "[音声] 常時": [
@@ -56,6 +57,7 @@
       {"source": "Ch2 iPhone", "place": "full"}
     ],
     "Ch3 待機": [
+      {"source": "BGM"},
       {"source": "待機画面", "place": "full"}
     ],
     "Ch3 第一体育館": [
@@ -83,9 +85,11 @@
       {"source": "お知らせ", "place": "full"}
     ],
     "Ch3 UP NEXT": [
+      {"source": "BGM"},
       {"source": "UP NEXT", "place": "full"}
     ],
     "Ch3 タイムテーブル": [
+      {"source": "BGM"},
       {"source": "タイムテーブル", "place": "full"}
     ],
     "Ch3 CM": [
@@ -110,6 +114,7 @@
     "video_param": {"rate_control": "CBR", "keyint_sec": 2, "bitrate": 12000},
     "audio_bitrate": 320,
     "format": "mkv",
+    "program_encoder": {"win32": "nvenc", "darwin": "x264", "linux": "x264"},
     "scenes": [
       {"scene": "[録画] Ch1 第一体育館", "track": 2, "name": "Ch1"},
       {"scene": "[録画] Ch2 遊撃", "track": 3, "name": "Ch2"}
