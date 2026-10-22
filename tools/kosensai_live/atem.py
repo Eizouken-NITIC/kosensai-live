@@ -1,4 +1,4 @@
-"""ATEM の映像の形式と配信の設定を、config.json と .env から設定・確認する。
+"""ATEM の映像の形式と配信の設定を config.json と .env から設定・確認する。
 
     uv run kosensai-live atem apply [ch]   映像の形式・サービス名・URL・キー・パスフレーズを設定し、check を行う
     uv run kosensai-live atem check [ch]   設定値が期待値と一致するかを確認する
@@ -122,7 +122,7 @@ def compare(have, want):
 
 def apply(atem, want):
     have = atem.values()
-    # 配信中(connecting を含む)は、ATEM が設定を受け付けない。
+    # 配信中(connecting を含む)は ATEM が設定を受け付けない。
     if have["status"] & ~1:
         sys.exit(f"配信中（{status_text(have['status'])}）のため設定できません。stop してから実行してください")
     if have["video_mode"] != want["video_mode"]:

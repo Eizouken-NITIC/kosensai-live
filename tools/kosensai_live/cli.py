@@ -48,7 +48,7 @@ def main():
     p.add_argument("duration", nargs="?", type=int, default=30, help="load-test: 実行秒数")
 
     args = ap.parse_args()
-    # サブコマンドの依存(obsws-python 等)は、使用する時だけ import する。
+    # サブコマンドの依存(obsws-python 等)は使用する時だけ import する。
     if args.cmd == "check":
         config.cmd_check(argparse.Namespace(env=args.env, server=False, certs=None, write_site_env=None))
     elif args.cmd == "obs":

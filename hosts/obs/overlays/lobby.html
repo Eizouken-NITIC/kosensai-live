@@ -22,19 +22,19 @@
 <iframe id="timetable"></iframe>
 <script src="overlay.js"></script>
 <script>
-  // 待機画面とタイムテーブルを交互に出す。次の出演の開始が近づいたら、待機画面に固定する。
-  // 仕様補完: 表示の秒数と、待機画面に固定する残り時間。
+  // 待機画面とタイムテーブルを交互に表示する。次の出演の開始が近づいたら待機画面に固定する。
+  // 仕様補完: 表示の秒数と待機画面に固定する残り時間。
   const SECONDS = { standby: 20, timetable: 15 };
   const HOLD_MINUTES = 5;
   const frames = { standby: document.getElementById('standby'), timetable: document.getElementById('timetable') };
-  // 確認用の ?now= は、中の画面にもそのまま渡す。
+  // 確認用の ?now= は中の画面にもそのまま渡す。
   for (const [name, frame] of Object.entries(frames)) frame.src = `${name}.html${location.search}`;
 
   let shown = null;
   function show(name) {
     if (name === shown) return;
     shown = name;
-    // 出す画面を読み込み直して入りのアニメーションを再生し、読み込みが終わってから重ねを切り替える。
+    // 表示する画面をリロードして入りのアニメーションを再生し、読み込み完了後に表示を切り替える。
     const frame = frames[name];
     frame.onload = () => {
       for (const [n, f] of Object.entries(frames)) f.classList.toggle('on', n === name);

@@ -46,7 +46,7 @@ def main(env_path):
     print("=" * 72)
     for c in conf["channels"]:
         if not c.get("obsListenPort"):
-            print(f"\n[{c['label']}] OBS 内で合成するため入力はありません")
+            print(f"\n[{c['label']}] OBS 内で合成するため入力はない")
             continue
         passphrase = config.require(env, config.listen_var(c["id"]))
         print(f"\n[{c['label']}]")

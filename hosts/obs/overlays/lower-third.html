@@ -15,7 +15,7 @@
     align-items: flex-start;
     gap: 14px;
   }
-  /* お知らせ(notice.html)が出ている間は、帯の高さの分だけ上げる。 */
+  /* お知らせ(notice.html)が出ている間は帯の高さの分だけ上げる。 */
   .lt.lifted { bottom: calc(var(--safe) + 72px); }
   .lt:not(.in) { visibility: hidden; }
   .lt.out { visibility: visible; }
@@ -63,7 +63,7 @@
     lt.classList.toggle('lifted', Overlay.noticeText(s, t) != null);
     const cur = ch === 'ch1' ? Overlay.current('ch1', t) : Overlay.ch2Now(s, t);
     const visible = cur && cur.kind !== 'ng';
-    // 経過の区切りは、演目の経過の割合の分だけ明るくする。遊撃の現在地には時刻が無いため出さない。
+    // 経過の区切りは演目の経過の割合の分だけ明るくする。遊撃の現在地には時刻が無いため出さない。
     const timed = visible && cur.start != null;
     $('seg').hidden = $('span').hidden = !timed;
     if (timed) {

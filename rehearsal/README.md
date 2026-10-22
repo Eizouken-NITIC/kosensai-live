@@ -61,7 +61,7 @@ rm -rf generated
 `:8444` は `caddy-preview` のエントリポイントであるため、本番 `Caddyfile` のホスト名マッチと TLS 設定そのものは検証できません。これらを確認する場合は、hosts ファイルへ一時的に追記して `caddy-origin` の `:8443` を直接開きます。
 
 1. `config.json` の `site.domain` でホスト名を確認します。
-2. hosts ファイル（macOS・Linux は `/etc/hosts`、Windows は `C:\Windows\System32\drivers\etc\hosts`）に、管理者の権限で `127.0.0.1 <ホスト名>` の行を追記します。
+2. hosts ファイル（macOS・Linux は `/etc/hosts`、Windows は `C:\Windows\System32\drivers\etc\hosts`）に管理者の権限で `127.0.0.1 <ホスト名>` の行を追記します。
 3. ブラウザで `https://<ホスト名>:8443/` を開きます。
 4. 確認後、追記した行を削除します。
 

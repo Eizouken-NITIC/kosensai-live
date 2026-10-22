@@ -2,7 +2,7 @@
 
 映像研究部が、高専祭のライブ配信のために作った配信システムです！
 
-実運用では、メイン会場にカメラ、スイッチャー、本部 PC（OBS）を配置します。スイッチングした映像を SRT で、音響の音声を USB オーディオで本部 PC へ入力し、移動中継のスマートフォンの映像も SRT で本部 PC へ集約します。本部 PC でテロップ等を合成し、配信サーバー（MediaMTX + Caddy）へ送出します。本部 PC では、各チャンネルの録画も行います。
+実運用では、メイン会場にカメラ、スイッチャー、本部 PC（OBS）を配置します。スイッチングした映像を SRT で、音響の音声を USB オーディオで本部 PC へ入力し、移動中継のスマートフォンの映像も SRT で本部 PC へ集約します。本部 PC でテロップ等を合成し、配信サーバー（MediaMTX + Caddy）へ送出します。本部 PC では各チャンネルの録画も行います。
 その後 MediaMTX で HLS に remux し、視聴ページに配信します。
 
 外部サービスには映像を送出せず、イベント会場内で配信が完結しているのが大きな特徴です。
@@ -120,7 +120,7 @@ kosensai-live/
 
 ### スクリプトの実行
 
-本部 PC（Windows）と開発用の PC（macOS・Windows）で行う操作は、CLI の `kosensai-live` にまとめてあり、OS によらず [uv](https://docs.astral.sh/uv/) で実行します。依存は `pyproject.toml` と `uv.lock` にあり、uv がリポジトリの `.venv/` に用意します。
+本部 PC（Windows）と開発用の PC（macOS・Windows）で行う操作は CLI の `kosensai-live` にまとめてあり、OS によらず [uv](https://docs.astral.sh/uv/) で実行します。依存は `pyproject.toml` と `uv.lock` にあり、uv がリポジトリの `.venv/` に用意します。
 
 | コマンド | 内容 |
 | --- | --- |
@@ -134,7 +134,7 @@ kosensai-live/
 
 `.env` は既定で `hosts/server/.env` を読みます。別のファイルは `uv run kosensai-live --env <パス> ...` で指定します。
 
-配信サーバー（Linux）とサイネージ端末（Raspberry Pi OS）のシェルスクリプト、コンテナの中の処理は、そのマシンの `bash` と `python3` で実行します。
+配信サーバー（Linux）とサイネージ端末（Raspberry Pi OS）のシェルスクリプト、コンテナの中の処理はそのマシンの `bash` と `python3` で実行します。
 
 ---
 
@@ -177,7 +177,7 @@ docker compose up -d         # 起動前に init サービスが設定・証明�
 
 **3. 本部 PC（OBS）を設定する**
 
-本部 PC は Windows・macOS・Linux のどれでも構いません。OBS に obs-multi-rtmp と Source Record のプラグインを入れ、本部 OBS（シーン・送出・録画）と ATEM は `kosensai-live` が `config.json`・`.env`・`hosts/obs/assets/scenes.json` から設定します。必要なものと手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
+本部 PC は Windows・macOS・Linux のどれでも構いません。OBS に obs-multi-rtmp と Source Record のプラグインをインストールし、本部 OBS（シーン・送出・録画）と ATEM は `kosensai-live` が `config.json`・`.env`・`hosts/obs/assets/scenes.json` から設定します。必要なものと手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
 
 **4. サイネージ端末を用意する（任意）**
 
@@ -201,7 +201,7 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 | `signage` | サイネージページのデフォルトチャンネルおよび QR コード横のテキスト |
 | `welcome` | オンボーディング案内文 |
 
-- **適用のタイミング**: `app/` はビルド時にこの設定をインポートします。`hosts/`、`rehearsal/`、`tools/` の各種スクリプトは、実行時に `tools/kosensai_live/config.py` を経由して読み込みます。
+- **適用のタイミング**: `app/` はビルド時にこの設定をインポートします。`hosts/`、`rehearsal/`、`tools/` の各種スクリプトは実行時に `tools/kosensai_live/config.py` を経由して読み込みます。
 
 ### .env
 
@@ -214,7 +214,7 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 - `Caddyfile` のホスト名は `{$SITE_DOMAIN}` です。compose の init サービスが `config.json` から書き出した値を、Caddy が起動時に読み込みます。
 - MediaMTX のパス（Ch）は `.env` の `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から作成します。`mediamtx.yml` には Ch を書きません。
 
-init サービスは `docker compose up` のたびに `tools/kosensai_live/config.py check --server` を実行し、`.env` の Ch と `config.json` の一致、パスフレーズ、証明書のホスト名と期限などを検証します。NG があれば MediaMTX と Caddy を起動しません。運用中に `config.json` や `.env` を変更した場合は、`docker compose run --rm init` で OK を確認してから `docker compose up -d` を実行してください。`.env` を変更すると、compose は init の完了を待たずに MediaMTX を作り直すため、NG のまま `up -d` を実行すると受信が止まります（`docker compose restart` では init が実行されません）。
+init サービスは `docker compose up` のたびに `tools/kosensai_live/config.py check --server` を実行し、`.env` の Ch と `config.json` の一致、パスフレーズ、証明書のホスト名と期限などを検証します。NG があれば MediaMTX と Caddy を起動しません。運用中に `config.json` や `.env` を変更した場合は `docker compose run --rm init` で OK を確認してから `docker compose up -d` を実行してください。`.env` を変更すると、compose は init の完了を待たずに MediaMTX を作り直すため、NG のまま `up -d` を実行すると受信が止まります（`docker compose restart` では init が実行されません）。
 
 ### QR コード
 

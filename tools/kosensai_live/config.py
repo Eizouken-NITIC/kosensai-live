@@ -1,6 +1,6 @@
 """config.json と .env を読み込み、検証する。
 
-app 以外で config.json と .env を読むコードは、このモジュールに集約する。
+app 以外で config.json と .env を読むコードはこのモジュールに集約する。
 Python のスクリプトは import し、シェルスクリプトは CLI で値を取得する。
 
   python3 tools/kosensai_live/config.py get site.domain          # config.json の値
@@ -30,7 +30,7 @@ SERVER_DIR = REPO / "hosts/server"
 
 # SRT のパスフレーズの長さの制約
 PASSPHRASE_MIN, PASSPHRASE_MAX = 10, 79
-# ATEM はパスフレーズを 64 バイトの null 終端の欄(SAth の Password)で送るため、63 文字まで
+# ATEM はパスフレーズを 64 バイトの null 終端フィールド(SAth の Password)で送信するため、63 文字まで
 ATEM_PASSPHRASE_MAX = 63
 # 証明書の期限がこの日数を切ったら WARN にする
 CERT_WARN_DAYS = 3
@@ -75,7 +75,7 @@ def load_env(path=ENV_FILE):
     """docker compose の .env と同じ KEY=VALUE 形式を読む。"""
     path = pathlib.Path(path)
     if not path.is_file():
-        raise SystemExit(f"{path} がありません（.env.example をコピーして実値を入れてください）")
+        raise SystemExit(f"{path} がありません（.env.example をコピーして実際の値を入れてください）")
     env = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()

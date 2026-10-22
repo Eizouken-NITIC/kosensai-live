@@ -5,8 +5,8 @@
 <title>notice</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
-  /* お知らせを下端に出す。出すお知らせと時間は Overlay.noticeText が決める(固定・今すぐ・ループ)。
-     赤い線は 1 つの画面に 1 本にするため、同時に出るテロップの板に任せ、帯には付けない。 */
+  /* お知らせを下端に表示する。表示するお知らせと時間は Overlay.noticeText で決定する(固定・今すぐ・ループ)。
+     赤い線は 1 つの画面に 1 本にするため、帯ではなく同時に出るテロップの板に付ける。 */
   #wrap:not(.in) { visibility: hidden; }
   #wrap.out { visibility: visible; }
   .band {

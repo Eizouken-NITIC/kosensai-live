@@ -23,7 +23,7 @@
   const MINUTE = 60000;
 
   // 第一体育館の遅れ。state.delays[日付] は [{ from: 予定の開始 "HH:MM", min: 遅れの分 }, ...] で、
-  // 操作パネルの「始まった」で追加する。各項目には、予定の開始が from 以降で最も新しい from の遅れを足す。
+  // 操作パネルの「始まった」で追加する。各項目には予定の開始が from 以降で最も新しい from の遅れを足す。
   function delayAt(delays, time) {
     let min = 0;
     for (const d of delays) if (d.from <= time) min = d.min;
@@ -85,11 +85,11 @@
 
   // ---- 操作パネルとの状態の受け渡し ----
   // ローカルファイルのブラウザソースとドックは同じ origin(http://absolute)になるため、
-  // localStorage に状態を置き、変更を BroadcastChannel で知らせる。
+  // localStorage に状態を保存し、変更を BroadcastChannel で通知する。
   const KEY = 'kosensai-live';
   const bus = new BroadcastChannel(KEY);
   const state = () => JSON.parse(localStorage.getItem(KEY) ?? '{}');
-  // BroadcastChannel は送ったページ自身には届かないため、同じページの受け手には直接知らせる。
+  // BroadcastChannel は送ったページ自身には届かないため、同じページの受け手には直接通知する。
   const listeners = [];
   function setState(patch) {
     const s = { ...state(), ...patch };
@@ -116,7 +116,7 @@
 
   // 今出すお知らせの文言。出さない時は null。
   // 固定(s.noticePin)があればそれを、「今すぐ」(s.noticeNow)から NOTICE_SHOW 秒の間はそれを出す。
-  // それ以外は、ループに入れたお知らせを NOTICE_CYCLE 秒ごとに 1 件ずつ、最初の NOTICE_SHOW 秒だけ出す。
+  // それ以外はループに入れたお知らせを NOTICE_CYCLE 秒ごとに 1 件ずつ、最初の NOTICE_SHOW 秒だけ出す。
   // 時刻だけで決まるため、お知らせの帯とテロップ(帯の分だけ上げる)が同じ判定になる。
   // 仕様補完: 表示 15 秒、間隔 60 秒。
   const NOTICE_SHOW = 15000;
@@ -145,9 +145,9 @@
     return e;
   }
 
-  // 文字を、字形の実際の形で揃える。
+  // 文字を字形の実際の形で揃える。
   // 左: 大きい文字ほど字形の左の余白が広がり、小さい文字より右にずれて見えるため、その分だけ左へ寄せる。
-  // 上下: 行の高さの中心ではなく、字形の中心を箱の中心に合わせる。英字は g や y の下に伸びる部分を
+  // 上下: 行の高さの中心ではなく、字形の中心をボックスの中心に合わせる。英字は g や y の下に伸びる部分を
   //       除いた大文字の高さで、日本語は字形の上端から下端で中心を求める。
   const canvas = document.createElement('canvas').getContext('2d');
   const CJK = /[\u3000-\u9fff\uff00-\uffef]/;

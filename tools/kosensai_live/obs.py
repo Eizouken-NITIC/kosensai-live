@@ -1,13 +1,13 @@
-"""本部 OBS を、今年の構成(hosts/obs/assets/scenes.json)と config.json・.env から obs-websocket で設定する。
+"""本部 OBS を今年の構成(hosts/obs/assets/scenes.json)と config.json・.env から obs-websocket で設定する。
 
     uv run kosensai-live obs build      # シーンコレクション・プロファイル・obs-multi-rtmp の出力を設定する
     uv run kosensai-live obs devices    # 音声入力のデバイスの名前を表示する(scenes.json の device に書く)
 
-起動中の OBS に接続する。scenes.json のシーンは、項目(ソース)の有無・並び・配置を scenes.json に合わせる。
-項目の表示・非表示は、channels.lua が切り替えるため、新しく作る項目にだけ設定する。
+起動中の OBS に接続する。scenes.json のシーンは項目(ソース)の有無・並び・配置を scenes.json に合わせる。
+項目の表示・非表示は channels.lua が切り替えるため、新しく作る項目にだけ設定する。
 scenes.json に無いシーンには手を加えない。ソースの設定(SRT の URL とパスフレーズ、ページのファイルの場所、音声のデバイス)、音声のトラック、
 映像の形式、obs-multi-rtmp の出力は毎回上書きする。
-obs-websocket のパスワードは、同じ PC の OBS の設定ファイルから読む。
+obs-websocket のパスワードは同じ PC の OBS の設定ファイルから読む。
 """
 
 import json
@@ -66,8 +66,8 @@ def audio_input_kind() -> str:
 
 
 def browser(page: str, replay: bool, query: str = "") -> dict:
-    # replay=True の画面は、表示するたびに読み込み直して入りのアニメーションを再生する。
-    # 引数付きで開く場合は、OBS がローカルファイルに使用する http://absolute/<パス> の URL で指定する。
+    # replay=True の画面は表示するたびに読み込み直して入りのアニメーションを再生する。
+    # 引数付きで開く場合は OBS がローカルファイルに使用する http://absolute/<パス> の URL で指定する。
     # TODO: Windows で http://absolute/C:/... の形で開けることを本番機で確認する(macOS では確認済み)。
     # フレームレートは指定しない(fps_custom が無効なら OBS の映像のフレームレートで描画する)。
     path = (OVERLAYS / page).as_posix().lstrip("/")
@@ -100,7 +100,7 @@ def audio_device_id(cl: obs.ReqClient, input_name: str, device: str | None) -> s
 
 def profile_dir(name: str) -> Path:
     # プロファイルのフォルダ名は名前と一致するとは限らない(記号を除く)ため、basic.ini の Name で探す。
-    # 作成した直後のプロファイルは、OBS が basic.ini を書き出すまで待つ。
+    # 作成した直後のプロファイルは OBS が basic.ini を書き出すまで待つ。
     for _ in range(PROFILE_WAIT_SEC * 10):
         for ini in (obs_config_dir() / "basic/profiles").glob("*/basic.ini"):
             if f"\nName={name}\n" in "\n" + ini.read_text(encoding="utf-8-sig"):
@@ -123,7 +123,7 @@ def multi_rtmp_config(conf: dict, env: dict, scenes: dict) -> dict:
             "fps-denumerator": 1,
             "param": {**out["video_param"], "bitrate": c["bitrateKbps"]},
         }
-        # scene が無い出力は、プログラム(OBS のシーンの切り替え)をそのまま送出する。
+        # scene が無い出力はプログラム(OBS のシーンの切り替え)をそのまま送出する。
         if "scene" in o:
             video["scene"] = o["scene"]
         videos.append(video)
@@ -147,7 +147,7 @@ def multi_rtmp_config(conf: dict, env: dict, scenes: dict) -> dict:
 def apply_profile(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict) -> None:
     """プロファイルと映像の形式を設定する。"""
     name = scenes["profile"]
-    # プロファイルの作成と切り替えは、必要な時だけ行う(OBS 32.1.2 の macOS で、obs-websocket からの
+    # プロファイルの作成と切り替えは必要な時だけ行う(OBS 32.1.2 の macOS で、obs-websocket からの
     # 作成・切り替え・削除を続けて行うと OBS が落ちることがあった)。
     profiles = cl.get_profile_list()
     if name not in profiles.profiles:
@@ -156,8 +156,8 @@ def apply_profile(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict) -> Non
     elif profiles.current_profile_name != name:
         cl.set_current_profile(name)
 
-    # 出力中は obs-websocket が映像の設定の変更を断る(OutputRunning)。出力中かどうかを GetOutputList で
-    # 調べないのは、Source Record を入れた OBS 32.1.2 で、GetOutputList の出力の列挙の中で OBS が落ちたため。
+    # 出力中は obs-websocket が映像の設定の変更を拒否する(OutputRunning)。出力中かどうかを GetOutputList で
+    # 調べないのは Source Record を入れた OBS 32.1.2 で GetOutputList の出力の列挙の中で OBS が落ちたため。
     w, h, num, den, _ = config.video_mode(conf)
     try:
         cl.set_video_settings(num, den, w, h, w, h)
@@ -244,7 +244,7 @@ def build(env_path) -> None:
                     "buffering_mb": 1,
                 }
             case "audio":
-                # デバイスは作成後に、OBS が出すデバイスの一覧から選ぶ(audio_device_id)。
+                # デバイスは作成後に OBS が返すデバイスの一覧から選ぶ(audio_device_id)。
                 return audio_input_kind(), {}
             case "page":
                 return "browser_source", browser(spec["page"], spec.get("replay", False), spec.get("query", ""))

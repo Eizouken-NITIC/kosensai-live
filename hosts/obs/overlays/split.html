@@ -5,8 +5,8 @@
 <title>split</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
-  /* 映像の枠。映像は OBS 側で 864x486 にして (80,200) と (976,200) に置く。
-     枠は映像の外側に 2px の金属の縁として描く。 */
+  /* 映像の枠。映像は OBS 側で 864x486 にして (80,200) と (976,200) に配置する。
+     枠は映像の外側に 2px の金属の縁として描画する。 */
   .pane {
     position: absolute;
     top: 198px;
@@ -43,7 +43,7 @@
 <div class="label r"><div class="caption"><span class="accent" id="rVenue"></span><span class="sep"></span><span id="rKind"></span></div><div class="n" id="rName"></div></div>
 <script src="overlay.js"></script>
 <script>
-  // 左に第一体育館、右に遊撃。映像の下に、それぞれの現在の内容を出す。
+  // 左に第一体育館、右に遊撃。映像の下にそれぞれの現在の内容を表示する。
   const $ = (id) => document.getElementById(id);
   let s = Overlay.state();
   Overlay.onState((next) => { s = next; });

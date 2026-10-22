@@ -36,7 +36,7 @@
   /* 終わった行は消灯にする。 */
   li.past, li.past .t { color: var(--unlit); }
   li.break .n { color: var(--lit-2); }
-  /* 進行中の行は選択中の枠にし、下端に経過の区切りを出す。 */
+  /* 進行中の行は選択中の枠にし、下端に経過の区切りを表示する。 */
   li.now {
     border-bottom-color: transparent;
     box-sizing: border-box;
@@ -58,7 +58,7 @@
 <div class="softkeys" id="softkeys"></div>
 <script src="overlay.js"></script>
 <script>
-  // 当日の第一体育館の進行。進行中の行を選択中の枠にし、経過を区切りの線で出す。配信しない時間は載せない。
+  // 当日の第一体育館の進行を表示する。配信しない時間は載せない。
   const $ = (id) => document.getElementById(id);
   const { el } = Overlay;
   const SEGMENTS = 10;
@@ -69,7 +69,7 @@
     $('clock').textContent = Overlay.hhmm(t);
     $('date').textContent = Overlay.date(t);
     $('title').textContent = `タイムテーブル　${window.PROGRAM.ch1.name}`;
-    // 予定の無い日(本番の前の日など)は、次の出演の日の予定を出す。
+    // 予定の無い日(本番の前の日など)は次の出演の日の予定を表示する。
     const nxt = Overlay.nextShow(t);
     const day = Overlay.schedule('ch1', t).length || !nxt ? t : nxt.start;
     const items = Overlay.schedule('ch1', day).filter((it) => it.kind !== 'ng');

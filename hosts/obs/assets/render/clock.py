@@ -5,7 +5,7 @@
 
 出力先の後に時刻(10:08 の形)を付けると、その時刻の時計を 1 枚(preview-HHMM.png)だけ描画する(確認用)。
 
-時計は文字盤を持たず、インデックス、分の目盛、針、キャップを画面の地の上に置く。
+時計は文字盤を持たず、インデックス、分の目盛、針、キャップを画面の地の上に配置する。
 インデックスと針は暗い鋼で、溝に LED を埋め込む。光源は画面の光源の方向から当てる。
 
 出力:
@@ -35,7 +35,7 @@ OUT = Path(ARGS[0]).resolve()
 PREVIEW = ARGS[1] if len(ARGS) > 1 else None
 # LED の明るさ。
 LUME_STRENGTH = 1.0
-# 待機画面で時計を置く位置(中心 px)と大きさ(px)。光源の方向をここから決める。
+# 待機画面で時計を配置する位置(中心 px)と大きさ(px)。光源の方向をここから決める。
 PLACE = ((578, 358), 380)
 # 光源の強さ(scene_parts.stage の level)。
 LIGHT_LEVEL = 0.5
@@ -49,7 +49,7 @@ CAP_Z = 0.07
 
 
 def carve_led(obj, length, width, top, depth, start=0.0):
-    """obj の天面に、+Y 方向に伸びる溝(長さ length、幅 width、深さ depth)を彫り、溝の底に平らな LED を置く。
+    """obj の天面に +Y 方向へ伸びる溝(長さ length、幅 width、深さ depth)を彫り、溝の底に平らな LED を配置する。
     LED は天面より depth だけ沈み、上から見ると金属の枠の中に光る線が埋まって見える。"""
     bpy.ops.mesh.primitive_cube_add(size=1)
     cutter = bpy.context.active_object
@@ -119,7 +119,7 @@ def dauphine(name, length, width, tail, height, mat):
 
 
 def build_dial():
-    """インデックスと分の目盛。影は、影だけを受ける面(scene_parts.stage の dial)に落ちる。"""
+    """インデックスと分の目盛。影は影だけを受ける面(scene_parts.stage の dial)に落ちる。"""
     # 枠の金属は暗くし、照明の映り込みと LED を見分けられるようにする。
     steel = material('index', srgb('#55575d'), metallic=1.0, roughness=0.06)
     for h in range(12):
@@ -131,7 +131,7 @@ def build_dial():
             carve_led(bar, 0.28, 0.028, 0.028, 0.008, start=0.03)
             bar.rotation_euler = (0, 0, -a)
             bar.location = (1.30 * math.sin(a) + off * math.cos(a), 1.30 * math.cos(a) - off * math.sin(a), 0.006)
-    # 分の目盛は、地に刷った弱く光る線。
+    # 分の目盛は地に刷った弱く光る線。
     for i in range(60):
         if i % 5 == 0:
             continue

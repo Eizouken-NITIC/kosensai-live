@@ -21,7 +21,7 @@ FILL = float(os.environ.get('FILL', 314))
 # 環境の明るさ。
 ENV = float(os.environ.get('ENV', 0.3))
 # 画面の暗い位置でも残す、周りの環境の明るさの下限(光源の直下に対する比)。
-# つやのある面が、光源から外れた向きでも部屋のゆるい明るさを映し、なだらかに暗くなるようにする。
+# つやのある面が光源から外れた向きでも部屋のゆるい明るさを映し、なだらかに暗くなるようにする。
 ENV_FLOOR = float(os.environ.get('ENV_FLOOR', 0.5))
 
 
@@ -255,7 +255,7 @@ def stage(scene, place=None, level=1.0):
     key_obj.rotation_euler = (Vector((0, 0, 0)) - key_obj.location).to_track_quat('-Z', 'Y').to_euler()
 
     # 視点の側の大きな反射板。金属の部品(METAL のコレクション)の映り込みにだけ効く。
-    # 正面を向く金属の天面は、真上のこの板を映して明るくなる。塗装と目盛には効かない。
+    # 正面を向く金属の天面は真上のこの板を映して明るくなる。塗装と目盛には効かない。
     fill = bpy.data.lights.new('fill', 'AREA')
     fill.shape = 'SQUARE'
     fill.size = 10.0
@@ -272,7 +272,7 @@ def stage(scene, place=None, level=1.0):
     world.use_nodes = True
     nt = world.node_tree
     # 周りの環境。下と横は暗く、上(+Y)の手前(+Z)ほど明るい。斜め上には細長い窓の帯がある。
-    # 艶のある面(金属と樹脂)は、面の向きに応じてこの環境の違う部分を映す。
+    # 艶のある面(金属と樹脂)は面の向きに応じてこの環境の違う部分を映す。
     coord = nt.nodes.new('ShaderNodeTexCoord')
     xyz = nt.nodes.new('ShaderNodeSeparateXYZ')
     nt.links.new(coord.outputs['Generated'], xyz.inputs[0])
@@ -317,7 +317,7 @@ def stage(scene, place=None, level=1.0):
 
 def resin(name, transmit, dye, density):
     """着色した透明な樹脂(アクリル)。表面で屈折・全反射し、中では染料が光を吸収し、わずかに散乱する。
-    transmit は染料が通す色。色と明るさは、光が樹脂の中をどう通ってきたかで決まる。"""
+    transmit は染料が通す色。色と明るさは光が樹脂の中をどう通ってきたかで決まる。"""
     m = bpy.data.materials.new(name)
     m.use_nodes = True
     nt = m.node_tree
@@ -359,7 +359,7 @@ def led(name, size, strength):
 
 def loft(name, stations, mats_by_y):
     """針の長さの方向の各位置 (v, 半幅, 高さ, 面取り) の断面をつないだ立体。
-    断面は、底面、垂直な側面、45° の面取り、平らな天面の六角形。"""
+    断面は底面、垂直な側面、45° の面取り、平らな天面の六角形。"""
     bm = bmesh.new()
     rings = []
     for v, hw, h, c in stations:
@@ -396,7 +396,7 @@ def loft(name, stations, mats_by_y):
 def render(scene, path):
     scene.render.filepath = str(path)
     bpy.ops.render.render(write_still=True)
-    # 影を受ける面には、ノイズ除去で影の無い所にも 1% 未満の不透明度が残る。これを 0 にし、ファイルを小さくする。
+    # 影を受ける面にはノイズ除去で影の無い所にも 1% 未満の不透明度が残る。これを 0 にし、ファイルを小さくする。
     img = bpy.data.images.load(str(path))
     px = np.array(img.pixels[:], dtype=np.float32).reshape(-1, 4)
     px[px[:, 3] < 0.01] = 0

@@ -50,7 +50,7 @@
 <script src="overlay.js"></script>
 <script>
   // 開始前は開始までの残り時間を計器に出す。休憩中は再開まで、終了後はお礼を出す。
-  // 下には、その日の第一体育館の出演を局のタイルの形で並べ、次の出演を選択中の形にする。
+  // 下にはその日の第一体育館の出演を局のタイルの形で並べ、次の出演を選択中の形にする。
   const $ = (id) => document.getElementById(id);
   const { el } = Overlay;
   const face = Overlay.clockFace($('face'));
@@ -61,7 +61,7 @@
     const t = Overlay.now();
     $('clock').textContent = Overlay.hhmm(t);
     $('date').textContent = Overlay.date(t);
-    // 状態は、開始前・休憩中・配信休止中(配信しない時間)・配信中・本日の終了後・配信の無い日の 6 つ。
+    // 状態は開始前・休憩中・配信休止中(配信しない時間)・配信中・本日の終了後・配信の無い日の 6 つ。
     const cur = Overlay.current('ch1', t);
     const show = Overlay.nextShow(t);
     const target = show?.start ?? null;
@@ -93,7 +93,7 @@
       $('what').textContent = 'ご視聴ありがとうございました';
     }
     $('venue').textContent = window.PROGRAM.ch1.name;
-    // 大きい時刻は、配信中は今の出演の開始、それ以外は次の出演の開始。
+    // 大きい時刻は配信中は今の出演の開始、それ以外は次の出演の開始。
     const when = cur && (cur.kind === 'band' || cur.kind === 'dance') ? cur.start : target;
     $('when').textContent = when ? Overlay.hhmm(when) : '';
     face(t);

@@ -7,7 +7,7 @@
   /* 操作パネル。OBS でこのブラウザソースを右クリックし「対話」で開いて操作する。配信には映らないため、
      画面のデザインは使用しない。テロップのブラウザソースと同じ origin になるため、
      localStorage と BroadcastChannel で状態を渡す。
-     OBS のブラウザソースが既定で入れる CSS(背景の透明、余白、overflow: hidden)を、詳細度の高いセレクターで上書きする。 */
+     OBS のブラウザソースが既定で入れる CSS(背景の透明、余白、overflow: hidden)を詳細度の高いセレクターで上書きする。 */
   html, body { background: #f4f4f5; overflow: auto; }
   html body { margin: 0; padding: 20px; font: 18px/1.5 system-ui, sans-serif; color: #111; }
   section { background: #fff; border: 1px solid #d4d4d8; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
@@ -47,7 +47,7 @@
 </section>
 <section>
   <h2>遊撃の現在地</h2>
-  <p class="muted">選んだ場所は、次の発表の枠が始まるまで出す。発表の枠の間は、枠の演目を出す。</p>
+  <p class="muted">選んだ場所は次の発表の枠が始まるまで出す。発表の枠の間は枠の演目を出す。</p>
   <p class="row" id="places"></p>
   <p class="row"><input type="text" id="placeTitle" placeholder="内容(例: 屋台)"><input type="text" id="placeWhere" placeholder="場所(例: 校内各所)"><button id="setPlace">出す</button><button id="autoPlace">自動に戻す</button></p>
 </section>
@@ -110,7 +110,7 @@
     $('ng').hidden = !ng;
     if (ng) {
       const on = ng.start <= t;
-      $('ng').replaceChildren(el('h2', {}, on ? `配信しない演目の時間です: ${ng.title}` : `次は配信しない演目: ${ng.title}`),
+      $('ng').replaceChildren(el('h2', {}, on ? `配信しない演目の時間: ${ng.title}` : `次は配信しない演目: ${ng.title}`),
         el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。始まったらホットキーの「配信休止: 出す」、終わったら「配信休止: 消す」を押す。`));
     }
 

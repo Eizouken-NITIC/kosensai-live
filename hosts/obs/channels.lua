@@ -1,10 +1,10 @@
 -- 本部 OBS の音声の振り分けと、第一体育館の配信休止。OBS の「ツール → スクリプト」でこのファイルを追加する。
 -- ソースとシーンの名前は assets/scenes.json の audio と signal_lost から読む。
 --
--- 1. audio.always のシーンを出力チャンネルにつなぎ、どのシーンをプログラムに出していても
+-- 1. audio.always のシーンを出力チャンネルに接続し、どのシーンをプログラムに出していても
 --    Ch1・Ch2 の音声がミキサーに入るようにする。obs-multi-rtmp がプログラム以外のシーンを
 --    送出しても、そのシーンにしか無いソースの音声はミキサーに入らないため。
---    シーンの中の映像は画面の外に置いてあるので、プログラムには何も映らない。
+--    シーンの中の映像は画面外に配置してあるため、プログラムには何も映らない。
 -- 2. Ch3(トラック 1)には、プログラムのシーン(入れ子を含む)に表示されている映像のうち、
 --    audio.ch3 の順で最初に見つかった会場の音声だけを入れる。本部のモニターにも同じ音声を出し、
 --    本部では Ch3 の視聴者と同じ音を聞く。
@@ -14,10 +14,10 @@
 --    休止の状態はスクリプトの設定に保存し、OBS を再起動しても残す。
 --    ミュートは音声のトラックの割り当てを変えないので、休止中に OBS を再起動しても割り当ては残る。
 -- 4. signal_lost の映像(遊撃のスマートフォン)の SRT が切れて映像が消えている間は、hide のソース
---    (遊撃のテロップ)を全シーンで隠す。映像の下に敷いた休止の画面が見えるため、その上に演目を出さない。
+--    (遊撃のテロップ)を全シーンで隠す。映像の下に配置した休止の画面が表示されるため、その上に演目を出さない。
 --    SRT は数秒の途切れでは切断と判断しないため、短い途切れでは切り替わらない。
 --
--- 休止の画面を出すかどうかはこのスクリプトだけが決める。overlays/pause.html は再開の時刻を出すだけである。
+-- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
 
 obs = obslua
 
@@ -42,7 +42,7 @@ local function load_json(name)
   local path = script_dir() .. "/assets/" .. name
   local data = obslua.obs_data_create_from_json_file(path)
   if data == nil then
-    obslua.script_log(obslua.LOG_WARNING, path .. " を読めません")
+    obslua.script_log(obslua.LOG_WARNING, path .. " を読み込めない")
   end
   return data
 end
@@ -93,7 +93,7 @@ local function attach_always_scene(warn)
   if source ~= nil then
     obslua.obs_source_release(source)
   elseif warn then
-    obslua.script_log(obslua.LOG_WARNING, tostring(always_scene) .. " シーンがありません")
+    obslua.script_log(obslua.LOG_WARNING, tostring(always_scene) .. " シーンがない")
   end
 end
 
@@ -191,12 +191,12 @@ local function update_signal_lost()
       for _, name in ipairs(entry.hide) do
         set_visible_everywhere(name, not lost)
       end
-      obslua.script_log(obslua.LOG_INFO, entry.video .. (lost and " の映像が消えました" or " の映像が戻りました"))
+      obslua.script_log(obslua.LOG_INFO, entry.video .. (lost and " の映像が消えた" or " の映像が戻った"))
     end
   end
 end
 
--- 全シーンの休止の画面の表示と、休止する会場の音声のミュートを、paused に合わせる。
+-- 全シーンの休止の画面の表示と、休止する会場の音声のミュートを paused に合わせる。
 local function apply_pause()
   set_visible_everywhere(pause.source, paused)
   local audio = pause.audio and obslua.obs_get_source_by_name(pause.audio)
@@ -211,7 +211,7 @@ local function set_paused(on)
   return function(pressed)
     if pressed and on ~= paused then
       paused = on
-      obslua.script_log(obslua.LOG_INFO, paused and "配信休止を表示しました" or "配信休止を解除しました")
+      obslua.script_log(obslua.LOG_INFO, paused and "配信休止を表示した" or "配信休止を解除した")
       apply_pause()
     end
   end
@@ -222,7 +222,7 @@ local function on_event(event)
     attach_always_scene(true)
     apply_pause()
   elseif event == obslua.OBS_FRONTEND_EVENT_SCENE_LIST_CHANGED then
-    -- kosensai-live obs build で後からシーンを作った場合につなぐ。
+    -- kosensai-live obs build で後からシーンを作った場合に接続する。
     attach_always_scene(false)
   elseif event == obslua.OBS_FRONTEND_EVENT_SCENE_CHANGED then
     update_track1()
