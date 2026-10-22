@@ -75,6 +75,7 @@
       {"source": "Ch2 iPhone", "place": "full"},
       {"source": "テロップ 遊撃", "place": "full"},
       {"source": "CM 小窓", "place": "corner", "hidden": true},
+      {"source": "CM", "place": "full", "hidden": true},
       {"source": "時計", "place": "full"},
       {"source": "お知らせ", "place": "full"},
       {"source": "ウォーターマーク", "place": "full"}
@@ -123,7 +124,7 @@
       {"scene": "[録画] Ch2 遊撃", "track": 3, "name": "Ch2"}
     ]
   },
-  "cm_corner": {"source": "CM 小窓", "file_from": "CM", "every_min": 5},
+  "cm_corner": {"scene": "Ch3 遊撃", "source": "CM 小窓", "file_from": "CM", "lost_video": "Ch2 iPhone", "every_min": 5},
   "signal_lost": [
     {"video": "Ch2 iPhone", "hide": [{"source": "テロップ 遊撃"}]}
   ],

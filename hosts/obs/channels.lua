@@ -16,8 +16,9 @@
 -- 4. signal_lost の映像(遊撃のスマートフォン)の SRT が切れて映像が消えている間は、hide のソース
 --    (遊撃のテロップ)を全シーンで隠す。映像の下に配置した休止の画面が表示されるため、その上に演目を出さない。
 --    SRT は数秒の途切れでは切断と判断しないため、短い途切れでは切り替わらない。
--- 5. cm_corner の小窓(右下の CM)を、毎時 every_min 分ごとに全シーンで表示し、再生が終わったら隠す。
---    動画のファイルは file_from の入力(全画面の CM)と同じものに合わせる。ホットキーの
+-- 5. cm_corner の scene に、毎時 every_min 分ごとに CM を表示し、再生が終わったら隠す。
+--    普段は右下の小窓(source、音なし)を出し、lost_video(遊撃)の映像が消えて休止の画面が出ている間は、
+--    全画面の CM(file_from、音あり)を出す。小窓の動画のファイルは file_from と同じものに合わせる。ホットキーの
 --    「CM 小窓: 自動で出す」「CM 小窓: 出さない」で切り替え、状態はスクリプトの設定に保存する。
 --
 -- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
@@ -34,12 +35,13 @@ local always_scene = nil
 local ch3 = {} -- { { video = ..., audio = ... }, ... }
 local pause = {} -- { source = ..., audio = ... }
 local signal_lost = {} -- { { video = ..., hide = { ... }, lost = nil }, ... }
-local cm_corner = nil -- { source = ..., file_from = ..., every_min = ... }
+local cm_corner = nil -- { scene = ..., source = ..., file_from = ..., lost_video = ..., every_min = ... }
 local paused = false
 -- 右下の CM。cm_auto は自動で出すかどうか、cm_shown_at は表示を始めた時刻(表示していなければ nil)、
 -- cm_slot は最後に表示した回(毎時 every_min 分ごとの区切りの番号)。
 local cm_auto = true
 local cm_shown_at = nil
+local cm_shown_source = nil
 local cm_slot = nil
 -- 再生の終わりを検出できない場合に、小窓を隠すまでの秒数
 local CM_MAX_SEC = 180
@@ -99,8 +101,10 @@ local function load_config()
   local cm = obslua.obs_data_get_obj(scenes, "cm_corner")
   if cm ~= nil then
     cm_corner = {
+      scene = obslua.obs_data_get_string(cm, "scene"),
       source = obslua.obs_data_get_string(cm, "source"),
       file_from = obslua.obs_data_get_string(cm, "file_from"),
+      lost_video = obslua.obs_data_get_string(cm, "lost_video"),
       every_min = obslua.obs_data_get_int(cm, "every_min"),
     }
     obslua.obs_data_release(cm)
@@ -249,9 +253,25 @@ local function sync_cm_file()
   return file
 end
 
+-- scene_name のシーンの name のソースの表示を切り替える。全画面の CM は Ch3 CM のシーンにもあるため、
+-- 全シーンではなく cm_corner.scene だけを切り替える。
+local function set_visible_in(scene_name, name, visible)
+  local scene_source = obslua.obs_get_source_by_name(scene_name)
+  if scene_source == nil then
+    return
+  end
+  local item = obslua.obs_scene_find_source(obslua.obs_scene_from_source(scene_source), name)
+  if item ~= nil then
+    obslua.obs_sceneitem_set_visible(item, visible)
+  end
+  obslua.obs_source_release(scene_source)
+end
+
 local function hide_cm()
   cm_shown_at = nil
-  set_visible_everywhere(cm_corner.source, false)
+  cm_shown_source = nil
+  set_visible_in(cm_corner.scene, cm_corner.source, false)
+  set_visible_in(cm_corner.scene, cm_corner.file_from, false)
 end
 
 local function update_cm()
@@ -259,26 +279,35 @@ local function update_cm()
     return
   end
   local file = sync_cm_file()
-  local source = obslua.obs_get_source_by_name(cm_corner.source)
-  if source == nil then
-    return
-  end
   if cm_shown_at ~= nil then
-    local ended = obslua.obs_source_media_get_state(source) == obslua.OBS_MEDIA_STATE_ENDED
+    local source = obslua.obs_get_source_by_name(cm_shown_source)
+    local elapsed = os.time() - cm_shown_at
+    local ended, duration = false, 0
+    if source ~= nil then
+      ended = obslua.obs_source_media_get_state(source) == obslua.OBS_MEDIA_STATE_ENDED
+      duration = obslua.obs_source_media_get_duration(source) / 1000
+      obslua.obs_source_release(source)
+    end
     -- 再生を始めた直後は前回の終了の状態が残っているため、2 秒は終了と見なさない。
-    if (ended and os.time() - cm_shown_at >= 2) or os.time() - cm_shown_at > CM_MAX_SEC then
+    -- 全画面の CM は Ch3 CM のシーンのためにループするので、終了の状態にならない。動画の長さでも判定する。
+    if (ended and elapsed >= 2) or (duration > 0 and elapsed >= duration) or elapsed > CM_MAX_SEC then
       hide_cm()
     end
   elseif cm_auto and file ~= "" then
     local slot = math.floor(os.time() / (cm_corner.every_min * 60))
     if slot ~= cm_slot then
       cm_slot = slot
-      cm_shown_at = os.time()
-      set_visible_everywhere(cm_corner.source, true)
-      obslua.obs_source_media_restart(source)
+      -- 遊撃の映像が消えて休止の画面が出ている間は、全画面の CM を音ありで出す。
+      cm_shown_source = video_lost(cm_corner.lost_video) and cm_corner.file_from or cm_corner.source
+      local source = obslua.obs_get_source_by_name(cm_shown_source)
+      if source ~= nil then
+        cm_shown_at = os.time()
+        set_visible_in(cm_corner.scene, cm_shown_source, true)
+        obslua.obs_source_media_restart(source)
+        obslua.obs_source_release(source)
+      end
     end
   end
-  obslua.obs_source_release(source)
 end
 
 local function set_cm_auto(on)
@@ -312,6 +341,10 @@ local function on_event(event)
   if event == obslua.OBS_FRONTEND_EVENT_FINISHED_LOADING or event == obslua.OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED then
     attach_always_scene(true)
     apply_pause()
+    -- 前回の終了時に表示していた CM が残らないよう隠す(script_load の時点ではシーンがまだ無い)。
+    if cm_corner ~= nil then
+      hide_cm()
+    end
   elseif event == obslua.OBS_FRONTEND_EVENT_SCENE_LIST_CHANGED then
     -- kosensai-live obs build で後からシーンを作った場合に接続する。
     attach_always_scene(false)
@@ -363,9 +396,6 @@ function script_load(settings)
   obslua.obs_frontend_add_event_callback(on_event)
   attach_always_scene(false)
   apply_pause()
-  if cm_corner ~= nil then
-    hide_cm()
-  end
   -- 起動した回は出さず、次の区切りから出す。
   cm_slot = cm_corner and math.floor(os.time() / (cm_corner.every_min * 60))
   obslua.timer_add(tick, 1000)
