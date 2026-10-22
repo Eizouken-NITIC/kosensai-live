@@ -14,9 +14,10 @@
     /tmp/qrenv/bin/python tools/make-qr.py
 """
 
-import json
 import pathlib
 import sys
+
+import config
 
 try:
     import segno
@@ -24,7 +25,7 @@ except ImportError:
     sys.exit("segno が必要です: pip install segno")
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-URL = "https://" + json.loads((REPO / "config.json").read_text(encoding="utf-8"))["site"]["domain"] + "/"
+URL = "https://" + config.load_config()["site"]["domain"] + "/"
 OUT = REPO / "app/static/assets/qr-viewer.svg"
 
 # error='m' … 15% の誤り訂正。サイネージは離れて読むので少し余裕を持たせる。

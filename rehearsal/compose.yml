@@ -7,17 +7,10 @@
 # Docker Desktop では host ネットワークを使用できず、かつ本番の Caddyfile は MediaMTX が
 # 127.0.0.1:8888 で待ち受けている前提で書かれているためである。
 
-x-passphrases: &passphrases
-  # リハーサル専用の使い捨ての値。本番は hosts/server/.env に別の値を設定する。
-  MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE: rehearsal-ch1-passphrase
-  MTX_PATHS_CH2_SRTPUBLISHPASSPHRASE: rehearsal-ch2-passphrase
-  MTX_PATHS_CH3_SRTPUBLISHPASSPHRASE: rehearsal-ch3-passphrase
-  # 本番は HQ_IP だけに絞る。リハーサルは 8890 から手動で送出できるよう全体を許可する。
-  # publisher は mediamtx の名前空間に相乗りしており 127.0.0.1 から送出する。
-  MTX_AUTHINTERNALUSERS_0_IPS: "0.0.0.0/0,::/0"
+# パスフレーズは rehearsal.env にある。
 
-# 送出の内容は containers/publisher/publish.sh にある。チャンネルごとに異なるのは名前と
-# パスフレーズだけであるため、compose 側には引数のみを配置する。
+# 送出の内容は containers/publisher/publish.sh にある。チャンネルごとに異なるのは名前だけで
+# あるため、compose 側には引数のみを配置する。パスフレーズは rehearsal.env から読む。
 #
 # 既定は 640x360@15 の ultrafast である。ビットレートや画質を実測する場合のみ本番相当へ
 # 引き上げる:
@@ -27,6 +20,7 @@ x-publisher: &publisher
   network_mode: "service:mediamtx"
   depends_on: [mediamtx]
   restart: unless-stopped
+  env_file: [rehearsal.env]
   environment:
     REH_SIZE: "${REH_SIZE:-}"
     REH_FPS: "${REH_FPS:-}"
@@ -34,7 +28,8 @@ x-publisher: &publisher
     REH_PRESET: "${REH_PRESET:-}"
 
 services:
-  # 証明書と caddy-preview の Caddyfile を生成する。2 つの Caddy はこの完了を待つ。
+  # rehearsal.env を検証し、証明書と Caddy 用の SITE_DOMAIN を生成する。
+  # 2 つの Caddy と MediaMTX はこの完了を待つ。
   init:
     build: ./containers/init
     container_name: rehearsal-init
@@ -48,7 +43,15 @@ services:
     image: bluenviron/mediamtx:1.19.3
     container_name: rehearsal-mediamtx
     restart: unless-stopped
-    environment: *passphrases
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    # MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE から MediaMTX が Ch のパスを作成する
+    env_file: [rehearsal.env]
+    environment:
+      # 本番は HQ_IP だけに絞る。リハーサルは 8890 から手動で送出できるよう全体を許可する。
+      # publisher は mediamtx の名前空間に相乗りしており 127.0.0.1 から送出する。
+      MTX_AUTHINTERNALUSERS_0_IPS: "0.0.0.0/0,::/0"
     volumes:
       - ../hosts/server/mediamtx.yml:/mediamtx.yml:ro
     ports:
@@ -71,9 +74,13 @@ services:
         condition: service_completed_successfully
       mediamtx:
         condition: service_started
+    command:
+      ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile",
+       "--envfile", "/etc/caddy/generated/site.env"]
     volumes:
       - ../hosts/server/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./generated/certs:/etc/caddy/certs:ro
+      - ./generated/caddy:/etc/caddy/generated:ro
       - ../web:/srv/live:ro
 
   # Host ヘッダを本番のホスト名へ付け替えて caddy-origin へ転送する。/etc/hosts を
@@ -89,32 +96,34 @@ services:
       caddy-origin:
         condition: service_started
     # 生成物はディレクトリごとマウントする。ファイル単位で指定すると、初回起動時に
-    # Docker が同名のディレクトリを作成して Caddy が設定を読めなくなる。
+    # Docker が同名のディレクトリを作成して Caddy が読めなくなる。
     #
     # :8444 の証明書を発行する internal CA の鍵は /data にある。ボリュームへ置かないと
     # reload.sh の --force-recreate のたびに CA が変わり、実機で受け入れた証明書の例外が
     # 毎回無効になる。
     volumes:
+      - ./containers/init/preview.Caddyfile:/etc/caddy/Caddyfile:ro
       - ./generated/caddy:/etc/caddy/generated:ro
       - caddy_preview_data:/data
     command:
-      ["caddy", "run", "--config", "/etc/caddy/generated/preview.Caddyfile", "--adapter", "caddyfile"]
+      ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile",
+       "--envfile", "/etc/caddy/generated/site.env"]
 
   # --- テストパターン送出 --------------------------------------------------
   pub-ch1:
     <<: *publisher
     container_name: rehearsal-pub-ch1
-    command: ["ch1", "rehearsal-ch1-passphrase"]
+    command: ["ch1"]
 
   pub-ch2:
     <<: *publisher
     container_name: rehearsal-pub-ch2
-    command: ["ch2", "rehearsal-ch2-passphrase"]
+    command: ["ch2"]
 
   pub-ch3:
     <<: *publisher
     container_name: rehearsal-pub-ch3
-    command: ["ch3", "rehearsal-ch3-passphrase"]
+    command: ["ch3"]
 
 
 volumes:

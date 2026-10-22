@@ -1,6 +1,31 @@
 # 配信サーバー一式
 
 services:
+  # 起動前の検証。.env と config.json の整合性、証明書、web/ のビルド、sysctl を確認する。
+  # NG があれば終了コード 1 で終了し、mediamtx と caddy は起動しない。内容は
+  # docker compose logs init で確認する。起動せずに検証だけを行う場合は
+  # docker compose run --rm init を実行する。
+  #
+  # .env を変更すると、compose は init の完了を待たずに mediamtx を削除して作り直す。
+  # 運用中は run --rm init で OK を確認してから up -d を実行する。
+  #
+  # 検証に通ると、Caddyfile の {$SITE_DOMAIN} に使用する値を generated ボリュームへ書き出す。
+  init:
+    image: python:3.14.8-alpine3.24
+    container_name: kosensai-init
+    # net.core.rmem_max をホストの値で確認するため
+    network_mode: host
+    command:
+      - python3
+      - /repo/tools/config.py
+      - check
+      - --server
+      - --write-site-env
+      - /generated/site.env
+    volumes:
+      - ../..:/repo:ro
+      - generated:/generated
+
   mediamtx:
     image: bluenviron/mediamtx:1.19.3
     container_name: kosensai-mediamtx
@@ -8,6 +33,7 @@ services:
     # network_mode: host により SRT(:8890) と HLS(127.0.0.1:8888) をそのまま公開する。
     # bridge だと SRT の UDP ポートフォワードで問題が出やすい。
     network_mode: host
+    # MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE から MediaMTX が Ch のパスを作成する
     env_file:
       - .env
     environment:
@@ -15,6 +41,9 @@ services:
       MTX_AUTHINTERNALUSERS_0_IPS: "127.0.0.1/32,::1/128,${HQ_IP:?.env に HQ_IP を設定してください}/32"
     volumes:
       - ./mediamtx.yml:/mediamtx.yml:ro
+    depends_on:
+      init:
+        condition: service_completed_successfully
     logging:
       driver: json-file
       options:
@@ -26,8 +55,12 @@ services:
     container_name: kosensai-caddy
     restart: unless-stopped
     network_mode: host
+    command:
+      ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile",
+       "--envfile", "/etc/caddy/generated/site.env"]
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - generated:/etc/caddy/generated:ro
       - ./certs:/etc/caddy/certs:ro # certbot(DNS-01) で取得した証明書
       # 配信サイトはこのホスト専用の成果物ではないため、
       # リポジトリ直下の web/ に置いてここからマウントする。
@@ -37,7 +70,10 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - mediamtx
+      init:
+        condition: service_completed_successfully
+      mediamtx:
+        condition: service_started
     logging:
       driver: json-file
       options:
@@ -45,5 +81,6 @@ services:
         max-file: "5"
 
 volumes:
+  generated:
   caddy_data:
   caddy_config:

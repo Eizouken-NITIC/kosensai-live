@@ -1,10 +1,11 @@
 ###############################################
 # MediaMTX 設定
 #
-# パスフレーズはこのファイルに書かない。
-# docker-compose の env_file (.env) から
+# パスフレーズと Ch（パス）はこのファイルに書かない。
+# compose の env_file (.env) の
 #   MTX_PATHS_CH1_SRTPUBLISHPASSPHRASE=...
-# の形で注入する。
+# から、MediaMTX がパス ch1 を作成する。.env の Ch と config.json の channels[].id が
+# 一致することは、compose の init サービス（tools/config.py check）が検証する。
 #
 # 本部 PC の IP もこのファイルに書かない。compose.yml が .env の HQ_IP を
 # MTX_AUTHINTERNALUSERS_0_IPS へ渡し、下の publish の許可範囲を上書きする。
@@ -72,14 +73,7 @@ authInternalUsers:
 ###############################################
 # Path definitions
 #
+# パスは .env の MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE から作成する（冒頭を参照）。
 # 送出側の streamid は publish:<パス名>
 #   例) srt://<server>:8890?streamid=publish:ch1&passphrase=...&latency=120000
 ###############################################
-paths:
-  # config.json の channels[].id と一致させる
-  ch1:
-    source: publisher
-  ch2:
-    source: publisher
-  ch3:
-    source: publisher
