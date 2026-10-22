@@ -1,6 +1,6 @@
 """計器(overlays の gauge)の画像を Blender の Cycles で描画する。
 
-    /Applications/Blender.app/Contents/MacOS/Blender -b -P hosts/obs/render-gauge.py -- hosts/obs/overlays/gauge
+    blender -b --factory-startup -P hosts/obs/render-gauge.py -- hosts/obs/overlays/gauge
 
 -- の後に番号(0〜60)を続けると、その番号の針だけを描画する(確認用)。
 

@@ -6,6 +6,7 @@
 
 import math
 import os
+import sys
 
 import bmesh
 import bpy
@@ -24,17 +25,34 @@ ENV = float(os.environ.get('ENV', 0.3))
 ENV_FLOOR = float(os.environ.get('ENV_FLOOR', 0.5))
 
 
+# Cycles の GPU のバックエンド。OS と GPU の組み合わせで使用できるものが 1 つに決まる。
+GPU_BACKENDS = ('OPTIX', 'CUDA', 'HIP', 'ONEAPI', 'METAL')
+
+
+def use_gpu(scene):
+    # GPU だけで描画する。CPU を併用すると、CPU の負荷が上がるうえに速くならない(Metal で確認)。
+    prefs = bpy.context.preferences.addons['cycles'].preferences
+    for backend in GPU_BACKENDS:
+        try:
+            prefs.compute_device_type = backend
+        except TypeError:
+            continue  # この OS の Blender に無いバックエンド
+        devices = [d for d in prefs.get_devices_for_type(backend) if d.type == backend]
+        if devices:
+            for d in prefs.devices:
+                d.use = d in devices
+            scene.cycles.device = 'GPU'
+            print(f'Cycles: {backend} ({", ".join(d.name for d in devices)})')
+            return
+    print('Cycles: GPU が無いため CPU で描画する', file=sys.stderr)
+    scene.cycles.device = 'CPU'
+
+
 def reset():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
     scene.render.engine = 'CYCLES'
-    prefs = bpy.context.preferences.addons['cycles'].preferences
-    prefs.compute_device_type = 'METAL'
-    prefs.get_devices()
-    # GPU(Metal)だけで描画する。CPU を併用すると、CPU の負荷が上がるうえに速くならない。
-    for d in prefs.devices:
-        d.use = d.type == 'METAL'
-    scene.cycles.device = 'GPU'
+    use_gpu(scene)
     scene.cycles.samples = int(os.environ.get('SAMPLES', 256))
     scene.cycles.use_denoising = True
     # 樹脂の中で光が散乱し、内面で全反射しながら先端まで届くように、反射と散乱の回数を増やす。

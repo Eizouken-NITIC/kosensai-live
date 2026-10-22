@@ -83,9 +83,11 @@ ATEM の配信設定（サービス名・URL・キー・パスフレーズ）は
 - 計器の画像（`gauge/`）と待機画面の時計の画像（`clock-face/`）は、`render-gauge.py` と `render-clock.py` で Blender の Cycles で描画します（シーンと部品は `scene_parts.py` で共通）。形・材質・光源を変えた場合は、次で描き直してコミットします。
 
   ```bash
-  /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P hosts/obs/render-gauge.py -- hosts/obs/overlays/gauge
-  /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P hosts/obs/render-clock.py -- hosts/obs/overlays/clock-face
+  blender -b --factory-startup -P hosts/obs/render-gauge.py -- hosts/obs/overlays/gauge
+  blender -b --factory-startup -P hosts/obs/render-clock.py -- hosts/obs/overlays/clock-face
   ```
+
+  `blender` は Blender の実行ファイルです（macOS は `/Applications/Blender.app/Contents/MacOS/Blender`、Windows は `C:\Program Files\Blender Foundation\Blender <バージョン>\blender.exe`）。GPU（OptiX・CUDA・HIP・oneAPI・Metal）があれば GPU だけで描画します。
 
 ---
 

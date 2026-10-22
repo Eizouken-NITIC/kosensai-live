@@ -1,6 +1,6 @@
 """待機画面の時計(overlays の clock-face)の画像を Blender の Cycles で描画する。
 
-    /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P hosts/obs/render-clock.py -- hosts/obs/overlays/clock-face
+    blender -b --factory-startup -P hosts/obs/render-clock.py -- hosts/obs/overlays/clock-face
 
 -- の後に時刻(10:08 の形)を付けると、その時刻の時計を 1 枚(preview-HHMM.png)だけ描画する(確認用)。
 
