@@ -3,8 +3,9 @@
     uv run kosensai-live obs build      # シーンコレクション・プロファイル・obs-multi-rtmp の出力を設定する
     uv run kosensai-live obs devices    # 音声入力のデバイスの名前を表示する(scenes.json の device に書く)
 
-起動中の OBS に接続する。シーンは無いものだけを作り、既にあるシーンには手を加えない。
-ソースの設定(SRT の URL とパスフレーズ、ページのファイルの場所、音声のデバイス)、音声のトラック、
+起動中の OBS に接続する。scenes.json のシーンは、項目(ソース)の有無・並び・配置を scenes.json に合わせる。
+項目の表示・非表示は、channels.lua が切り替えるため、新しく作る項目にだけ設定する。
+scenes.json に無いシーンには手を加えない。ソースの設定(SRT の URL とパスフレーズ、ページのファイルの場所、音声のデバイス)、音声のトラック、
 映像の形式、obs-multi-rtmp の出力は毎回上書きする。
 obs-websocket のパスワードは、同じ PC の OBS の設定ファイルから読む。
 """
@@ -268,19 +269,26 @@ def build(env_path) -> None:
 
     # シーンの項目は下から順に並べる。hidden の項目(配信休止)は channels.lua が必要な時だけ表示する。
     for scene, items in scenes["scenes"].items():
-        if scene in existing_scenes:
-            print(f"既存: {scene}")
-            continue
-        cl.create_scene(scene)
+        created = scene not in existing_scenes
+        if created:
+            cl.create_scene(scene)
+        current = sorted(cl.get_scene_item_list(scene).scene_items, key=lambda i: i["sceneItemIndex"])
+        before = [i["sourceName"] for i in current]
+        ids = []
         for item in items:
             name = item["source"]
-            kind, settings = inputs[name]
-            visible = not item.get("hidden", False)
-            if name in existing_inputs:
-                item_id = cl.create_scene_item(scene, name, visible).scene_item_id
+            # 同じソースの既存の項目があれば使い、表示・非表示はそのままにする。
+            match = next((i for i in current if i["sourceName"] == name), None)
+            if match:
+                current.remove(match)
+                item_id = match["sceneItemId"]
+            elif name in existing_inputs:
+                item_id = cl.create_scene_item(scene, name, not item.get("hidden", False)).scene_item_id
             else:
-                item_id = cl.create_input(scene, name, kind, settings, visible).scene_item_id
+                kind, settings = inputs[name]
+                item_id = cl.create_input(scene, name, kind, settings, not item.get("hidden", False)).scene_item_id
                 existing_inputs.add(name)
+            ids.append(item_id)
             if "place" in item:
                 p = scenes["places"][item["place"]]
                 cl.set_scene_item_transform(scene, item_id, {
@@ -288,7 +296,13 @@ def build(env_path) -> None:
                     "boundsType": "OBS_BOUNDS_SCALE_INNER", "boundsAlignment": 0,
                     "boundsWidth": p["w"], "boundsHeight": p["h"],
                 })
-        print(f"作成: {scene}")
+        # scenes.json に無い項目は削除する。
+        for extra in current:
+            cl.remove_scene_item(scene, extra["sceneItemId"])
+        for index, item_id in enumerate(ids):
+            cl.set_scene_item_index(scene, item_id, index)
+        after = [i["source"] for i in items]
+        print(f"{'作成' if created else '更新' if before != after else '変更なし'}: {scene}")
 
     # 設定は今の値に重ねて書く(overlay)ので、OBS で指定した CM の動画のファイルは消えない。
     for name, spec in scenes["inputs"].items():

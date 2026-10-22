@@ -53,7 +53,7 @@ uv run kosensai-live obs build
 | 設定するもの | 内容 |
 | --- | --- |
 | プロファイル | `KOSENSAI-LIVE`。映像の形式は `config.json` の `video.mode`（1080p29.97） |
-| シーンコレクション | `KOSENSAI-LIVE`。無いシーンとソースだけを追加し、既にあるシーンには手を加えません |
+| シーンコレクション | `KOSENSAI-LIVE`。`scenes.json` のシーンは、項目の有無・並び・配置を `scenes.json` に合わせます。項目の表示・非表示は変えません（`channels.lua` が切り替えるため）。`scenes.json` に無いシーンには手を加えません |
 | ソース | SRT Listener の URL とパスフレーズ、ページのファイルの場所、音声のデバイスとトラック。毎回上書きします |
 | 録画 | `[録画] …` のシーンの Source Record のフィルター（[3-4.](#3-4-録画)） |
 | obs-multi-rtmp の出力 | Ch1・Ch2・Ch3 の 3 つ（[3-3.](#3-3-出力obs-multi-rtmp)）。送出先の URL とパスフレーズは `.env` から作ります |
