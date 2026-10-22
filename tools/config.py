@@ -1,15 +1,15 @@
-#!/usr/bin/env python3
 """config.json と .env を読み込み、検証する。
 
 app 以外で config.json と .env を読むコードは、このモジュールに集約する。
 Python のスクリプトは import し、シェルスクリプトは CLI で値を取得する。
 
-  python3 tools/config.py get site.domain          # config.json の値
-  python3 tools/config.py channels [--listen]      # Ch の id を 1 行 1 件で
-  python3 tools/config.py env HQ_IP                # .env の値
-  python3 tools/config.py check [--server]         # .env と config.json の整合性を検証する
+  uv run tools/config.py get site.domain          # config.json の値
+  uv run tools/config.py channels [--listen]      # Ch の id を 1 行 1 件で
+  uv run tools/config.py env HQ_IP                # .env の値
+  uv run tools/config.py check [--server]         # .env と config.json の整合性を検証する
 
 .env は既定で hosts/server/.env を読む。--env で別のファイルを指定できる。
+配信サーバー・サイネージ・コンテナの中のシェルスクリプトは、uv ではなく python3 で実行する。
 配信サーバーの compose の init サービスは `check --server --write-site-env` を実行する。
 """
 

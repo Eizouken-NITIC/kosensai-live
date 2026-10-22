@@ -84,7 +84,11 @@ kosensai-live/
 │  │  ├─ logs/                アクセスログ格納ディレクトリ（Git 管理外）
 │  │  └─ scripts/             get-cert / smoke-test
 │  ├─ obs/                    本部配信用 PC
-│  │  └─ srt-urls.py          OBS に入力する SRT の URL を自動生成するスクリプト
+│  │  ├─ srt-urls.py          OBS に入力する SRT の URL を自動生成するスクリプト
+│  │  ├─ build-scenes.py      OBS のシーンコレクションを作成するスクリプト
+│  │  ├─ channels.lua         音声の振り分けと配信休止を行う OBS のスクリプト
+│  │  ├─ assets/              今年の進行とシーンの構成
+│  │  └─ overlays/            テロップと全画面の画面（ブラウザソース）
 │  └─ signage/                サイネージ端末
 │     └─ setup.sh / signage.service
 ├─ app/                       配信サイトのソースコード
@@ -113,6 +117,16 @@ kosensai-live/
 | **サイネージ端末のセットアップ** | [hosts/signage/README.md](hosts/signage/README.md) |
 | **ローカル検証環境** | [rehearsal/README.md](rehearsal/README.md) |
 
+### スクリプトの実行
+
+本部 PC（Windows）と開発用の PC（macOS・Windows）で実行する Python のスクリプトは、OS によらず [uv](https://docs.astral.sh/uv/) で実行します。依存するパッケージはスクリプトの先頭（PEP 723）に書いてあり、uv が用意します。
+
+```bash
+uv run hosts/obs/srt-urls.py
+```
+
+配信サーバー（Linux）とサイネージ端末（Raspberry Pi OS）のシェルスクリプト、コンテナの中の処理は、そのマシンの `bash` と `python3` で実行します。
+
 ---
 
 ## 3. クイックスタート
@@ -120,7 +134,7 @@ kosensai-live/
 ```bash
 cd rehearsal
 docker compose up -d     # 起動
-./scripts/reload.sh      # app/ の変更をビルドして検証環境に反映
+uv run scripts/reload.py   # app/ の変更をビルドして検証環境に反映
 docker compose down -v   # 停止
 ```
 

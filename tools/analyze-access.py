@@ -4,8 +4,8 @@
 視聴ページとサイネージは 30 秒ごとに /config.json?v=<端末ID>&p=<ページ>&ch=<Ch> を取得する
 （app/src/lib/liveConfig.svelte.ts）。この要求だけを数える。
 
-  tools/analyze-access.py hosts/server/logs/access*.log*            # 日ごとの要約
-  tools/analyze-access.py --csv minutes.csv hosts/server/logs/*      # 1 分ごとの同時視聴数も書き出す
+  python3 tools/analyze-access.py hosts/server/logs/access*.log*            # 日ごとの要約
+  python3 tools/analyze-access.py --csv minutes.csv hosts/server/logs/*      # 1 分ごとの同時視聴数も書き出す
 
 同時視聴数は、その 1 分間に要求を送った端末の数である。読み直しは 30 秒ごとのため、
 開いている端末は 1 分に必ず 1 回以上数えられる。延べ端末数は、その日に現れた ID の数である。

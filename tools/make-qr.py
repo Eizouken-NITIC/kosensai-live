@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["segno==1.6.6"]
+# ///
 """視聴ページの QR コードを SVG で生成する。
 
 生成物（app/static/assets/qr-viewer.svg）はリポジトリにコミットしてあるため、
@@ -10,19 +13,14 @@
 このスクリプト自体は配信物に含めない。app/static/ へ配置するとビルド成果物へ
 複製され、視聴者へ配信されてしまう。
 
-    python3 -m venv /tmp/qrenv && /tmp/qrenv/bin/pip install segno
-    /tmp/qrenv/bin/python tools/make-qr.py
+    uv run tools/make-qr.py
 """
 
 import pathlib
-import sys
 
 import config
 
-try:
-    import segno
-except ImportError:
-    sys.exit("segno が必要です: pip install segno")
+import segno
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 URL = "https://" + config.load_config()["site"]["domain"] + "/"

@@ -7,7 +7,7 @@
 #   CLIENTS  同時視聴者数（既定 10）
 #   CH       対象チャンネル（既定 ch1）
 #   DURATION 実行秒数（既定 30）
-#   DOMAIN   必須。load-test.sh が config.json から取得して渡す
+#   DOMAIN   必須。load-test.py が config.json から取得して渡す
 #
 # 結果は /out/c<i> へ「バイト数 セグメント数 エラー数」の形式で出力する。
 

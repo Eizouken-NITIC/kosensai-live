@@ -22,11 +22,11 @@ docker compose stop pub-ch1
 docker compose start pub-ch1
 
 # app/ をビルドして反映する
-./scripts/reload.sh
+uv run scripts/reload.py
 
 # 負荷テスト（20 人 / ch1 / 30 秒、および 10 人 × 全 Ch / 60 秒）
-./scripts/load-test.sh 20 ch1 30
-./scripts/load-test.sh 10 all 60
+uv run scripts/load-test.py 20 ch1 30
+uv run scripts/load-test.py 10 all 60
 
 # MediaMTX のログを表示する
 docker compose logs -f mediamtx
@@ -54,21 +54,16 @@ rm -rf generated
 
 ### LAN の実機（スマートフォン等）から開く
 
-`https://<この PC のアドレス>:8444/` を開きます。IP アドレスは `ipconfig getifaddr en0`、mDNS 名は `hostname -s` の結果に `.local` を付けたもので確認できます。IP で直接開いた場合は証明書のホスト名も一致しませんが、操作は同じです。
+`https://<この PC のアドレス>:8444/` を開きます。IP アドレスは OS のネットワークの設定で確認します。IP で直接開いた場合は証明書のホスト名も一致しませんが、操作は同じです。
 
 ### 本番と同じホスト名・TLS で開く
 
-`:8444` は `caddy-preview` のエントリポイントであるため、本番 `Caddyfile` のホスト名マッチと TLS 設定そのものは検証できません。これらを確認する場合は、`/etc/hosts` へ一時的に追記して `caddy-origin` の `:8443` を直接開きます。
+`:8444` は `caddy-preview` のエントリポイントであるため、本番 `Caddyfile` のホスト名マッチと TLS 設定そのものは検証できません。これらを確認する場合は、hosts ファイルへ一時的に追記して `caddy-origin` の `:8443` を直接開きます。
 
-```bash
-DOMAIN=$(python3 ../tools/config.py get site.domain)
-echo "127.0.0.1 ${DOMAIN}" | sudo tee -a /etc/hosts
-
-# ブラウザで https://${DOMAIN}:8443/ を開く
-
-# 追記を削除
-sudo sed -i '' "/${DOMAIN//./\\.}/d" /etc/hosts
-```
+1. `uv run ../tools/config.py get site.domain` でホスト名を確認します。
+2. hosts ファイル（macOS・Linux は `/etc/hosts`、Windows は `C:\Windows\System32\drivers\etc\hosts`）に、管理者の権限で `127.0.0.1 <ホスト名>` の行を追記します。
+3. ブラウザで `https://<ホスト名>:8443/` を開きます。
+4. 確認後、追記した行を削除します。
 
 ---
 

@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 """本部 OBS の SRT の URL 一覧を生成する。
 
 Ch の定義は config.json から、パスフレーズと IP は .env（既定: hosts/server/.env）から読み込む。
 
-  ./hosts/obs/srt-urls.py
-  ./hosts/obs/srt-urls.py --env path/to/.env
+  uv run hosts/obs/srt-urls.py
+  uv run hosts/obs/srt-urls.py --env path/to/.env
 """
 
 import argparse

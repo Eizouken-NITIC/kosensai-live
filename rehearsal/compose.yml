@@ -99,7 +99,7 @@ services:
     # Docker が同名のディレクトリを作成して Caddy が読めなくなる。
     #
     # :8444 の証明書を発行する internal CA の鍵は /data にある。ボリュームへ置かないと
-    # reload.sh の --force-recreate のたびに CA が変わり、実機で受け入れた証明書の例外が
+    # reload.py の --force-recreate のたびに CA が変わり、実機で受け入れた証明書の例外が
     # 毎回無効になる。
     volumes:
       - ./containers/init/preview.Caddyfile:/etc/caddy/Caddyfile:ro

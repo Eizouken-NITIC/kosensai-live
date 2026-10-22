@@ -1,0 +1,2 @@
+# コンテナと Linux のホストで実行するシェルスクリプトは、Windows で clone しても LF にする。
+*.sh text eol=lf
