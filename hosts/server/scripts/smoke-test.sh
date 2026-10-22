@@ -15,7 +15,7 @@ cd "${HOST_DIR}"
 
 SRT_HOST="${SRT_HOST:-127.0.0.1}"
 SRT_PORT="${SRT_PORT:-8890}"
-DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/config.py" get site.domain)}" || exit 1
+DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/kosensai_live/config.py" get site.domain)}" || exit 1
 JAR="$(mktemp)"
 
 # MediaMTX は最初のプレイリスト要求へ、セッション Cookie を付与するための 302 を返す。
@@ -36,7 +36,7 @@ check() { # check <説明> <URL>
   [[ "${code}" == "200" ]] && ok "$1" || ng "$1 (http ${code})"
 }
 
-PASS="$(python3 "${REPO_DIR}/tools/config.py" env "MTX_PATHS_$(printf '%s' "${CH}" | tr '[:lower:]' '[:upper:]')_SRTPUBLISHPASSPHRASE")" || exit 1
+PASS="$(python3 "${REPO_DIR}/tools/kosensai_live/config.py" env "MTX_PATHS_$(printf '%s' "${CH}" | tr '[:lower:]' '[:upper:]')_SRTPUBLISHPASSPHRASE")" || exit 1
 
 command -v ffmpeg >/dev/null || { echo "ffmpeg がありません" >&2; exit 1; }
 ffmpeg -hide_banner -protocols 2>/dev/null | grep -qw srt \

@@ -1,8 +1,9 @@
-"""待機画面の時計(overlays の clock-face)の画像を Blender の Cycles で描画する。
+"""待機画面の時計(assets/clock-face)の画像を Blender の Cycles で描画する。
 
-    blender -b --factory-startup -P hosts/obs/render-clock.py -- hosts/obs/overlays/clock-face
+    uv run kosensai-live render clock            # assets/clock-face に描画する
+    uv run kosensai-live render clock 10:08      # 確認用に 1 枚だけ描画する
 
--- の後に時刻(10:08 の形)を付けると、その時刻の時計を 1 枚(preview-HHMM.png)だけ描画する(確認用)。
+出力先の後に時刻(10:08 の形)を付けると、その時刻の時計を 1 枚(preview-HHMM.png)だけ描画する(確認用)。
 
 時計は文字盤を持たず、インデックス、分の目盛、針、キャップを画面の地の上に置く。
 インデックスと針は暗い鋼で、溝に LED を埋め込む。光源は画面の光源の方向から当てる。

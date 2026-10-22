@@ -84,10 +84,8 @@ kosensai-live/
 │  │  ├─ logs/                アクセスログ格納ディレクトリ（Git 管理外）
 │  │  └─ scripts/             get-cert / smoke-test
 │  ├─ obs/                    本部配信用 PC
-│  │  ├─ srt-urls.py          OBS に入力する SRT の URL を自動生成するスクリプト
-│  │  ├─ build-scenes.py      OBS のシーンコレクションを作成するスクリプト
-│  │  ├─ channels.lua         音声の振り分けと配信休止を行う OBS のスクリプト
-│  │  ├─ assets/              今年の進行とシーンの構成
+│  │  ├─ channels.lua         音声の振り分け・本部のモニター・配信休止を行う OBS のスクリプト
+│  │  ├─ assets/              今年の進行・OBS の構成・フォント・画像
 │  │  └─ overlays/            テロップと全画面の画面（ブラウザソース）
 │  └─ signage/                サイネージ端末
 │     └─ setup.sh / signage.service
@@ -100,10 +98,10 @@ kosensai-live/
 │
 ├─ rehearsal/                 ローカル検証
 ├─ tools/                     複数のマシンから使用する共通スクリプト
-│  ├─ config.py               config.json と .env の読み込みと検証
-│  ├─ make-qr.py              QR コード生成スクリプト
-│  ├─ analyze-access.py       アクセスログから視聴数を集計するスクリプト
-│  └─ atem-stream/            ATEM の配信設定を読み書きする CLI（macOS、SDK は別途インストール）
+│  ├─ kosensai_live/          本部 PC と開発用の PC の CLI（kosensai-live）
+│  │  └─ config.py            config.json と .env の読み込みと検証（配信サーバーでも使用する）
+│  └─ analyze-access.py       アクセスログから視聴数を集計するスクリプト（配信サーバーで実行する）
+├─ pyproject.toml             kosensai-live の依存
 ├─ LICENSE
 └─ THIRD-PARTY.md
 ```
@@ -113,17 +111,25 @@ kosensai-live/
 | 対象マシン・用途 | 参照ドキュメント |
 | --- | --- |
 | **配信サーバーの構築・管理** | [hosts/server/README.md](hosts/server/README.md) |
-| **本部 PC（OBS）のユーティリティ** | [hosts/obs/README.md](hosts/obs/README.md) |
+| **本部 PC（OBS）の設定** | [hosts/obs/README.md](hosts/obs/README.md) |
 | **サイネージ端末のセットアップ** | [hosts/signage/README.md](hosts/signage/README.md) |
 | **ローカル検証環境** | [rehearsal/README.md](rehearsal/README.md) |
 
 ### スクリプトの実行
 
-本部 PC（Windows）と開発用の PC（macOS・Windows）で実行する Python のスクリプトは、OS によらず [uv](https://docs.astral.sh/uv/) で実行します。依存するパッケージはスクリプトの先頭（PEP 723）に書いてあり、uv が用意します。
+本部 PC（Windows）と開発用の PC（macOS・Windows）で行う操作は、CLI の `kosensai-live` にまとめてあり、OS によらず [uv](https://docs.astral.sh/uv/) で実行します。依存は `pyproject.toml` と `uv.lock` にあり、uv がリポジトリの `.venv/` に用意します。
 
-```bash
-uv run hosts/obs/srt-urls.py
-```
+| コマンド | 内容 |
+| --- | --- |
+| `uv run kosensai-live check` | `.env` と `config.json` を検証する |
+| `uv run kosensai-live obs build` / `obs devices` | 本部 OBS のプロファイル・シーン・出力を設定する / 音声のデバイスを表示する |
+| `uv run kosensai-live atem apply` / `check` / `get` / `start` / `stop` / `watch` | ATEM の映像の形式と配信を設定・確認する |
+| `uv run kosensai-live urls` | SRT の URL と視聴の URL を表示する |
+| `uv run kosensai-live qr` | 視聴ページの QR コードを生成する |
+| `uv run kosensai-live render gauge` / `clock` | 計器と時計の画像を Blender で描画する |
+| `uv run kosensai-live rehearsal reload` / `load-test` | ローカル検証環境を操作する |
+
+`.env` は既定で `hosts/server/.env` を読みます。別のファイルは `uv run kosensai-live --env <パス> ...` で指定します。
 
 配信サーバー（Linux）とサイネージ端末（Raspberry Pi OS）のシェルスクリプト、コンテナの中の処理は、そのマシンの `bash` と `python3` で実行します。
 
@@ -134,7 +140,7 @@ uv run hosts/obs/srt-urls.py
 ```bash
 cd rehearsal
 docker compose up -d     # 起動
-uv run scripts/reload.py   # app/ の変更をビルドして検証環境に反映
+uv run kosensai-live rehearsal reload   # app/ の変更をビルドして検証環境に反映
 docker compose down -v   # 停止
 ```
 
@@ -168,7 +174,7 @@ docker compose up -d         # 起動前に init サービスが設定・証明�
 
 **3. 本部 PC（OBS）を設定する**
 
-OBS に入力する SRT の URL は `hosts/obs/srt-urls.py` が `config.json` と `.env` から生成します。ATEM の配信設定は `tools/atem-stream/` の CLI で投入します。使い方は [hosts/obs/README.md](hosts/obs/README.md) にあります。
+本部 OBS と ATEM は、`kosensai-live` が `config.json`・`.env`・`hosts/obs/assets/scenes.json` から設定します。手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
 
 **4. サイネージ端末を用意する（任意）**
 
@@ -185,17 +191,18 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 | 設定キー | 内容 |
 | --- | --- |
 | `site` | 配信サイトの名称・ホスト名・GitHub リポジトリの URL |
+| `video` | ATEM と本部 OBS の映像の形式 |
 | `channels` | チャンネル ID・表示名・OBS 待受ポート・SRT レイテンシ・ビットレート |
 | `externalSite` | 視聴ページとサイネージに iframe で埋め込む外部サイトの表示名と URL |
 | `viewer` | 視聴ページのデフォルトチャンネル |
 | `signage` | サイネージページのデフォルトチャンネルおよび QR コード横のテキスト |
 | `welcome` | オンボーディング案内文 |
 
-- **適用のタイミング**: `app/` はビルド時にこの設定をインポートします。`hosts/`、`rehearsal/`、`tools/` の各種スクリプトは、実行時に `tools/config.py` を経由して読み込みます。
+- **適用のタイミング**: `app/` はビルド時にこの設定をインポートします。`hosts/`、`rehearsal/`、`tools/` の各種スクリプトは、実行時に `tools/kosensai_live/config.py` を経由して読み込みます。
 
 ### .env
 
-パスフレーズと各マシンの IP は `hosts/server/.env`（Git 管理外）に設定します。配信サーバーの compose に加えて、本部 PC の `srt-urls.py` と `tools/atem-stream/` もこのファイルを読みます。設定項目は [hosts/server/README.md](hosts/server/README.md) にあります。
+パスフレーズと各マシンの IP は `hosts/server/.env`（Git 管理外）に設定します。配信サーバーの compose に加えて、本部 PC の `kosensai-live` もこのファイルを読みます。設定項目は [hosts/server/README.md](hosts/server/README.md) にあります。
 
 ### 設定の検証と反映
 
@@ -204,11 +211,11 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 - `Caddyfile` のホスト名は `{$SITE_DOMAIN}` です。compose の init サービスが `config.json` から書き出した値を、Caddy が起動時に読み込みます。
 - MediaMTX のパス（Ch）は `.env` の `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から作成します。`mediamtx.yml` には Ch を書きません。
 
-init サービスは `docker compose up` のたびに `tools/config.py check --server` を実行し、`.env` の Ch と `config.json` の一致、パスフレーズ、証明書のホスト名と期限などを検証します。NG があれば MediaMTX と Caddy を起動しません。運用中に `config.json` や `.env` を変更した場合は、`docker compose run --rm init` で OK を確認してから `docker compose up -d` を実行してください。`.env` を変更すると、compose は init の完了を待たずに MediaMTX を作り直すため、NG のまま `up -d` を実行すると受信が止まります（`docker compose restart` では init が実行されません）。
+init サービスは `docker compose up` のたびに `tools/kosensai_live/config.py check --server` を実行し、`.env` の Ch と `config.json` の一致、パスフレーズ、証明書のホスト名と期限などを検証します。NG があれば MediaMTX と Caddy を起動しません。運用中に `config.json` や `.env` を変更した場合は、`docker compose run --rm init` で OK を確認してから `docker compose up -d` を実行してください。`.env` を変更すると、compose は init の完了を待たずに MediaMTX を作り直すため、NG のまま `up -d` を実行すると受信が止まります（`docker compose restart` では init が実行されません）。
 
 ### QR コード
 
-サイネージに表示する QR コードは `tools/make-qr.py` で生成します。config のドメインを変更した場合に実行してください。
+サイネージに表示する QR コードは `uv run kosensai-live qr` で生成します。config のドメインを変更した場合に実行してください。
 
 ### エンドポイント
 

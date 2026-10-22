@@ -3,13 +3,14 @@
 app 以外で config.json と .env を読むコードは、このモジュールに集約する。
 Python のスクリプトは import し、シェルスクリプトは CLI で値を取得する。
 
-  uv run tools/config.py get site.domain          # config.json の値
-  uv run tools/config.py channels [--listen]      # Ch の id を 1 行 1 件で
-  uv run tools/config.py env HQ_IP                # .env の値
-  uv run tools/config.py check [--server]         # .env と config.json の整合性を検証する
+  python3 tools/kosensai_live/config.py get site.domain          # config.json の値
+  python3 tools/kosensai_live/config.py channels [--listen]      # Ch の id を 1 行 1 件で
+  python3 tools/kosensai_live/config.py env HQ_IP                # .env の値
+  python3 tools/kosensai_live/config.py check [--server]         # .env と config.json の整合性を検証する
 
 .env は既定で hosts/server/.env を読む。--env で別のファイルを指定できる。
-配信サーバー・サイネージ・コンテナの中のシェルスクリプトは、uv ではなく python3 で実行する。
+標準ライブラリだけで書き、配信サーバー・サイネージ・コンテナの python3 で直接実行する。
+本部 PC と開発用の PC では kosensai-live の CLI が import する。
 配信サーバーの compose の init サービスは `check --server --write-site-env` を実行する。
 """
 
@@ -22,21 +23,40 @@ import ssl
 import sys
 import time
 
-REPO = pathlib.Path(__file__).resolve().parent.parent
+REPO = pathlib.Path(__file__).resolve().parents[2]
 CONFIG_JSON = REPO / "config.json"
 ENV_FILE = REPO / "hosts/server/.env"
 SERVER_DIR = REPO / "hosts/server"
 
 # SRT のパスフレーズの長さの制約
 PASSPHRASE_MIN, PASSPHRASE_MAX = 10, 79
+# ATEM はパスフレーズを 64 バイトの null 終端の欄(SAth の Password)で送るため、63 文字まで
+ATEM_PASSPHRASE_MAX = 63
 # 証明書の期限がこの日数を切ったら WARN にする
 CERT_WARN_DAYS = 3
 # SRT の再送バッファに必要な net.core.rmem_max
 RMEM_MIN = 26214400
 
+# 映像の形式 → (幅, 高さ, フレームレートの分子, 分母, ATEM の映像モードの番号(VidM))
+VIDEO_MODES = {
+    "1080p25": (1920, 1080, 25, 1, 10),
+    "1080p29.97": (1920, 1080, 30000, 1001, 11),
+    "1080p30": (1920, 1080, 30, 1, 26),
+    "1080p50": (1920, 1080, 50, 1, 12),
+    "1080p59.94": (1920, 1080, 60000, 1001, 13),
+    "1080p60": (1920, 1080, 60, 1, 27),
+}
+
 
 def load_config(path=CONFIG_JSON):
     return json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+
+
+def video_mode(conf):
+    mode = conf["video"]["mode"]
+    if mode not in VIDEO_MODES:
+        raise SystemExit(f"config.json の video.mode {mode!r} は {', '.join(VIDEO_MODES)} のいずれかにしてください")
+    return VIDEO_MODES[mode]
 
 
 def channel_ids(conf, listen=False):
@@ -91,14 +111,14 @@ def listen_var(cid):
 # 各関数は (結果, 説明) を返す。結果は "OK" / "WARN" / "NG"。
 
 
-def check_passphrase(env, key):
+def check_passphrase(env, key, max_len=PASSPHRASE_MAX):
     val = env.get(key, "")
     if not val:
         return "NG", f"{key} が設定されていません"
     if val.startswith("CHANGEME"):
         return "NG", f"{key} がサンプル値のままです"
-    if not PASSPHRASE_MIN <= len(val) <= PASSPHRASE_MAX:
-        return "NG", f"{key} は {PASSPHRASE_MIN}〜{PASSPHRASE_MAX} 文字にしてください（現在 {len(val)} 文字）"
+    if not PASSPHRASE_MIN <= len(val) <= max_len:
+        return "NG", f"{key} は {PASSPHRASE_MIN}〜{max_len} 文字にしてください（現在 {len(val)} 文字）"
     return "OK", f"{key} ({len(val)} 文字)"
 
 
@@ -109,7 +129,7 @@ def check_channels_env(conf, env):
     results = [("NG", f"Ch の id {c!r} は英小文字と数字だけにしてください")
                for c in ids if not re.fullmatch(r"[a-z0-9]+", c)]
     results += [check_passphrase(env, publish_var(c)) for c in ids]
-    results += [check_passphrase(env, listen_var(c)) for c in listen_ids]
+    results += [check_passphrase(env, listen_var(c), ATEM_PASSPHRASE_MAX) for c in listen_ids]
 
     # MediaMTX は MTX_PATHS_<名前>_* からパスを作成するため、config.json に無い Ch の変数は
     # 公開されないパスを作成してしまう。

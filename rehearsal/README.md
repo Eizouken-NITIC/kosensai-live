@@ -22,11 +22,11 @@ docker compose stop pub-ch1
 docker compose start pub-ch1
 
 # app/ をビルドして反映する
-uv run scripts/reload.py
+uv run kosensai-live rehearsal reload
 
 # 負荷テスト（20 人 / ch1 / 30 秒、および 10 人 × 全 Ch / 60 秒）
-uv run scripts/load-test.py 20 ch1 30
-uv run scripts/load-test.py 10 all 60
+uv run kosensai-live rehearsal load-test 20 ch1 30
+uv run kosensai-live rehearsal load-test 10 all 60
 
 # MediaMTX のログを表示する
 docker compose logs -f mediamtx
@@ -60,7 +60,7 @@ rm -rf generated
 
 `:8444` は `caddy-preview` のエントリポイントであるため、本番 `Caddyfile` のホスト名マッチと TLS 設定そのものは検証できません。これらを確認する場合は、hosts ファイルへ一時的に追記して `caddy-origin` の `:8443` を直接開きます。
 
-1. `uv run ../tools/config.py get site.domain` でホスト名を確認します。
+1. `config.json` の `site.domain` でホスト名を確認します。
 2. hosts ファイル（macOS・Linux は `/etc/hosts`、Windows は `C:\Windows\System32\drivers\etc\hosts`）に、管理者の権限で `127.0.0.1 <ホスト名>` の行を追記します。
 3. ブラウザで `https://<ホスト名>:8443/` を開きます。
 4. 確認後、追記した行を削除します。
@@ -72,10 +72,9 @@ rm -rf generated
 - `compose.yml` … init・MediaMTX・Caddy 2 つ・テストパターン送出 3 系統のサービス定義
 - `rehearsal.env` … リハーサル専用の使い捨てのパスフレーズ。本番の `hosts/server/.env` と同じ形式で、MediaMTX と publisher が読みます
 - `containers/` … コンテナの中で動作するもの
-  - `init/` … `rehearsal.env` を本番と同じ規則（`tools/config.py check`）で検証し、証明書と Caddy 用の `SITE_DOMAIN` を生成します。`preview.Caddyfile` は `caddy-preview` の設定です
+  - `init/` … `rehearsal.env` を本番と同じ規則（`tools/kosensai_live/config.py check`）で検証し、証明書と Caddy 用の `SITE_DOMAIN` を生成します。`preview.Caddyfile` は `caddy-preview` の設定です
   - `publisher/` … カラーバーと 1kHz の基準音を SRT で送出します。チャンネル名と経過時刻を映像へ焼き込むため、遅延の目視に使用できます
   - `client/pull.sh` … 負荷テストのクライアント。hls.js の取得手順を curl で再現します
-- `scripts/` … ホスト上で実行するスクリプト
 - `generated/` … 生成物（Git 管理対象外）。`certs/` に証明書、`caddy/` に Caddy 用の `SITE_DOMAIN`、`load-test/` に負荷テストの結果を置きます
 
 ---

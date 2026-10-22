@@ -6,7 +6,7 @@ set -euo pipefail
 HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
 
-DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/config.py" get site.domain)}"
+DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/kosensai_live/config.py" get site.domain)}"
 SIGNAGE_CH="${SIGNAGE_CH:-}"
 
 URL="https://${DOMAIN}/signage/"

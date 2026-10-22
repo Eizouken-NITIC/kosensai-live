@@ -79,8 +79,8 @@ docker compose up -d
 | `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` | 本部 OBS → 配信サーバーの送出に使うパスフレーズです。**ATEM・スマートフォンには設定しません。** |
 | `OBS_<Ch>_LISTEN_PASSPHRASE` | ATEM・スマートフォン → 本部 OBS（SRT Listener）に使うパスフレーズです。ATEM とスマートフォンに設定するのはこちらです。`obsListenPort` を持つ Ch にだけ設定します。 |
 | `HQ_IP` | 本部 PC の IPv4 アドレスです。配信サーバーへの送出は、この IP とサーバー自身からだけ受け付けます。ATEM・スマートフォンの送信先もこの IP です。 |
-| `SERVER_IP` | 本部 PC から見た配信サーバーの IPv4 アドレスです。`hosts/obs/srt-urls.py` が OBS の送出先の URL に使用します。 |
-| `ATEM_IP` | ATEM の IPv4 アドレスです。`tools/atem-stream/` が使用します。 |
+| `SERVER_IP` | 本部 PC から見た配信サーバーの IPv4 アドレスです。`kosensai-live obs build` が obs-multi-rtmp の送出先の URL に使用します。 |
+| `ATEM_IP` | ATEM の IPv4 アドレスです。`kosensai-live atem` が使用します。 |
 
 MediaMTX は `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から Ch のパスを作成します。`config.json` に無い Ch の変数があると、公開されないパスを作成するため NG にします。
 
@@ -88,7 +88,7 @@ MediaMTX は `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から Ch のパスを作成�
 
 ### 起動前の検証
 
-`compose.yml` の `init` サービスが、`docker compose up` のたびに `tools/config.py check --server` を実行します。次の項目を検証し、NG があれば MediaMTX と Caddy を起動しません（稼働中の場合の動作は「4. 運用・管理コマンド」の注意を参照してください）。
+`compose.yml` の `init` サービスが、`docker compose up` のたびに `tools/kosensai_live/config.py check --server` を実行します。次の項目を検証し、NG があれば MediaMTX と Caddy を起動しません（稼働中の場合の動作は「4. 運用・管理コマンド」の注意を参照してください）。
 
 - `.env` の Ch と `config.json` の `channels[].id` の一致、パスフレーズの長さと重複、`HQ_IP` の形式
 - `web/` のビルド成果物とライセンス本文の有無

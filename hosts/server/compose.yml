@@ -17,7 +17,7 @@ services:
     network_mode: host
     command:
       - python3
-      - /repo/tools/config.py
+      - /repo/tools/kosensai_live/config.py
       - check
       - --server
       - --write-site-env

@@ -1,8 +1,9 @@
-"""計器(overlays の gauge)の画像を Blender の Cycles で描画する。
+"""計器(assets/gauge)の画像を Blender の Cycles で描画する。
 
-    blender -b --factory-startup -P hosts/obs/render-gauge.py -- hosts/obs/overlays/gauge
+    uv run kosensai-live render gauge            # assets/gauge に描画する
+    uv run kosensai-live render gauge 30         # 確認用に 30 番の針だけ描画する
 
--- の後に番号(0〜60)を続けると、その番号の針だけを描画する(確認用)。
+出力先の後に番号(0〜60)を続けると、その番号の針だけを描画する(確認用)。
 
 出力:
     static.png         目盛、内側の輪(針を除く固定の部品)
@@ -35,7 +36,7 @@ DYE = float(os.environ.get('DYE', 60))
 DENSITY = float(os.environ.get('DENSITY', 1))
 GLOW = float(os.environ.get('GLOW', 600))
 ANGLES = list(range(-150, 151, STEP))
-# UP NEXT で計器を置く位置(中心 px)と大きさ(px)と、光源の強さ。時計(render-clock.py)と同じ光で描く。
+# UP NEXT で計器を置く位置(中心 px)と大きさ(px)と、光源の強さ。時計(clock.py)と同じ光で描く。
 PLACE = ((296, 400), 400)
 LIGHT_LEVEL = 0.5
 

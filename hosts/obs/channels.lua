@@ -6,7 +6,8 @@
 --    送出しても、そのシーンにしか無いソースの音声はミキサーに入らないため。
 --    シーンの中の映像は画面の外に置いてあるので、プログラムには何も映らない。
 -- 2. Ch3(トラック 1)には、プログラムのシーン(入れ子を含む)に表示されている映像のうち、
---    audio.ch3 の順で最初に見つかった会場の音声だけを入れる。
+--    audio.ch3 の順で最初に見つかった会場の音声だけを入れる。本部のモニターにも同じ音声を出し、
+--    本部では Ch3 の視聴者と同じ音を聞く。
 -- 3. audio.pause.channel の配信をしない時間(program.json の種類が ng の項目)は、
 --    audio.pause.source を全シーンで表示し、audio.pause.audio をミュートする。
 --    ミュートは音声のトラックの割り当てを変えないので、休止中に OBS を再起動しても割り当ては残る。
@@ -169,6 +170,8 @@ local function collect(scene_source, found)
   obslua.sceneitem_list_release(items)
 end
 
+-- トラック 1 への出力と、本部のモニターを切り替える。モニターは「モニターと出力」にする
+-- (「モニターのみ」はトラックへの出力を止めるため、Ch1・Ch2 の配信から音声が消える)。
 local function set_track1(name, on)
   local source = obslua.obs_get_source_by_name(name)
   if source == nil then
@@ -181,10 +184,12 @@ local function set_track1(name, on)
     mixers = bit.band(mixers, bit.bnot(TRACK1))
   end
   obslua.obs_source_set_audio_mixers(source, mixers)
+  obslua.obs_source_set_monitoring_type(source,
+    on and obslua.OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT or obslua.OBS_MONITORING_TYPE_NONE)
   obslua.obs_source_release(source)
 end
 
--- Ch3(トラック 1)の音声。休止中は休止する会場の音声を候補から外し、2 画面ではもう一方の会場の音声にする。
+-- Ch3(トラック 1)の音声と本部のモニター。休止中は休止する会場の音声を候補から外し、2 画面ではもう一方の会場の音声にする。
 local function update_track1()
   local scene = obslua.obs_frontend_get_current_scene()
   if scene == nil then
@@ -251,7 +256,7 @@ local function on_event(event)
     attach_always_scene(true)
     apply_pause()
   elseif event == obslua.OBS_FRONTEND_EVENT_SCENE_LIST_CHANGED then
-    -- build-scenes.py で後からシーンを作った場合につなぐ。
+    -- kosensai-live obs build で後からシーンを作った場合につなぐ。
     attach_always_scene(false)
   elseif event == obslua.OBS_FRONTEND_EVENT_SCENE_CHANGED then
     update_track1()
@@ -261,7 +266,7 @@ local function on_event(event)
 end
 
 function script_description()
-  return "Ch1・Ch2 の音声をミキサーに常時入れ、Ch3 の音声を表示中の会場に合わせる。"
+  return "Ch1・Ch2 の音声をミキサーに常時入れ、Ch3 の音声と本部のモニターを表示中の会場に合わせる。"
     .. "第一体育館の配信をしない時間は休止の画面を表示し、その会場の音声をミュートする。"
 end
 

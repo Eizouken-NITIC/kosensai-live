@@ -23,5 +23,5 @@
 
 | ソフトウェア | バージョン | ライセンス | 著作権者 | ライセンス全文へのリンク |
 | --- | --- | --- | --- | --- |
-| [LINE Seed JP](https://seed.line.me/) | Fontsource 5.3.2 経由 | OFL-1.1 | LY Corporation | [hosts/obs/overlays/fonts/line-seed-jp/LICENSE](hosts/obs/overlays/fonts/line-seed-jp/LICENSE) |
-| [DSEG7 Classic Bold](https://github.com/keshikan/DSEG) | 0.46 | OFL-1.1 | keshikan | [hosts/obs/overlays/fonts/dseg/LICENSE](hosts/obs/overlays/fonts/dseg/LICENSE) |
+| [LINE Seed JP](https://seed.line.me/) | Fontsource 5.3.2 経由 | OFL-1.1 | LY Corporation | [hosts/obs/assets/fonts/line-seed-jp/LICENSE](hosts/obs/assets/fonts/line-seed-jp/LICENSE) |
+| [DSEG7 Classic Bold](https://github.com/keshikan/DSEG) | 0.46 | OFL-1.1 | keshikan | [hosts/obs/assets/fonts/dseg/LICENSE](hosts/obs/assets/fonts/dseg/LICENSE) |

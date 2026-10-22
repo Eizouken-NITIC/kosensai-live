@@ -4,9 +4,9 @@
 set -euo pipefail
 
 # rehearsal.env を本番と同じ規則で検証し、Caddy 用の SITE_DOMAIN を書き出す。
-python3 /repo/tools/config.py --env /repo/rehearsal/rehearsal.env check --write-site-env /caddy/site.env
+python3 /repo/tools/kosensai_live/config.py --env /repo/rehearsal/rehearsal.env check --write-site-env /caddy/site.env
 
-DOMAIN="$(python3 /repo/tools/config.py get site.domain)"
+DOMAIN="$(python3 /repo/tools/kosensai_live/config.py get site.domain)"
 CERT=/certs/fullchain.pem
 KEY=/certs/privkey.pem
 

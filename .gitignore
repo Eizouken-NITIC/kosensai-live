@@ -22,10 +22,7 @@ recordings/
 # 一度きりの切り分けに使う実験コード
 scratch/
 
-# tools/atem-stream のビルド成果物
-tools/atem-stream/atem-stream
-
-# tools/config.py を import するスクリプトの実行で生成される
+# Python の実行で生成される
 __pycache__/
 
 # OS
@@ -35,3 +32,6 @@ Thumbs.db
 # SvelteKit
 app/node_modules/
 app/.svelte-kit/
+
+# uv が作成する仮想環境
+.venv/

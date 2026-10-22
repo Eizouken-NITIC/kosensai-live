@@ -133,14 +133,14 @@
   // 計器(MIB2 のパフォーマンスモニターの形)を container に作り、値を更新する関数を返す。
   // 目盛は左下(-150°)から右下(+150°)までの 300°。update(value, digits, unit): value は min〜max、
   // digits は中央に出す文字列、unit はその右に出す単位。
-  // 輪・目盛と針は render-gauge.py が Blender で描いた画像を使う。針の画像は 5° ごとに 61 枚あり、
+  // 輪・目盛と針は assets/render/gauge.py が Blender で描いた画像を使う。針の画像は 5° ごとに 61 枚あり、
   // 角度に最も近い画像を選ぶ。画像ごとに光の当たり方が角度に合っているため、画像を回転させて使わない。
   // 切り替えの時だけ、前の角度から画像の角度まで 0.8 秒で回して見せる。
   const SVG = 'http://www.w3.org/2000/svg';
   const NEEDLE_STEP = 5;
   function gauge(container, { min = 0, max = 60 } = {}) {
     const box = el('div', { className: 'gauge' },
-      el('img', { src: 'gauge/static.png', alt: '' }),
+      el('img', { src: '../assets/gauge/static.png', alt: '' }),
     );
     const needle = el('img', { className: 'needle', alt: '' });
     box.append(needle);
@@ -178,7 +178,7 @@
       if (n !== shown) {
         const from = shown === null ? frameDeg : -SPAN + shown * NEEDLE_STEP;
         shown = n;
-        needle.src = `gauge/needle-${String(n).padStart(2, '0')}.png`;
+        needle.src = `../assets/gauge/needle-${String(n).padStart(2, '0')}.png`;
         needle.animate(
           [{ transform: `rotate(${from - frameDeg}deg)` }, { transform: 'none' }],
           { duration: 800, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
@@ -190,11 +190,11 @@
   }
 
   // アナログ時計を container に作り、時刻を更新する関数を返す。
-  // 部品は render-clock.py が Blender で描いた画像(clock-face/)を重ねる。長針は 6° ごと(1 分ごと)の画像、
+  // 部品は assets/render/clock.py が Blender で描いた画像(assets/clock-face/)を重ねる。長針は 6° ごと(1 分ごと)の画像、
   // 短針は 5° ごとの画像で、短針だけは画像の角度との差(2.5° 未満)を回転で補う。
   const HOUR_STEP = 5;
   function clockFace(container) {
-    const img = (src) => el('img', { src: src ? `clock-face/${src}` : undefined, alt: '' });
+    const img = (src) => el('img', { src: src ? `../assets/clock-face/${src}` : undefined, alt: '' });
     const hour = img();
     const minute = img();
     container.replaceChildren(el('div', { className: 'clock-face' }, img('dial.png'), hour, minute, img('cap.png')));
@@ -202,9 +202,9 @@
       const m = d.getMinutes();
       const deg = (d.getHours() % 12) * 30 + m * 0.5;
       const n = Math.round(deg / HOUR_STEP) % (360 / HOUR_STEP);
-      hour.src = `clock-face/hour-${String(n).padStart(2, '0')}.png`;
+      hour.src = `../assets/clock-face/hour-${String(n).padStart(2, '0')}.png`;
       hour.style.transform = `rotate(${deg - n * HOUR_STEP}deg)`;
-      minute.src = `clock-face/minute-${String(m).padStart(2, '0')}.png`;
+      minute.src = `../assets/clock-face/minute-${String(m).padStart(2, '0')}.png`;
     };
   }
 

@@ -7,7 +7,7 @@ HOST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "${HOST_DIR}/../.." && pwd)"
 DEST="${HOST_DIR}/certs"
 
-DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/config.py" get site.domain)}"
+DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/kosensai_live/config.py" get site.domain)}"
 
 if [[ $EUID -ne 0 ]]; then
   echo "root 権限が必要です。sudo で実行してください。" >&2

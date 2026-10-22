@@ -1,5 +1,6 @@
 {
   "collection": "KOSENSAI-LIVE",
+  "profile": "KOSENSAI-LIVE",
   "program_scene": "Ch3 待機",
   "places": {
     "full": {"x": 0, "y": 0, "w": 1920, "h": 1080},
@@ -22,7 +23,7 @@
     "タイムテーブル": {"type": "page", "page": "timetable.html", "replay": true},
     "2 画面 背景": {"type": "page", "page": "split.html", "replay": true},
     "配信休止": {"type": "page", "page": "pause.html", "replay": true},
-    "CM": {"type": "media", "tracks": [1]}
+    "CM": {"type": "media", "tracks": [1], "monitor": true}
   },
   "scenes": {
     "[音声] 常時": [
@@ -78,6 +79,18 @@
     ],
     "Ch3 CM": [
       {"source": "CM", "place": "full"}
+    ]
+  },
+  "outputs": {
+    "video_encoder": {
+      "win32": {"id": "obs_nvenc_h264_tex", "param": {"rate_control": "CBR", "keyint_sec": 2}},
+      "darwin": {"id": "com.apple.videotoolbox.videoencoder.ave.avc", "param": {"rate_control": "CBR", "keyint_sec": 2}}
+    },
+    "audio_bitrate": 160,
+    "channels": [
+      {"channel": "ch1", "scene": "[出力] Ch1 第一体育館", "track": 2},
+      {"channel": "ch2", "scene": "[出力] Ch2 遊撃", "track": 3},
+      {"channel": "ch3", "track": 1}
     ]
   },
   "audio": {

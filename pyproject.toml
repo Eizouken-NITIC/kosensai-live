@@ -1,0 +1,27 @@
+# 本部 PC と開発用の PC で実行する CLI(tools/kosensai_live/)。uv run kosensai-live で実行する。
+[project]
+name = "kosensai-live"
+version = "0"
+requires-python = ">=3.11"
+dependencies = [
+  "obsws-python==1.8.0",
+  "segno==1.6.6",
+  # pyatem は C 拡張を含むため、Windows では Microsoft C++ Build Tools が必要。
+  "pyatem",
+  # pyatem の transport が無条件に import する(ATEM の USB 接続は使用しない)
+  "pyusb==1.3.1",
+]
+
+# PyPI の pyatem(0.10.0)は 2024-03 で止まっているため、上流の git のコミットを指定する。
+[tool.uv.sources]
+pyatem = { git = "https://git.sr.ht/~martijnbraam/pyatem", rev = "bbded935fa7e1cd6fd09a09a1fdb23293d425382" }
+
+[project.scripts]
+kosensai-live = "kosensai_live.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tools/kosensai_live"]

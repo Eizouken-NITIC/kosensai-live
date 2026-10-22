@@ -1,10 +1,10 @@
-@import url('./fonts/line-seed-jp/400.css');
-@import url('./fonts/line-seed-jp/700.css');
+@import url('../assets/fonts/line-seed-jp/400.css');
+@import url('../assets/fonts/line-seed-jp/700.css');
 
 /* 計器の数字の 7 セグメントの書体。 */
 @font-face {
   font-family: 'DSEG7';
-  src: url('./fonts/dseg/DSEG7Classic-Bold.woff2') format('woff2');
+  src: url('../assets/fonts/dseg/DSEG7Classic-Bold.woff2') format('woff2');
 }
 
 /*
@@ -18,7 +18,7 @@
   - 線: 見出しの下の線は中央が白く両端で暗くなる。行の区切りは --line の一様な線で、端は切りっぱなし。
   - 地: 上部のバーは --bar の黒。その下の地は、バーの下端の中央から照らした光が下と左右に減衰する。
   - 光源: 画面の上の中央の 1 つ。板の縁はこの光源に対する向きで明るさを決める。
-    計器は ../render-gauge.py の Blender のシーンに同じ位置の光源を置いて描く。
+    計器は ../assets/render/gauge.py の Blender のシーンに同じ位置の光源を置いて描く。
   - 赤(--red)は、テロップの板の下端の線と計器の針だけに使い、1 つの画面に赤い線は 1 本までにする。
 */
 :root {
@@ -363,7 +363,7 @@ body {
 }
 
 /* ---- 計器 ---- */
-/* Overlay.gauge() が作る計器。輪・目盛と針は Blender で描いた画像(gauge/)を重ね、
+/* Overlay.gauge() が作る計器。輪・目盛と針は Blender で描いた画像(assets/gauge/)を重ね、
    中央の数字と単位だけを SVG で重ねる。 */
 .gauge {
   position: relative;
