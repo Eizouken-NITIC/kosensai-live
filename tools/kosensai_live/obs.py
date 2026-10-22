@@ -304,7 +304,7 @@ def build(env_path) -> None:
             case "media":
                 # 動画・音楽のファイルは OBS で指定する。ファイルが無ければ何も出ない(BGM の既定は無音)。
                 # restart が false の入力(BGM)は、同じ入力を持つシーンの間で切り替えても続きから再生する。
-                return "ffmpeg_source", {"is_local_file": True, "looping": True,
+                return "ffmpeg_source", {"is_local_file": True, "looping": spec.get("loop", True),
                                          "restart_on_activate": spec.get("restart", True)}
         sys.exit(f"scenes.json の入力の種類 {spec['type']} は使用できません")
 

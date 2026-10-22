@@ -1,5 +1,5 @@
 -- 本部 OBS の音声の振り分けと、第一体育館の配信休止。OBS の「ツール → スクリプト」でこのファイルを追加する。
--- ソースとシーンの名前は assets/scenes.json の audio と signal_lost から読む。
+-- ソースとシーンの名前は assets/scenes.json の audio・signal_lost・cm_corner から読む。
 --
 -- 1. audio.always のシーンを出力チャンネルに接続し、どのシーンをプログラムに出していても
 --    Ch1・Ch2 の音声がミキサーに入るようにする。obs-multi-rtmp がプログラム以外のシーンを
@@ -16,6 +16,9 @@
 -- 4. signal_lost の映像(遊撃のスマートフォン)の SRT が切れて映像が消えている間は、hide のソース
 --    (遊撃のテロップ)を全シーンで隠す。映像の下に配置した休止の画面が表示されるため、その上に演目を出さない。
 --    SRT は数秒の途切れでは切断と判断しないため、短い途切れでは切り替わらない。
+-- 5. cm_corner の小窓(右下の CM)を、毎時 every_min 分ごとに全シーンで表示し、再生が終わったら隠す。
+--    動画のファイルは file_from の入力(全画面の CM)と同じものに合わせる。ホットキーの
+--    「CM 小窓: 自動で出す」「CM 小窓: 出さない」で切り替え、状態はスクリプトの設定に保存する。
 --
 -- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
 
@@ -31,7 +34,15 @@ local always_scene = nil
 local ch3 = {} -- { { video = ..., audio = ... }, ... }
 local pause = {} -- { source = ..., audio = ... }
 local signal_lost = {} -- { { video = ..., hide = { ... }, lost = nil }, ... }
+local cm_corner = nil -- { source = ..., file_from = ..., every_min = ... }
 local paused = false
+-- 右下の CM。cm_auto は自動で出すかどうか、cm_shown_at は表示を始めた時刻(表示していなければ nil)、
+-- cm_slot は最後に表示した回(毎時 every_min 分ごとの区切りの番号)。
+local cm_auto = true
+local cm_shown_at = nil
+local cm_slot = nil
+-- 再生の終わりを検出できない場合に、小窓を隠すまでの秒数
+local CM_MAX_SEC = 180
 local hotkeys = {}
 
 local function script_dir()
@@ -84,6 +95,16 @@ local function load_config()
     end)
     table.insert(signal_lost, entry)
   end)
+  cm_corner = nil
+  local cm = obslua.obs_data_get_obj(scenes, "cm_corner")
+  if cm ~= nil then
+    cm_corner = {
+      source = obslua.obs_data_get_string(cm, "source"),
+      file_from = obslua.obs_data_get_string(cm, "file_from"),
+      every_min = obslua.obs_data_get_int(cm, "every_min"),
+    }
+    obslua.obs_data_release(cm)
+  end
   obslua.obs_data_release(scenes)
 end
 
@@ -207,6 +228,76 @@ local function apply_pause()
   update_track1()
 end
 
+-- 小窓の動画のファイルを、全画面の CM のファイルに合わせる。ファイルが無ければ空の文字列を返す。
+local function sync_cm_file()
+  local from = obslua.obs_get_source_by_name(cm_corner.file_from)
+  local to = obslua.obs_get_source_by_name(cm_corner.source)
+  local file = ""
+  if from ~= nil and to ~= nil then
+    local fs = obslua.obs_source_get_settings(from)
+    local ts = obslua.obs_source_get_settings(to)
+    file = obslua.obs_data_get_string(fs, "local_file")
+    if obslua.obs_data_get_string(ts, "local_file") ~= file then
+      obslua.obs_data_set_string(ts, "local_file", file)
+      obslua.obs_source_update(to, ts)
+    end
+    obslua.obs_data_release(fs)
+    obslua.obs_data_release(ts)
+  end
+  if from ~= nil then obslua.obs_source_release(from) end
+  if to ~= nil then obslua.obs_source_release(to) end
+  return file
+end
+
+local function hide_cm()
+  cm_shown_at = nil
+  set_visible_everywhere(cm_corner.source, false)
+end
+
+local function update_cm()
+  if cm_corner == nil then
+    return
+  end
+  local file = sync_cm_file()
+  local source = obslua.obs_get_source_by_name(cm_corner.source)
+  if source == nil then
+    return
+  end
+  if cm_shown_at ~= nil then
+    local ended = obslua.obs_source_media_get_state(source) == obslua.OBS_MEDIA_STATE_ENDED
+    -- 再生を始めた直後は前回の終了の状態が残っているため、2 秒は終了と見なさない。
+    if (ended and os.time() - cm_shown_at >= 2) or os.time() - cm_shown_at > CM_MAX_SEC then
+      hide_cm()
+    end
+  elseif cm_auto and file ~= "" then
+    local slot = math.floor(os.time() / (cm_corner.every_min * 60))
+    if slot ~= cm_slot then
+      cm_slot = slot
+      cm_shown_at = os.time()
+      set_visible_everywhere(cm_corner.source, true)
+      obslua.obs_source_media_restart(source)
+    end
+  end
+  obslua.obs_source_release(source)
+end
+
+local function set_cm_auto(on)
+  return function(pressed)
+    if pressed and on ~= cm_auto then
+      cm_auto = on
+      obslua.script_log(obslua.LOG_INFO, cm_auto and "CM 小窓を自動で出す" or "CM 小窓を出さない")
+      if not cm_auto and cm_corner ~= nil then
+        hide_cm()
+      end
+    end
+  end
+end
+
+local function tick()
+  update_signal_lost()
+  update_cm()
+end
+
 local function set_paused(on)
   return function(pressed)
     if pressed and on ~= paused then
@@ -248,15 +339,22 @@ function script_properties()
   return props
 end
 
+function script_defaults(settings)
+  obslua.obs_data_set_default_bool(settings, "cm_auto", true)
+end
+
 function script_load(settings)
   paused = obslua.obs_data_get_bool(settings, "paused")
+  cm_auto = obslua.obs_data_get_bool(settings, "cm_auto")
   load_config()
   local defs = {
-    { "kosensai.pause.on", "配信休止: 出す", true },
-    { "kosensai.pause.off", "配信休止: 消す", false },
+    { "kosensai.pause.on", "配信休止: 出す", set_paused(true) },
+    { "kosensai.pause.off", "配信休止: 消す", set_paused(false) },
+    { "kosensai.cm.on", "CM 小窓: 自動で出す", set_cm_auto(true) },
+    { "kosensai.cm.off", "CM 小窓: 出さない", set_cm_auto(false) },
   }
   for _, d in ipairs(defs) do
-    local id = obslua.obs_hotkey_register_frontend(d[1], d[2], set_paused(d[3]))
+    local id = obslua.obs_hotkey_register_frontend(d[1], d[2], d[3])
     local saved = obslua.obs_data_get_array(settings, d[1])
     obslua.obs_hotkey_load(id, saved)
     obslua.obs_data_array_release(saved)
@@ -265,11 +363,17 @@ function script_load(settings)
   obslua.obs_frontend_add_event_callback(on_event)
   attach_always_scene(false)
   apply_pause()
-  obslua.timer_add(update_signal_lost, 1000)
+  if cm_corner ~= nil then
+    hide_cm()
+  end
+  -- 起動した回は出さず、次の区切りから出す。
+  cm_slot = cm_corner and math.floor(os.time() / (cm_corner.every_min * 60))
+  obslua.timer_add(tick, 1000)
 end
 
 function script_save(settings)
   obslua.obs_data_set_bool(settings, "paused", paused)
+  obslua.obs_data_set_bool(settings, "cm_auto", cm_auto)
   for name, id in pairs(hotkeys) do
     local arr = obslua.obs_hotkey_save(id)
     obslua.obs_data_set_array(settings, name, arr)
@@ -278,6 +382,6 @@ function script_save(settings)
 end
 
 function script_unload()
-  obslua.timer_remove(update_signal_lost)
+  obslua.timer_remove(tick)
   obslua.obs_set_output_source(CHANNEL, nil)
 end

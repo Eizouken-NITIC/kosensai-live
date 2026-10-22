@@ -6,7 +6,8 @@
     "full": {"x": 0, "y": 0, "w": 1920, "h": 1080},
     "offscreen": {"x": 2020, "y": 0, "w": 16, "h": 9},
     "pane-left": {"x": 80, "y": 200, "w": 864, "h": 486},
-    "pane-right": {"x": 976, "y": 200, "w": 864, "h": 486}
+    "pane-right": {"x": 976, "y": 200, "w": 864, "h": 486},
+    "corner": {"x": 1344, "y": 642, "w": 480, "h": 270}
   },
   "inputs": {
     "Ch1 ATEM": {"type": "srt", "channel": "ch1", "tracks": []},
@@ -25,7 +26,8 @@
     "配信休止": {"type": "page", "page": "pause.html", "replay": true},
     "遊撃 休止": {"type": "page", "page": "pause.html", "query": "ch=ch2"},
     "CM": {"type": "media", "tracks": [1], "monitor": true},
-    "BGM": {"type": "media", "tracks": [1], "monitor": true, "restart": false}
+    "BGM": {"type": "media", "tracks": [1], "monitor": true, "restart": false},
+    "CM 小窓": {"type": "media", "tracks": [], "loop": false}
   },
   "scenes": {
     "[音声] 常時": [
@@ -72,6 +74,7 @@
       {"source": "遊撃 休止", "place": "full"},
       {"source": "Ch2 iPhone", "place": "full"},
       {"source": "テロップ 遊撃", "place": "full"},
+      {"source": "CM 小窓", "place": "corner", "hidden": true},
       {"source": "時計", "place": "full"},
       {"source": "お知らせ", "place": "full"},
       {"source": "ウォーターマーク", "place": "full"}
@@ -120,6 +123,7 @@
       {"scene": "[録画] Ch2 遊撃", "track": 3, "name": "Ch2"}
     ]
   },
+  "cm_corner": {"source": "CM 小窓", "file_from": "CM", "every_min": 5},
   "signal_lost": [
     {"video": "Ch2 iPhone", "hide": [{"source": "テロップ 遊撃"}]}
   ],
