@@ -271,7 +271,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 | `cm_corner` | `scene` に、毎時 `every_min` 分ごとに CM を `show_sec` 秒表示する。普段は `source`（右下）を、`lost_video` の映像が消えている間は `full_source`（全画面）を出す |
 | `signal_lost` | 映像が消えた時に隠すソース。`video` の幅が 0 の間（SRT が切れている間）、`hide` のソースを全シーンで隠す |
 
-- TODO：`Ch1 音声 (USB)` の `device`（配信用ミキサーの名前）が未定です。
+- `Ch1 音声 (USB)` の `device` は、Windows の表示名 `ライン (2- USB AUDIO  CODEC)` から、USB ポートで変わる番号（`2-`）を除いたものです（空白は 2 つ）。
 - TODO：Windows の NVENC（`obs_nvenc_h264_tex`）の出力は、本番機で未確認です。NVENC は obs-multi-rtmp の 3 出力、Source Record の 2 つ、Ch3 の録画の 6 か所で同時に使用します（Sunshine を使う場合は 7 か所）。GPU とドライバーが同時に扱えるセッション数を本番機で確認します。
 - macOS の Ch3 の録画は x264 にしています。Ch3 の録画に VideoToolbox を使うと、Source Record の VideoToolbox のエンコーダーが「Unsupported color format」で動かず、Ch1・Ch2 のファイルが作られませんでした（OBS 32.1.2、Source Record 0.4.8）。
 - 仕様補完：obs-multi-rtmp の音声のビットレートは 160 kbps としました（OBS の既定値）。

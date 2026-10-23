@@ -11,7 +11,7 @@
   },
   "inputs": {
     "Ch1 ATEM": {"type": "srt", "channel": "ch1", "tracks": []},
-    "Ch1 音声 (USB)": {"type": "audio", "tracks": [2]},
+    "Ch1 音声 (USB)": {"type": "audio", "device": "USB AUDIO  CODEC", "tracks": [2]},
     "Ch2 iPhone": {"type": "srt", "channel": "ch2", "tracks": [3]},
     "テロップ 第一体育館": {"type": "page", "page": "lower-third.html"},
     "テロップ 遊撃": {"type": "page", "page": "lower-third.html", "query": "ch=ch2"},
