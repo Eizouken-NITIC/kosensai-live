@@ -4,6 +4,7 @@
   import { loadMediaChrome, keepLiveButtonEnabled } from '$lib/mediaChrome';
   import { setNowPlaying } from '$lib/mediaSession';
   import { setThemeColor } from '$lib/themeColor';
+  import { setFavicon } from '$lib/favicon';
   import Logo from '$lib/components/Logo.svelte';
   import EmbeddedSite from '$lib/components/EmbeddedSite.svelte';
   import GitHubIcon from '$lib/components/GitHubIcon.svelte';
@@ -177,9 +178,10 @@
     setNowPlaying(ch.label, site.name);
   });
 
-  // 再生状態に応じてテーマカラーを変更する
+  // 再生状態に応じてテーマカラーと favicon を変更する
   $effect(() => {
     setThemeColor(player.isLive ? '--live' : '--surface');
+    setFavicon(player.isLive);
   });
 
   $effect(() => {

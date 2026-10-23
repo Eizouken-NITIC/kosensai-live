@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- ロゴ（logo-off.svg）の K の字形。配信していない時は暗い地にする。 -->
+  <rect width="32" height="32" rx="7" fill="#14181d"/>
+  <path transform="translate(4.91 26.4) scale(0.028 -0.028)" fill="#f2f5f8" d="M88.6 0V742.9H252V434.6H254.9L483.1 742.9H662.7L436.8 447.5L703.5 0H525.1L341.2 318.9L252 201.7V0Z"/>
+</svg>
