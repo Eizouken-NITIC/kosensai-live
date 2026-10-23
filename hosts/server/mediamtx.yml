@@ -31,10 +31,13 @@ hlsAddress: 127.0.0.1:8888
 hlsEncryption: no                  # TLS 終端は Caddy に集約
 hlsAllowOrigins: ["*"]
 hlsVariant: mpegts
-# OBS のキーフレーム間隔と同一にする
-hlsSegmentDuration: 2s
+# MediaMTX は、この長さを過ぎた後の最初のキーフレームでセグメントを区切る。
+# OBS のキーフレームの間隔（keyint_sec 2）は 29.97fps では 59 フレーム（約 1.97 秒）で
+# 2 秒に満たず、2s にすると 2 つおきに区切られて約 3.94 秒になる。キーフレームの間隔より
+# 短くして、キーフレームごと（約 1.97 秒）に区切る。
+hlsSegmentDuration: 1s
 # 巻き戻せる長さを決める。app/src/lib/player.svelte.ts の dvr 側の
-# backBufferLength と同一にする（180 × 2 秒 = 6 分）
+# backBufferLength と同一にする（180 × 約 2 秒 = 約 6 分）
 hlsSegmentCount: 180
 hlsAlwaysRemux: yes
 

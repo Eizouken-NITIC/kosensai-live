@@ -12,7 +12,7 @@ const RETRY_MS = 5000;
 /**
  * PlayerSync ごとの hls.js の設定。
  *
- * 各カウントは mediamtx.yml の hlsSegmentDuration（2 秒）の倍数として効く。
+ * 各カウントはセグメントの長さ（OBS のキーフレームの間隔、約 2 秒）の倍数として効く。
  *
  * live 側の maxLiveSyncPlaybackRate と liveMaxLatencyDurationCount が、遅れを詰め戻す
  * ための設定である。hls.js の既定はどちらも無効で、一度遅れるとその遅れを抱えたまま
@@ -24,7 +24,7 @@ const SYNC_CONFIG: Record<PlayerSync, Partial<HlsConfig>> = {
   dvr: {
     // 先端から 10 秒後方に構える。回線が細っても数秒なら途切れない
     liveSyncDurationCount: 5,
-    // mediamtx.yml の hlsSegmentCount と同一にする（180 × 2 秒）
+    // mediamtx.yml の hlsSegmentCount と同一にする（180 × 約 2 秒）
     backBufferLength: 360,
   },
   live: {

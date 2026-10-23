@@ -155,7 +155,7 @@ obs-multi-rtmp でプログラム以外のシーンを送出しても、その�
 | Ch2 | `[出力] Ch2 遊撃` | 3 | 同上 |
 | Ch3 | プログラム（OBS のシーンの切り替え） | 1 | 同上 |
 
-エンコーダーは `scenes.json` の `video_encoder` で OS ごとに指定します（Windows は NVENC、macOS は VideoToolbox、Linux は x264）。CBR、キーフレーム間隔 2 秒です。キーフレーム間隔は、配信サーバーの `hosts/server/mediamtx.yml` の `hlsSegmentDuration` と同じ値にします。
+エンコーダーは `scenes.json` の `video_encoder` で OS ごとに指定します（Windows は NVENC、macOS は VideoToolbox、Linux は x264）。CBR、キーフレーム間隔 2 秒です（29.97fps では 59 フレーム、約 1.97 秒）。配信サーバーの `hosts/server/mediamtx.yml` の `hlsSegmentDuration` はキーフレーム間隔より短くし、HLS のセグメントをキーフレームごとに区切ります。
 
 ### 3-4. 録画
 
