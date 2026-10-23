@@ -64,21 +64,23 @@
   }
 
   /* ---- 右カラム ---- */
-  /* 縦画面では映像の下に付くので上辺が映像と接する */
+  /* 縦画面では映像の下に付くので上辺が映像と接する。埋め込んだページは明るく、映像も
+     明るい場面では境目が分からなくなるため、上端のバーと同じ色の帯で区切る。 */
   .panel {
     grid-area: panel;
-    border-top-width: 1px;
+    border-top: var(--sp-2) solid var(--surface);
   }
 
   /* ---- 埋め込みの上に重ねるリンク ---- */
   /* 帯は左右いっぱいに伸びるので、そのままでは埋め込んだページの下端がクリック
      できなくなる。帯は操作を透過させ、その中のリンクだけが受け取る。 */
+  /* 縦画面では指で押すため、押せる大きさにする */
   .panel-links {
-    --link-h: 30px;
+    --link-h: 40px;
     position: absolute;
-    left: var(--sp-3);
-    right: var(--sp-3);
-    bottom: calc(var(--sp-3) + var(--safe-b));
+    left: var(--sp-4);
+    right: var(--sp-4);
+    bottom: calc(var(--sp-4) + var(--safe-b));
     display: flex;
     align-items: center;
     gap: var(--sp-2);
@@ -89,11 +91,11 @@
     align-items: center;
     justify-content: center;
     height: var(--link-h);
-    padding: 0 var(--sp-3);
+    padding: 0 var(--sp-4);
     border-radius: var(--radius-round);
     background: var(--scrim-2);
     color: var(--on-video);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-sm);
     font-weight: 600;
     text-decoration: none;
     backdrop-filter: blur(6px);
@@ -109,8 +111,8 @@
     padding: 0;
   }
   .panel-link.gh svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
   }
 
   /* 幅を変えられるのは横並びのときだけなので、つまみは表示しない */
@@ -154,9 +156,25 @@
 
     /* 幅は JS が決める。JS が動かない場合はこの既定値で固定される。 */
     .panel {
-      border-top-width: 0;
-      border-left-width: 1px;
-      width: var(--panel-w, 360px);
+      border-top: 0;
+      border-left: 1px solid var(--line);
+      width: var(--panel-w, 440px);
+    }
+
+    /* 横並びではマウスで押すため、埋め込んだページを隠さない大きさにする */
+    .panel-links {
+      --link-h: 30px;
+      left: var(--sp-3);
+      right: var(--sp-3);
+      bottom: calc(var(--sp-3) + var(--safe-b));
+    }
+    .panel-link {
+      padding: 0 var(--sp-3);
+      font-size: var(--fs-xs);
+    }
+    .panel-link.gh svg {
+      width: 16px;
+      height: 16px;
     }
 
     /* ---- 境界のつまみ ----

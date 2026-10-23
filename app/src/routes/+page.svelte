@@ -17,8 +17,10 @@
   // 初回起動時にミュート吹き出しを表示する時間である
   const MUTE_HINT_MS = 10000;
 
-  const PANEL_INITIAL = 360;
+  // 埋め込んだ公式サイトは幅 512px 未満でスマートフォン向けの表示になり、その幅で崩れずに収まる
+  const PANEL_INITIAL = 440;
   const PANEL_MIN = 280;
+  const PANEL_STORE_KEY = 'panelWidth';
   const PANEL_MAX_RATIO = 0.6;
   // キーボード操作時にパネル幅を変化させる量である
   const PANEL_STEP = 16;
@@ -33,10 +35,12 @@
   // 自動再生の制約でミュート起動する。解除するまでコントロールを非表示にしない。
   let muted = $state(true);
   let muteHint = $state(false);
+  // 利用者が指定した幅。表示には窓の幅に収めた panelShown を使用する
   let panelWidth = $state(PANEL_INITIAL);
   let dragging = $state(false);
   let winWidth = $state(0);
   const panelMax = $derived(Math.round(winWidth * PANEL_MAX_RATIO));
+  const panelShown = $derived(clampPanel(panelWidth));
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -65,14 +69,24 @@
   }
 
   function clampPanel(px: number): number {
-    return Math.round(Math.min(panelMax, Math.max(PANEL_MIN, px)));
+    // 窓の幅が分かる前（prerender）は上限を設けない
+    const max = winWidth ? panelMax : Infinity;
+    return Math.round(Math.min(max, Math.max(PANEL_MIN, px)));
+  }
+
+  function savePanel() {
+    try {
+      localStorage.setItem(PANEL_STORE_KEY, String(panelWidth));
+    } catch {
+      /* ローカルストレージへ書き込めない場合は幅の保存を諦める */
+    }
   }
 
   /* パネルは右にあるので、境界を左へ動かすと幅は増える。 */
   function onGripPointerDown(event: PointerEvent) {
     const grip = event.currentTarget as HTMLElement;
     const startX = event.clientX;
-    const startWidth = panelWidth;
+    const startWidth = panelShown;
 
     grip.setPointerCapture(event.pointerId);
     // ドラッグ中にiframeへポインターイベントが奪われないようにするフラグである
@@ -82,6 +96,7 @@
       (panelWidth = clampPanel(startWidth - (e.clientX - startX)));
     const onUp = (e: PointerEvent) => {
       dragging = false;
+      savePanel();
       grip.releasePointerCapture(e.pointerId);
       grip.removeEventListener('pointermove', onMove);
       grip.removeEventListener('pointerup', onUp);
@@ -97,9 +112,10 @@
 
   function onGripKeyDown(event: KeyboardEvent) {
     const step = event.shiftKey ? PANEL_STEP_LARGE : PANEL_STEP;
-    if (event.key === 'ArrowLeft') panelWidth = clampPanel(panelWidth + step);
-    else if (event.key === 'ArrowRight') panelWidth = clampPanel(panelWidth - step);
+    if (event.key === 'ArrowLeft') panelWidth = clampPanel(panelShown + step);
+    else if (event.key === 'ArrowRight') panelWidth = clampPanel(panelShown - step);
     else return;
+    savePanel();
     event.preventDefault();
   }
 
@@ -120,6 +136,13 @@
 
     muteHint = v.muted;
     const hintTimer = setTimeout(() => (muteHint = false), MUTE_HINT_MS);
+
+    try {
+      const saved = Number(localStorage.getItem(PANEL_STORE_KEY));
+      if (saved) panelWidth = saved;
+    } catch {
+      /* ローカルストレージを読み取れない場合は既定の幅のままにする */
+    }
 
     let initial = new URLSearchParams(location.search).get('ch');
     if (!initial) {
@@ -246,7 +269,7 @@
     role="separator"
     aria-orientation="vertical"
     aria-label="パネルの幅"
-    aria-valuenow={panelWidth}
+    aria-valuenow={panelShown}
     aria-valuemin={PANEL_MIN}
     aria-valuemax={panelMax}
     tabindex="0"
@@ -254,7 +277,7 @@
     onkeydown={onGripKeyDown}
   ></div>
 
-  <aside class="panel" style="--panel-w: {panelWidth}px">
+  <aside class="panel" style="--panel-w: {panelShown}px">
     <EmbeddedSite allowPopups />
     <div class="panel-links">
       {#if site.repository}
