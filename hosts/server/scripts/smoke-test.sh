@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 起動後の疎通確認。ffmpeg でテストパターンを SRT 送信し、Caddy 経由で HLS のプレイリストと
-# セグメントを取得できるかを確認する。
+# セグメントを取得できるかを確認する。Caddy へは名前を引かずに CADDY_HOST（既定はこのマシン）へ
+# 接続し、証明書も検証する。名前の解決は視聴者の端末が使用するローカル DNS の役割のため、
+# このマシンで引けなくても WARN にとどめる。
 #
 #   ./scripts/smoke-test.sh [チャンネル] [秒数]
 
@@ -15,6 +17,7 @@ cd "${HOST_DIR}"
 
 SRT_HOST="${SRT_HOST:-127.0.0.1}"
 SRT_PORT="${SRT_PORT:-8890}"
+CADDY_HOST="${CADDY_HOST:-127.0.0.1}"
 DOMAIN="${DOMAIN:-$(python3 "${REPO_DIR}/tools/kosensai_live/config.py" get site.domain)}" || exit 1
 JAR="$(mktemp)"
 
@@ -29,11 +32,13 @@ trap cleanup EXIT
 FAIL=0
 ok() { printf '  \033[32mOK\033[0m   %s\n' "$1"; }
 ng() { printf '  \033[31mNG\033[0m   %s\n' "$1"; FAIL=1; }
+warn() { printf '  \033[33mWARN\033[0m %s\n' "$1"; }
 
-check() { # check <説明> <URL>
-  local code
-  code=$(fetch -o /dev/null -w '%{http_code}' "$2")
-  [[ "${code}" == "200" ]] && ok "$1" || ng "$1 (http ${code})"
+check() { # check <説明> [curl の引数...] <URL>
+  local desc="$1" code
+  shift
+  code=$(fetch -o /dev/null -w '%{http_code}' "$@")
+  [[ "${code}" == "200" ]] && ok "${desc}" || ng "${desc} (http ${code})"
 }
 
 PASS="$(python3 "${REPO_DIR}/tools/kosensai_live/config.py" env "MTX_PATHS_$(printf '%s' "${CH}" | tr '[:lower:]' '[:upper:]')_SRTPUBLISHPASSPHRASE")" || exit 1
@@ -74,16 +79,20 @@ if [[ -n "${VARIANT}" ]]; then
 fi
 
 echo
-echo "== Caddy 経由（https://${DOMAIN}） =="
-check "/healthz"              "https://${DOMAIN}/healthz"
-check "/hls/${CH}/index.m3u8" "https://${DOMAIN}/hls/${CH}/index.m3u8"
-check "/ (視聴ページ)"         "https://${DOMAIN}/"
-check "/signage/ (サイネージ)" "https://${DOMAIN}/signage/"
+echo "== Caddy 経由（https://${DOMAIN} → ${CADDY_HOST}） =="
+RESOLVE=(--resolve "${DOMAIN}:443:${CADDY_HOST}")
+check "/healthz"              "${RESOLVE[@]}" "https://${DOMAIN}/healthz"
+check "/hls/${CH}/index.m3u8" "${RESOLVE[@]}" "https://${DOMAIN}/hls/${CH}/index.m3u8"
+check "/ (視聴ページ)"         "${RESOLVE[@]}" "https://${DOMAIN}/"
+check "/signage/ (サイネージ)" "${RESOLVE[@]}" "https://${DOMAIN}/signage/"
 
-if (( FAIL )); then
-  echo
-  echo "  名前解決が未設定の場合は、次のコマンドでローカルのみを確認できます"
-  echo "    curl -k --resolve ${DOMAIN}:443:127.0.0.1 https://${DOMAIN}/hls/${CH}/index.m3u8"
+echo
+echo "== 名前の解決（このマシンの DNS） =="
+ADDR="$(getent hosts "${DOMAIN}" | awk '{print $1; exit}')"
+if [[ -n "${ADDR}" ]]; then
+  ok "${DOMAIN} → ${ADDR}"
+else
+  warn "${DOMAIN} を引けません。視聴者の端末が使用するローカル DNS で、Notion の「2. DNS」を確認してください"
 fi
 
 wait "${FFPID}" 2>/dev/null
