@@ -255,7 +255,7 @@ def apply_recordings(cl: obs.ReqClient, scenes: dict) -> bool:
     for r in rec["scenes"]:
         settings = {
             **rec["video_param"],
-            "encoder": platform_value(scenes["video_encoder"], "video_encoder"),
+            "encoder": platform_value(rec["encoder"], "recordings.encoder"),
             "record_mode": SOURCE_RECORD_MODE_RECORDING,
             "rec_format": rec["format"],
             # 同時に始まる録画のファイル名が重ならないよう、名前を付ける。保存先は OBS の録画の設定に従う。

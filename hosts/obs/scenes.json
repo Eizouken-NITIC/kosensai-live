@@ -116,7 +116,8 @@
     ]
   },
   "recordings": {
-    "video_param": {"rate_control": "CBR", "keyint_sec": 2, "bitrate": 12000},
+    "video_param": {"rate_control": "CBR", "keyint_sec": 2, "bitrate": 12000, "preset": "veryfast"},
+    "encoder": {"win32": "obs_x264", "darwin": "com.apple.videotoolbox.videoencoder.ave.avc", "linux": "obs_x264"},
     "audio_bitrate": 320,
     "format": "mkv",
     "program_encoder": {"win32": "nvenc", "darwin": "x264", "linux": "x264"},
