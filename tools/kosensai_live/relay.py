@@ -52,11 +52,13 @@ def find_ffmpeg(path) -> str:
 
 def command(ffmpeg, conf, env, cid):
     # MPEG-TS は PMT からコーデックが分かるため、入力の解析は最小限にする(既定では最大 5 秒分を読んでから出力する)。
-    # -muxdelay 0: MPEG-TS の muxer の既定の 0.7 秒の遅延を無くす。
+    # 映像と音声だけを渡し、-max_interleave_delta 0 で出力の並べ直しの待ちを無くす(既定では、間隔の空いた
+    # ストリームのパケットを最大 10 秒待つ)。-muxdelay 0 は MPEG-TS の muxer の既定の 0.7 秒の遅延を無くす。
     return [ffmpeg, "-hide_banner", "-nostdin", "-nostats", "-loglevel", "warning",
             "-fflags", "nobuffer", "-probesize", "32768", "-analyzeduration", "0",
             "-i", urls.listen_url(conf, env, cid),
-            "-map", "0", "-c", "copy", "-muxdelay", "0", "-flush_packets", "1", "-f", "mpegts", "pipe:1"]
+            "-map", "0:v", "-map", "0:a", "-c", "copy", "-max_interleave_delta", "0", "-muxdelay", "0",
+            "-flush_packets", "1", "-f", "mpegts", "pipe:1"]
 
 
 def pump(proc, conn):
