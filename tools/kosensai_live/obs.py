@@ -38,6 +38,9 @@ SOURCE_RECORD_URL = "https://github.com/exeldro/obs-source-record/releases/tag/0
 SOURCE_RECORD_MODE_RECORDING = 3
 # 作成したプロファイルの basic.ini が書き出されるまで待つ秒数
 PROFILE_WAIT_SEC = 5
+# シーンコレクションのファイルの、グローバル音声デバイス(設定 → 音声)のキー
+GLOBAL_AUDIO_KEYS = ["DesktopAudioDevice1", "DesktopAudioDevice2",
+                     "AuxAudioDevice1", "AuxAudioDevice2", "AuxAudioDevice3", "AuxAudioDevice4"]
 
 
 def obs_config_dir() -> Path:
@@ -114,6 +117,14 @@ def profile_dir(name: str) -> Path:
                 return ini.parent
         time.sleep(0.1)
     sys.exit(f"プロファイル {name} のフォルダが見つかりません")
+
+
+def collection_file(name: str) -> Path:
+    # ファイル名は名前と一致するとは限らない(記号を除く)ため、ファイルの name で探す。
+    for path in (obs_config_dir() / "basic/scenes").glob("*.json"):
+        if json.loads(path.read_text(encoding="utf-8-sig")).get("name") == name:
+            return path
+    sys.exit(f"シーンコレクション {name} のファイルが見つかりません")
 
 
 def multi_rtmp_config(conf: dict, env: dict, scenes: dict) -> dict:
@@ -225,14 +236,20 @@ def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, f
     プロファイルの出力の設定は、起動中に obs-websocket で変えると録画の出力と食い違う(拡張子だけが
     変わり、エンコーダーは変わらなかった)。どちらも OBS の終了後に書き込み、起動し直して読ませる。
     録画のフィルターの設定を変えた場合も、起動中に録画を始めると OBS が落ちたため、起動し直す。
+    グローバル音声デバイス(設定 → 音声)は、全トラックに入り、同期オフセットも scenes.json の入力と別になる。
+    OBS は出力のチャンネルからシーンコレクションに保存し直すため、終了後にファイルから削除する。
     """
     profile = profile_dir(scenes["profile"])
     rtmp_path = profile / "obs-multi-rtmp.json"
     rtmp = json.dumps(multi_rtmp_config(conf, env, scenes), ensure_ascii=False, indent=1)
     rtmp_changed = not rtmp_path.is_file() or json.loads(rtmp_path.read_text(encoding="utf-8-sig")) != json.loads(rtmp)
     params = [(c, k, v) for c, k, v in profile_parameters(scenes) if cl.get_profile_parameter(c, k).parameter_value != v]
+    special = cl.get_special_inputs()
+    global_audio = [n for n in (special.desktop1, special.desktop2, special.mic1, special.mic2,
+                                special.mic3, special.mic4) if n is not None]
     reasons = (["obs-multi-rtmp の出力"] if rtmp_changed else []) + (["Ch3 の録画の設定"] if params else []) \
-        + (["Ch1・Ch2 の録画のフィルター"] if filters_changed else [])
+        + (["Ch1・Ch2 の録画のフィルター"] if filters_changed else []) \
+        + ([f"グローバル音声デバイス({'・'.join(global_audio)})の削除"] if global_audio else [])
     if not reasons:
         print("OBS の再起動: 不要")
         return
@@ -250,6 +267,12 @@ def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, f
         rtmp_path.write_text(rtmp, encoding="utf-8")
     if params:
         set_ini(profile / "basic.ini", params)
+    if global_audio:
+        path = collection_file(scenes["collection"])
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+        for key in GLOBAL_AUDIO_KEYS:
+            data.pop(key, None)
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding="utf-8")
     print("書き込みました。OBS を起動してください")
 
 
@@ -423,6 +446,7 @@ def build(env_path, assets: Path) -> None:
         if spec["type"] != "slides":
             tracks = spec.get("tracks", [])
             cl.set_input_audio_tracks(name, {str(t): t in tracks for t in range(1, 7)})
+            cl.set_input_audio_sync_offset(name, spec.get("sync_offset_ms", 0))
         # 会場の音声のモニターは channels.lua が Ch3 に合わせて切り替える。ここでは固定のものだけを設定する。
         if spec.get("monitor"):
             cl.set_input_audio_monitor_type(name, "OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT")

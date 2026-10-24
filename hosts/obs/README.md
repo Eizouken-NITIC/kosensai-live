@@ -63,11 +63,12 @@ uv run kosensai-live obs build
 | プロファイル | `KOSENSAI-LIVE`。映像の形式は `config.json` の `video.mode`（1080p29.97） |
 | スタジオモード | 無効（[3-1.](#3-1-シーン)） |
 | シーンコレクション | `KOSENSAI-LIVE`。`scenes.json` のシーンは、項目の有無・並び・配置を `scenes.json` に合わせます。項目の表示・非表示は変えません（`channels.lua` が切り替えるため）。`scenes.json` に無いシーンには手を加えません |
-| ソース | SRT Listener の URL とパスフレーズ、ページのファイルの場所（URL の `?assets=` に kosensai-live-assets の場所を付けます）、CM のスライドの一覧、音声のデバイスとトラック。毎回上書きします |
+| ソース | SRT Listener の URL とパスフレーズ、ページのファイルの場所（URL の `?assets=` に kosensai-live-assets の場所を付けます）、CM のスライドの一覧、音声のデバイス・トラック・同期オフセット。毎回上書きします |
+| グローバル音声デバイス | 「設定 → 音声」のデスクトップ音声・マイク音声を削除します（[3-2.](#3-2-音声)） |
 | 録画 | `[録画] …` のシーンの Source Record のフィルター（[3-4.](#3-4-録画)） |
 | obs-multi-rtmp の出力 | Ch1・Ch2・Ch3 の 3 つ（[3-3.](#3-3-出力obs-multi-rtmp)）。送出先の URL とパスフレーズは `.env` から作ります |
 
-obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch1・Ch2 の録画のフィルターが変わる場合、`obs build` は「OBS を終了してください」と表示して OBS の終了を待ち、終了した後に設定を書き込みます。書き込んだら OBS を起動し直します。obs-multi-rtmp は設定を OBS の起動時に読んで終了時に書き戻し、録画の設定は起動中に変えると録画の出力と食い違うためです。
+obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch1・Ch2 の録画のフィルターが変わる場合と、グローバル音声デバイスがある場合、`obs build` は「OBS を終了してください」と表示して OBS の終了を待ち、終了した後に設定を書き込みます。書き込んだら OBS を起動し直します。obs-multi-rtmp は設定を OBS の起動時に読んで終了時に書き戻し、録画の設定は起動中に変えると録画の出力と食い違うためです。グローバル音声デバイスは、OBS が終了時にシーンコレクションに保存し直すため、終了後にシーンコレクションのファイルから削除します。
 
 その後、OBS で次を設定します。
 
@@ -82,7 +83,6 @@ obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch1�
    | CM 小窓: 自動で出す / 出さない | F11 / F12 |
 3. 「設定 → 音声 → 詳細設定」のモニタリングデバイスに、本部のヘッドホンをつなぐデバイスを選ぶ。
 4. 「設定 → 出力 → 録画」の録画ファイルのパスに、録画を保存するディスクを選ぶ（Source Record もこのパスに保存します）。
-5. `Ch1 音声 (USB)` の「オーディオの詳細プロパティ」で同期オフセットを設定する（リハーサルで実測した値）。USB オーディオは SRT の映像より早く届くためです。
 
 kosensai-live-assets の `program.json` や `cm/out/` を変更した場合は、本部 PC で `git pull` した後に `uv run kosensai-live obs build` を実行し直します。`obs build` は全てのブラウザソースを読み込み直します。
 
@@ -152,7 +152,9 @@ obs-multi-rtmp でプログラム以外のシーンを送出しても、その�
 | `Ch1 ATEM` | なし（ATEM の埋め込み音声は使用しません） | なし |
 | `BGM` | 1（待機・UP NEXT・タイムテーブルのシーンを出している間だけ鳴ります） | 常に |
 
-`channels.lua` は、プログラムのシーンに `Ch1 ATEM` が映っていれば `Ch1 音声 (USB)` を、`Ch2 iPhone` が映っていれば `Ch2 iPhone` をトラック 1 に入れ、本部のモニターにも出します。本部では Ch3 の視聴者と同じ音を聞きます。両方が映る 2 画面では Ch1 の音声を使用します。待機画面などの全画面のシーンでは、Ch3 に会場の音声は入りません。CM はスライドショー（画像）のため、音声はありません。`BGM` にはファイルを指定していないため、既定では無音です。音楽を流す場合は、OBS で `BGM` に音楽のファイルを指定します（ループして再生し、待機・UP NEXT・タイムテーブルの間で切り替えても続きから再生します）。
+`channels.lua` は、プログラムのシーンに `Ch1 ATEM` が映っていれば `Ch1 音声 (USB)` を、`Ch2 iPhone` が映っていれば `Ch2 iPhone` をトラック 1 に入れ、本部のモニターにも出します。本部では Ch3 の視聴者と同じ音を聞きます。両方が映る 2 画面では Ch1 の音声を使用します。会場の音声は `scenes.json` の入力だけから入れます。「設定 → 音声」のグローバル音声デバイスは全てのトラックに入るため、`obs build` が削除します。OBS は新しいシーンコレクションにも既定のマイク音声を作成します。待機画面などの全画面のシーンでは、Ch3 に会場の音声は入りません。CM はスライドショー（画像）のため、音声はありません。`BGM` にはファイルを指定していないため、既定では無音です。音楽を流す場合は、OBS で `BGM` に音楽のファイルを指定します（ループして再生し、待機・UP NEXT・タイムテーブルの間で切り替えても続きから再生します）。
+
+`Ch1 音声 (USB)` は、`scenes.json` の `sync_offset_ms`（400 ms）だけ遅らせます。USB の音声は配信用ミキサーから直接届き、ATEM の映像は ATEM の符号化と SRT の latency の分だけ遅れて届くためです。値は、ATEM の埋め込み音声（ATEM の映像と揃っている）と USB の音声を Ch1 の録画の左右のチャンネルに分けて記録し、相互相関から求めました。SRT の latency（`config.json` の `srtLatencyUs`）を変えた場合は測り直します。OBS の音声のモニターは、映像を持たないソースに同期オフセットを適用しないため、本部のヘッドホンでは USB の音声が遅れずに聞こえます。ずれは視聴ページか録画で確認します。
 
 ### 3-3. 出力（obs-multi-rtmp）
 
@@ -270,7 +272,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 | `profile` | プロファイルの名前。映像の形式と obs-multi-rtmp の出力を設定する |
 | `program_scene` | 作成後にプログラムに出すシーン |
 | `places` | 配置の名前 → `{x, y, w, h}`。`pane-left`・`pane-right` は `overlays/split.html` の映像の枠と一致させる |
-| `inputs` | 入力の名前 → 種類と設定。`type` は `srt`（`channel` の SRT Listener、ポートとパスフレーズは `config.json` と `.env`）、`audio`（音声入力のデバイス）、`page`（`overlays/` の `page`、`query` で引数、`replay` で表示のたびに読み込み直す、`width`・`height` でページの大きさ。既定は 1920x1080）、`slides`（`cm` のフォルダの画像のスライドショー。`behavior` は隠している間の動作で、`always_play` は進み、`pause_unpause` は止まる）、`media`（動画・音楽のファイル。OBS で指定する。`restart` が false なら同じ入力を持つシーンの間で切り替えても続きから再生し、`loop` が false なら 1 回だけ再生する）。`tracks` は音声のトラックの番号。`audio` の `device` はデバイスの名前の一部（`kosensai-live obs devices` で確認する）。`monitor` が true の入力は常に本部のモニターに出す |
+| `inputs` | 入力の名前 → 種類と設定。`type` は `srt`（`channel` の SRT Listener、ポートとパスフレーズは `config.json` と `.env`）、`audio`（音声入力のデバイス）、`page`（`overlays/` の `page`、`query` で引数、`replay` で表示のたびに読み込み直す、`width`・`height` でページの大きさ。既定は 1920x1080）、`slides`（`cm` のフォルダの画像のスライドショー。`behavior` は隠している間の動作で、`always_play` は進み、`pause_unpause` は止まる）、`media`（動画・音楽のファイル。OBS で指定する。`restart` が false なら同じ入力を持つシーンの間で切り替えても続きから再生し、`loop` が false なら 1 回だけ再生する）。`tracks` は音声のトラックの番号。`audio` の `device` はデバイスの名前の一部（`kosensai-live obs devices` で確認する）。`sync_offset_ms` は同期オフセット（ms、既定は 0）。`monitor` が true の入力は常に本部のモニターに出す |
 | `scenes` | シーンの名前 → 下から順の `{source, place, hidden}`。`hidden` の項目は `channels.lua` が必要な時だけ表示する |
 | `video_encoder` | OS（`win32`・`darwin`・`linux`）ごとの映像のエンコーダーの ID。出力と録画に使用する |
 | `outputs` | obs-multi-rtmp の出力。`video_param` はエンコーダーの設定、`audio_bitrate` は音声のビットレート（kbps）、`channels` は Ch ごとの映像のシーン（無ければプログラム）と音声のトラック。映像のビットレートは `config.json` の `bitrateKbps` |
