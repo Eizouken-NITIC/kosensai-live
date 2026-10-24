@@ -1,7 +1,8 @@
-# 本部 PC で 1 回だけ実行する(管理者の PowerShell)。
+﻿# 本部 PC で 1 回だけ実行する(管理者の PowerShell)。
 #   powershell -ExecutionPolicy Bypass -File hosts\obs\relay-task.ps1 -Ffmpeg <ffmpeg.exe の場所>
 # 中継(kosensai-live relay)を PC の起動時に起動するタスクと、SRT の待ち受けのポートの受信の許可を登録する。
-# タスクはログオンしていなくても動き、画面を持たない。出力は hosts\obs\.relay\relay.log に追記する。
+# タスクはログオンしていなくても動き、画面を持たない。出力は hosts\obs\.relay\relay.log に UTF-8 で追記する。
+# Windows PowerShell 5.1 は BOM の無いスクリプトを UTF-8 として読まないため、このファイルは BOM 付きで保存する。
 param([Parameter(Mandatory)][string]$Ffmpeg, [string]$Uv = (Get-Command uv -ErrorAction Stop).Source)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -10,7 +11,7 @@ New-Item -ItemType Directory -Force (Split-Path $log) | Out-Null
 
 $name = 'kosensai-live relay'
 $action = New-ScheduledTaskAction -Execute 'cmd.exe' -WorkingDirectory $repo `
-    -Argument "/c `"`"$Uv`" run kosensai-live relay --ffmpeg `"$Ffmpeg`" >> `"$log`" 2>&1`""
+    -Argument "/c `"set PYTHONIOENCODING=utf-8&& `"$Uv`" run kosensai-live relay --ffmpeg `"$Ffmpeg`" >> `"$log`" 2>&1`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
 # S4U: パスワードを保存せずに、ログオンの有無によらず動かす(ネットワークの資格情報は使用しない)。
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Highest

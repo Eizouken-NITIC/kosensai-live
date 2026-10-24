@@ -9,7 +9,7 @@ export type Channel = {
   visible?: boolean;
   /** 本部 PC の中継（kosensai-live relay）が SRT Listener として待つポートである。Ch3 は OBS 内で合成するため null になる。 */
   obsListenPort: number | null;
-  /** 中継が OBS へ UDP で渡すポートである。Ch3 は null になる。 */
+  /** 中継が OBS へ TCP で渡すポートである。Ch3 は null になる。 */
   relayPort: number | null;
   srtLatencyUs: number | null;
   bitrateKbps: number;

@@ -24,8 +24,8 @@ def listen_url(conf, env, cid):
 
 
 def relay_url(conf, cid):
-    """中継（relay）から OBS のメディアソースへ渡す UDP の URL。"""
-    return f"udp://127.0.0.1:{config.channel(conf, cid)['relayPort']}"
+    """中継（relay）が待ち受け、OBS のメディアソースが接続する TCP の URL。"""
+    return f"tcp://127.0.0.1:{config.channel(conf, cid)['relayPort']}"
 
 
 def caller_url(conf, env, cid):
@@ -47,7 +47,7 @@ def main(env_path):
     domain = conf["site"]["domain"]
 
     print("=" * 72)
-    print(" 1. ATEM・スマートフォン → 本部 PC の中継（SRT Listener）→ 本部 OBS（UDP）")
+    print(" 1. ATEM・スマートフォン → 本部 PC の中継（SRT Listener）→ 本部 OBS（TCP）")
     print("=" * 72)
     for c in conf["channels"]:
         if not c.get("obsListenPort"):

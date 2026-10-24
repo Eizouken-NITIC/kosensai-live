@@ -1,13 +1,14 @@
-"""ATEM・スマートフォンの SRT を本部 PC で受け、OBS へ UDP で渡す。
+"""ATEM・スマートフォンの SRT を本部 PC で受け、OBS へ TCP で渡す。
 
     uv run kosensai-live relay [--ffmpeg <ffmpeg の場所>]
 
 config.json の obsListenPort を持つ Ch ごとに ffmpeg を 1 つ起動し、SRT Listener で受けた MPEG-TS を
-そのまま udp://127.0.0.1:<relayPort> へ送る。OBS はこの UDP を受ける。
+tcp://127.0.0.1:<relayPort> で待ち受けて、接続した OBS へそのまま送る。
 
-送信元が切断すると ffmpeg は終了し、すぐに起動し直す。OBS のプロセスの中で SRT を受けると、切断の後に
-同じポートで待ち受けられなくなることがあった(libsrt の状態がプロセスに残る)。ffmpeg を起動し直すたびに
-libsrt の状態も作り直される。
+OBS のメディアソースは、入力が切断した後も待ち受けのソケットを閉じずに持ち続け、同じポートで
+待ち受け直せなくなる(SRT・UDP のどちらでも起きた)。待ち受けは中継が行い、OBS は接続する側にする。
+送信元が切断すると ffmpeg は終了して TCP も切れ、OBS は映像が消えたことを検出する。relay は ffmpeg を
+すぐに起動し直す。
 
 OBS のホットキーの「<会場> SRT を受け直す」は、RESTART_DIR に restart-<Ch> のファイルを作る。
 このファイルを見つけたら、その Ch の ffmpeg を終了させて起動し直す。
@@ -45,10 +46,12 @@ def find_ffmpeg(path) -> str:
 
 
 def command(ffmpeg, conf, env, cid):
-    # -muxdelay 0: MPEG-TS の muxer の既定の 0.7 秒の遅延を無くす。pkt_size は TS のパケット 7 個分。
+    # -muxdelay 0: MPEG-TS の muxer の既定の 0.7 秒の遅延を無くす。
+    # TCP の待ち受けは SRT の送信元が接続した後に始まり、OBS が接続するまで待つ。
     return [ffmpeg, "-hide_banner", "-nostdin", "-nostats", "-loglevel", "warning",
             "-i", urls.listen_url(conf, env, cid),
-            "-map", "0", "-c", "copy", "-muxdelay", "0", "-f", "mpegts", urls.relay_url(conf, cid) + "?pkt_size=1316"]
+            "-map", "0", "-c", "copy", "-muxdelay", "0", "-flush_packets", "1",
+            "-f", "mpegts", urls.relay_url(conf, cid) + "?listen=1"]
 
 
 def run_channel(conf, cmd, cid, procs):
