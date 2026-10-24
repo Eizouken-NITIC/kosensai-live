@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>monitor</title>
+<style>
+  /* 受信の確認。[確認] 受信 のシーンの背景に置き、受信の映像(scenes.json の monitor-left・monitor-right)の
+     上にラベルと受信の状態、下にホットキーの一覧を出す。配信には映らないため、画面のデザインは使用しない。
+     状態は channels.lua が毎秒 kosensaiStatus のイベントで送る。 */
+  :root { --bg: #18181b; --line: #3f3f46; --text: #f4f4f5; --sub: #a1a1aa; --ok: #22c55e; --ng: #ef4444; color-scheme: dark; }
+  html body { margin: 0; width: 1920px; height: 1080px; background: var(--bg); color: var(--text);
+    font: 32px/1.4 system-ui, sans-serif; overflow: hidden; }
+  .label { position: absolute; top: 40px; width: 900px; display: flex; gap: 0.6em; align-items: baseline; }
+  .label b { font-size: 48px; }
+  .ok { color: var(--ok); }
+  .ng { color: var(--ng); font-weight: 700; }
+  #keys { position: absolute; left: 40px; top: 680px; width: 1840px; display: grid;
+    grid-template-columns: repeat(2, 1fr); gap: 0.15em 2em; font-size: 30px; }
+  #keys kbd { display: inline-block; min-width: 2.6em; margin-right: 0.6em; padding: 0 0.3em; text-align: center;
+    border: 1px solid var(--line); border-radius: 0.2em; font: inherit; font-weight: 700; }
+  #wait { position: absolute; left: 40px; top: 680px; color: var(--sub); }
+</style>
+</head>
+<body>
+<div class="label" style="left: 40px" id="in0"></div>
+<div class="label" style="left: 980px" id="in1"></div>
+<div id="keys"></div>
+<p id="wait">channels.lua からの状態を待っています</p>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const hhmm = (sec) => { const d = new Date(sec * 1000); return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  window.addEventListener('kosensaiStatus', ({ detail: s }) => {
+    $('wait').hidden = true;
+    s.inputs.forEach((input, i) => {
+      const paused = s.pauses.find((p) => p.name === input.name)?.on;
+      $(`in${i}`).innerHTML = '';
+      $(`in${i}`).append(Object.assign(document.createElement('b'), { textContent: input.name }),
+        Object.assign(document.createElement('span'), {
+          className: input.lost ? 'ng' : 'ok',
+          textContent: input.lost ? `切断中(${hhmm(input.since)} から)` : '受信中',
+        }),
+        Object.assign(document.createElement('span'), { className: 'ng', textContent: paused ? '休止中' : '' }));
+    });
+    const fkey = (k) => Number(k.replace(/^F/, '')) || 99;
+    $('keys').replaceChildren(...s.hotkeys.filter((h) => h.key).sort((a, b) => fkey(a.key) - fkey(b.key)).map((h) => {
+      const row = document.createElement('div');
+      row.append(Object.assign(document.createElement('kbd'), { textContent: h.key }), h.label);
+      return row;
+    }));
+  });
+</script>
+</body>
+</html>

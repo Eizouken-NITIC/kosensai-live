@@ -7,7 +7,9 @@
     "offscreen": {"x": 2020, "y": 0, "w": 16, "h": 9},
     "pane-left": {"x": 80, "y": 200, "w": 864, "h": 486},
     "pane-right": {"x": 976, "y": 200, "w": 864, "h": 486},
-    "corner": {"x": 1344, "y": 642, "w": 480, "h": 270}
+    "corner": {"x": 1344, "y": 642, "w": 480, "h": 270},
+    "monitor-left": {"x": 40, "y": 140, "w": 900, "h": 506},
+    "monitor-right": {"x": 980, "y": 140, "w": 900, "h": 506}
   },
   "inputs": {
     "Ch1 ATEM": {"type": "srt", "channel": "ch1", "tracks": []},
@@ -19,6 +21,7 @@
     "お知らせ": {"type": "page", "page": "notice.html"},
     "ウォーターマーク": {"type": "page", "page": "watermark.html"},
     "操作パネル": {"type": "page", "page": "control.html", "width": 1280, "height": 1000},
+    "受信の確認": {"type": "page", "page": "monitor.html"},
     "待機画面": {"type": "page", "page": "lobby.html", "replay": true},
     "UP NEXT": {"type": "page", "page": "upnext.html", "replay": true},
     "タイムテーブル": {"type": "page", "page": "timetable.html", "replay": true},
@@ -37,6 +40,11 @@
     ],
     "[操作] パネル": [
       {"source": "操作パネル", "place": "full"}
+    ],
+    "[確認] 受信": [
+      {"source": "受信の確認", "place": "full"},
+      {"source": "Ch1 ATEM", "place": "monitor-left"},
+      {"source": "Ch2 iPhone", "place": "monitor-right"}
     ],
     "[出力] Ch1 第一体育館": [
       {"source": "Ch1 ATEM", "place": "full"},
@@ -147,7 +155,16 @@
     {"id": "ch1", "name": "第一体育館"},
     {"id": "ch2", "name": "遊撃"}
   ],
+  "monitor": {
+    "scene": "[確認] 受信",
+    "inputs": [
+      {"name": "第一体育館", "video": "Ch1 ATEM"},
+      {"name": "遊撃", "video": "Ch2 iPhone"}
+    ],
+    "pages": [{"source": "操作パネル"}, {"source": "受信の確認"}]
+  },
   "hotkeys": {
+    "monitor.open": "F1",
     "restart.ch1": "F5",
     "restart.ch2": "F6",
     "pause.ch2.on": "F7",

@@ -25,6 +25,10 @@
 -- 6. ホットキーの「<会場> SRT を受け直す」で、restart の Ch の中継(kosensai-live relay)の ffmpeg を
 --    起動し直す。.relay/restart-<Ch> のファイルを作ると、relay がその Ch の ffmpeg を終了させて起動し直す。
 --    送信元との接続が残ったまま映像が届かない時に使う。Ch3 のシーンは変えない。
+-- 7. ホットキーの「受信の確認を開く」で、monitor.scene(各会場の受信の映像を並べたシーン)の
+--    ウィンドウ プロジェクターを開く。monitor.inputs の受信の状態(映像が消えた時刻を含む)、休止の状態、
+--    ホットキーの一覧を、毎秒 monitor.pages のブラウザソースへ kosensaiStatus のイベントで送る。
+--    monitor.scene は休止で隠すソースを含むが、受信を確かめるためのシーンなので、休止では隠さない。
 --
 -- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
 
@@ -42,6 +46,9 @@ local pauses = {} -- { { id = ..., name = ..., show = { ... }, hide = { ... }, a
 local signal_lost = {} -- { { video = ..., hide = { ... }, lost = nil }, ... }
 local restarts = {} -- { { id = ..., name = ... }, ... }
 local cm_corner = nil -- { scene = ..., source = ..., full_source = ..., lost_video = ..., every_min = ..., show_sec = ... }
+local monitor = nil -- { scene = ..., inputs = { { name = ..., video = ..., lost = nil, since = nil }, ... }, pages = { ... } }
+-- 登録したホットキー。{ { id = ..., label = ... }, ... }
+local hotkey_list = {}
 -- scenes.json の hotkeys。ホットキーの ID → キー(OBS_KEY_ を除いた名前)。
 local hotkey_keys = {}
 -- 最後に設定した各ソースの表示。変わった時だけ全シーンに反映する。
@@ -122,7 +129,7 @@ local function load_config()
   hotkey_keys = {}
   local keys = obslua.obs_data_get_obj(scenes, "hotkeys")
   if keys ~= nil then
-    local ids = { "cm.on", "cm.off" }
+    local ids = { "cm.on", "cm.off", "monitor.open" }
     for _, r in ipairs(restarts) do
       table.insert(ids, "restart." .. r.id)
     end
@@ -155,6 +162,18 @@ local function load_config()
       show_sec = obslua.obs_data_get_int(cm, "show_sec"),
     }
     obslua.obs_data_release(cm)
+  end
+  monitor = nil
+  local mon = obslua.obs_data_get_obj(scenes, "monitor")
+  if mon ~= nil then
+    monitor = { scene = obslua.obs_data_get_string(mon, "scene"), inputs = {}, pages = {} }
+    each(mon, "inputs", function(item)
+      table.insert(monitor.inputs, { name = obslua.obs_data_get_string(item, "name"), video = obslua.obs_data_get_string(item, "video") })
+    end)
+    each(mon, "pages", function(item)
+      table.insert(monitor.pages, obslua.obs_data_get_string(item, "source"))
+    end)
+    obslua.obs_data_release(mon)
   end
   obslua.obs_data_release(scenes)
 end
@@ -237,18 +256,20 @@ local function update_track1()
   end
 end
 
--- 全シーンの name のソースの表示を切り替える。
+-- 全シーン(monitor.scene を除く)の name のソースの表示を切り替える。
 local function set_visible_everywhere(name, visible)
   local scenes = obslua.obs_frontend_get_scenes()
   for _, scene_source in ipairs(scenes) do
-    local scene = obslua.obs_scene_from_source(scene_source)
-    local items = obslua.obs_scene_enum_items(scene)
-    for _, item in ipairs(items) do
-      if obslua.obs_source_get_name(obslua.obs_sceneitem_get_source(item)) == name then
-        obslua.obs_sceneitem_set_visible(item, visible)
+    if monitor == nil or obslua.obs_source_get_name(scene_source) ~= monitor.scene then
+      local scene = obslua.obs_scene_from_source(scene_source)
+      local items = obslua.obs_scene_enum_items(scene)
+      for _, item in ipairs(items) do
+        if obslua.obs_source_get_name(obslua.obs_sceneitem_get_source(item)) == name then
+          obslua.obs_sceneitem_set_visible(item, visible)
+        end
       end
+      obslua.sceneitem_list_release(items)
     end
-    obslua.sceneitem_list_release(items)
   end
   obslua.source_list_release(scenes)
 end
@@ -393,9 +414,81 @@ local function set_cm_auto(on)
   end
 end
 
+-- obs_data の配列に、fill で値を設定したオブジェクトを追加する。
+local function push_object(arr, fill)
+  local item = obslua.obs_data_create()
+  fill(item)
+  obslua.obs_data_array_push_back(arr, item)
+  obslua.obs_data_release(item)
+end
+
+-- monitor.pages のブラウザソースへ、受信・休止の状態とホットキーの一覧を送る。
+local function send_status()
+  if monitor == nil then
+    return
+  end
+  local data = obslua.obs_data_create()
+  local inputs = obslua.obs_data_array_create()
+  for _, input in ipairs(monitor.inputs) do
+    local lost = video_lost(input.video)
+    if lost ~= input.lost then
+      input.lost = lost
+      input.since = os.time()
+    end
+    push_object(inputs, function(item)
+      obslua.obs_data_set_string(item, "name", input.name)
+      obslua.obs_data_set_bool(item, "lost", lost)
+      obslua.obs_data_set_int(item, "since", input.since)
+    end)
+  end
+  obslua.obs_data_set_array(data, "inputs", inputs)
+  obslua.obs_data_array_release(inputs)
+  local paused = obslua.obs_data_array_create()
+  for _, p in ipairs(pauses) do
+    push_object(paused, function(item)
+      obslua.obs_data_set_string(item, "name", p.name)
+      obslua.obs_data_set_bool(item, "on", p.on)
+    end)
+  end
+  obslua.obs_data_set_array(data, "pauses", paused)
+  obslua.obs_data_array_release(paused)
+  obslua.obs_data_set_bool(data, "cm_auto", cm_auto)
+  local hotkeys = obslua.obs_data_array_create()
+  for _, h in ipairs(hotkey_list) do
+    push_object(hotkeys, function(item)
+      obslua.obs_data_set_string(item, "key", hotkey_keys[h.id] or "")
+      obslua.obs_data_set_string(item, "label", h.label)
+    end)
+  end
+  obslua.obs_data_set_array(data, "hotkeys", hotkeys)
+  obslua.obs_data_array_release(hotkeys)
+  local json = obslua.obs_data_get_json(data)
+  obslua.obs_data_release(data)
+  -- obs-browser の javascript_event は、そのブラウザソースのページに CustomEvent を送る(detail は JSON を解釈した値)。
+  for _, name in ipairs(monitor.pages) do
+    local source = obslua.obs_get_source_by_name(name)
+    if source ~= nil then
+      local cd = obslua.calldata_create()
+      obslua.calldata_set_string(cd, "eventName", "kosensaiStatus")
+      obslua.calldata_set_string(cd, "jsonString", json)
+      obslua.proc_handler_call(obslua.obs_source_get_proc_handler(source), "javascript_event", cd)
+      obslua.calldata_destroy(cd)
+      obslua.obs_source_release(source)
+    end
+  end
+end
+
+local function open_monitor(pressed)
+  if pressed and monitor ~= nil then
+    -- monitor は -1 でウィンドウ、geometry は空で既定の大きさ。
+    obslua.obs_frontend_open_projector("Scene", -1, "", monitor.scene)
+  end
+end
+
 local function tick()
   update_signal_lost()
   update_cm()
+  send_status()
 end
 
 local function set_paused(id, on)
@@ -471,6 +564,7 @@ end
 -- ホットキーに scenes.json の hotkeys のキーを割り当てる。OBS の設定画面で変えたキーは、読み込みのたびに
 -- scenes.json の値に戻る。
 local function register_hotkey(id, label, callback)
+  table.insert(hotkey_list, { id = id, label = label })
   local hotkey = obslua.obs_hotkey_register_frontend("kosensai." .. id, label, callback)
   local binding = obslua.obs_data_array_create()
   if hotkey_keys[id] ~= nil and hotkey_keys[id] ~= "" then
@@ -496,6 +590,7 @@ function script_load(settings)
   end
   register_hotkey("cm.on", "CM 小窓: 自動で出す", set_cm_auto(true))
   register_hotkey("cm.off", "CM 小窓: 出さない", set_cm_auto(false))
+  register_hotkey("monitor.open", "受信の確認を開く", open_monitor)
   obslua.obs_frontend_add_event_callback(on_event)
   attach_always_scene(false)
   apply_pause(true)

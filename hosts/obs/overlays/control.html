@@ -8,52 +8,68 @@
      画面のデザインは使用しない。テロップのブラウザソースと同じ origin になるため、
      localStorage と BroadcastChannel で状態を渡す。
      OBS のブラウザソースが既定で入れる CSS(背景の透明、余白、overflow: hidden)を詳細度の高いセレクターで上書きする。
-     ソースの大きさは scenes.json で 1280x1000 にし、「対話」の窓でほぼ等倍に表示する。 */
+     ソースの大きさは scenes.json で 1280x1000 にし、「対話」の窓でほぼ等倍に表示する。
+     「対話」の窓ではスクロールの操作が届かないことがあるため、スクロールせずに収まるように、
+     タブで表示を切り替え、長い表は「▲」「▼」で送る。受信の状態とホットキーの一覧は、
+     channels.lua が毎秒 kosensaiStatus のイベントで送る。 */
   :root {
     --bg: #18181b; --panel: #27272a; --line: #3f3f46; --text: #f4f4f5; --sub: #a1a1aa; --dim: #71717a;
     --button: #3f3f46; --now: #423a10; --warn-bg: #4c1d1d; --warn-line: #ef4444;
     font-size: 22px;
     color-scheme: dark;
   }
-  html, body { background: var(--bg); overflow: auto; }
+  html, body { background: var(--bg); overflow: hidden; }
   html body { margin: 0; padding: 0.8rem; font: 1rem/1.5 system-ui, sans-serif; color: var(--text); }
   section { background: var(--panel); border: 1px solid var(--line); border-radius: 0.3rem; padding: 0.6rem 0.8rem; margin-bottom: 0.6rem; }
   h2 { margin: 0 0 0.4rem; font-size: 1.1rem; }
   table { border-collapse: collapse; width: 100%; }
-  td { padding: 0.25rem 0.3rem; border-top: 1px solid var(--line); vertical-align: middle; }
+  td { padding: 0.1rem 0.3rem; border-top: 1px solid var(--line); vertical-align: middle; }
   td.time { white-space: nowrap; font-variant-numeric: tabular-nums; }
   tr.now td { background: var(--now); }
   tr.past td { color: var(--dim); }
-  button { font: inherit; font-size: 0.9rem; padding: 0.25rem 0.6rem; border: 1px solid var(--line); border-radius: 0.25rem; background: var(--button); color: var(--text); cursor: pointer; }
+  button { font: inherit; font-size: 0.9rem; padding: 0.15rem 0.6rem; border: 1px solid var(--line); border-radius: 0.25rem; background: var(--button); color: var(--text); cursor: pointer; }
   button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
   input[type=checkbox] { zoom: 1.6; vertical-align: -0.1em; }
   input[type=text] { font: inherit; padding: 0.25rem 0.4rem; border: 1px solid var(--line); border-radius: 0.25rem; background: var(--bg); color: var(--text); }
   .row { display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap; }
-  .status { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 0.6rem; }
+  .status { display: grid; grid-template-columns: max-content 1fr max-content 1fr; gap: 0.15rem 0.6rem; margin: 0 0 0.4rem; }
   .status dt { color: var(--sub); }
   .status dd { margin: 0; font-weight: 600; }
   .warn { background: var(--warn-bg); border-color: var(--warn-line); }
+  .warn h2, .warn p { margin: 0; }
   .muted { color: var(--sub); font-size: 0.85rem; }
+  section p { margin: 0.3rem 0; }
+  .ok { color: #22c55e; }
+  .ng { color: var(--warn-line); }
+  .tabs { display: flex; gap: 0.3rem; margin-bottom: 0.6rem; }
+  .tabs button { font-size: 1rem; padding: 0.3rem 1.2rem; }
+  #keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.1rem 0.8rem; font-size: 0.75rem; color: var(--sub); }
+  #keys kbd { display: inline-block; min-width: 2.2em; margin-right: 0.4em; text-align: center; border: 1px solid var(--line);
+    border-radius: 0.2em; font: inherit; font-weight: 700; color: var(--text); }
 </style>
 </head>
 <body>
 <section>
   <dl class="status" id="status"></dl>
+  <div id="keys"></div>
 </section>
 <section class="warn" id="ng" hidden></section>
-<section>
+<p class="tabs" id="tabs"></p>
+<section data-tab="遅延">
   <h2>第一体育館の遅延</h2>
   <p class="muted">演目が始まったら「開始」を押すと、その演目以降の時刻をずらす。</p>
   <table id="acts"></table>
-  <p class="row"><button id="clearDelay">遅延を削除</button></p>
+  <p class="row"><button id="actsUp">▲</button><button id="actsDown">▼</button><button id="actsNow">今の演目へ</button>
+    <button id="clearDelay">遅延を削除</button></p>
 </section>
-<section>
+<section data-tab="お知らせ">
   <h2>お知らせ</h2>
   <p class="muted">ループ対象のお知らせを 1 分ごとに 1 件ずつ 15 秒表示する。固定は解除するまで表示し続ける。</p>
   <table id="notices"></table>
+  <p class="row"><button id="noticesUp">▲</button><button id="noticesDown">▼</button></p>
   <p class="row"><input type="text" id="newNotice" size="50" placeholder="お知らせの文言"><button id="addNotice">追加</button></p>
 </section>
-<section>
+<section data-tab="遊撃">
   <h2>遊撃の現在地</h2>
   <p class="muted">選択した場所を次の発表枠の開始まで表示する。発表枠の間は枠の演目を表示する。</p>
   <p class="row" id="places"></p>
@@ -66,6 +82,37 @@
   const $ = (id) => document.getElementById(id);
   let s = Overlay.state();
   const button = (text, onclick, on = false) => el('button', { textContent: text, onclick, className: on ? 'on' : '' });
+
+  // ---- タブと表の送り ----
+  // 選んだタブと表の位置はこのページだけで持つ(Overlay.state はテロップと共有するため入れない)。
+  const ACT_ROWS = 6;
+  const NOTICE_ROWS = 6;
+  let tab = '遅延';
+  let actsTop = null; // null の間は今の演目の 1 つ前から表示する
+  let noticesTop = 0;
+  const sections = [...document.querySelectorAll('section[data-tab]')];
+  function drawTabs() {
+    $('tabs').replaceChildren(...sections.map((sec) => button(sec.dataset.tab, () => { tab = sec.dataset.tab; drawTabs(); }, sec.dataset.tab === tab)));
+    for (const sec of sections) sec.hidden = sec.dataset.tab !== tab;
+  }
+  drawTabs();
+  $('actsUp').onclick = () => { actsTop = Math.max(0, (actsTop ?? autoTop()) - 3); draw(); };
+  $('actsDown').onclick = () => { actsTop = (actsTop ?? autoTop()) + 3; draw(); };
+  $('actsNow').onclick = () => { actsTop = null; draw(); };
+  $('noticesUp').onclick = () => { noticesTop = Math.max(0, noticesTop - 3); draw(); };
+  $('noticesDown').onclick = () => { noticesTop += 3; draw(); };
+  function autoTop() {
+    const t = Overlay.now();
+    const items = Overlay.schedule('ch1', t, s);
+    const i = items.findIndex((it) => it.end > t);
+    return Math.max(0, (i < 0 ? items.length : i) - 1);
+  }
+
+  // ---- channels.lua からの受信の状態とホットキー ----
+  let lua = null;
+  window.addEventListener('kosensaiStatus', ({ detail }) => { lua = detail; });
+  const fkey = (k) => Number(k.replace(/^F/, '')) || 99;
+  const key = (label) => lua?.hotkeys.find((h) => h.label === label)?.key ?? '?';
 
   // ---- 遅れ ----
   // 押した演目の予定の開始から、今までの差を遅れとする。その演目より後の指定は消す。
@@ -111,7 +158,15 @@
       el('dt', {}, '遅延'), el('dd', {}, delay ? `${delay > 0 ? '+' : ''}${delay} 分` : 'なし'),
       el('dt', {}, 'お知らせ'), el('dd', {}, s.noticePin ? `固定: ${s.noticePin}` : (notice ?? '(ループ待機中)')),
       el('dt', {}, '遊撃'), el('dd', {}, ch2 ? `${ch2.title}(${ch2.place})` : 'なし'),
+      el('dt', {}, '受信'), el('dd', {}, ...(lua ? lua.inputs.flatMap((input) => [
+        `${input.name} `,
+        el('span', { className: input.lost ? 'ng' : 'ok' },
+          input.lost ? `切断中(${hhmm(new Date(input.since * 1000))} から)` : '受信中'),
+        lua.pauses.find((p) => p.name === input.name)?.on ? '・休止中 ' : ' ',
+      ]) : ['channels.lua からの状態を待っています'])),
     );
+    $('keys').replaceChildren(...(lua ? [...lua.hotkeys].filter((h) => h.key).sort((a, b) => fkey(a.key) - fkey(b.key))
+      .map((h) => el('div', {}, el('kbd', {}, h.key), h.label)) : []));
 
     // 配信しない演目の予告。休止の画面はホットキーで出す。
     const ng = items.find((it) => it.kind === 'ng' && it.end > t);
@@ -119,10 +174,11 @@
     if (ng) {
       const on = ng.start <= t;
       $('ng').replaceChildren(el('h2', {}, on ? `配信休止の時間: ${ng.title}` : `次の配信休止: ${ng.title}`),
-        el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。開始時にホットキー「第一体育館 休止: 出す」(F9)、終了時に「第一体育館 休止: 消す」(F10)を押す。`));
+        el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。開始時にホットキー「第一体育館 休止: 出す」(${key('第一体育館 休止: 出す')})、終了時に「第一体育館 休止: 消す」(${key('第一体育館 休止: 消す')})を押す。`));
     }
 
-    $('acts').replaceChildren(...items.map((it, i) => el('tr', { className: it === cur ? 'now' : it.end <= t ? 'past' : '' },
+    const top = Math.max(0, Math.min(actsTop ?? autoTop(), items.length - ACT_ROWS));
+    $('acts').replaceChildren(...items.map((it, i) => [it, i]).slice(top, top + ACT_ROWS).map(([it, i]) => el('tr', { className: it.at === cur?.at ? 'now' : it.end <= t ? 'past' : '' },
       el('td', { className: 'time' }, `予定 ${plan[i].at}`),
       el('td', { className: 'time' }, plan[i].start.getTime() === it.start.getTime() ? '' : `→ ${hhmm(it.start)}`),
       el('td', {}, it.kind === 'break' ? '休憩' : it.title, it.kind === 'ng' ? '(配信休止)' : ''),
@@ -130,7 +186,8 @@
     )));
 
     const list = Overlay.notices(s);
-    $('notices').replaceChildren(...list.map((n, i) => el('tr', {},
+    noticesTop = Math.max(0, Math.min(noticesTop, list.length - NOTICE_ROWS));
+    $('notices').replaceChildren(...list.map((n, i) => [n, i]).slice(noticesTop, noticesTop + NOTICE_ROWS).map(([n, i]) => el('tr', {},
       el('td', {}, el('label', {}, el('input', { type: 'checkbox', checked: n.loop, onchange: (e) => setNotices(list.map((m, j) => (j === i ? { ...m, loop: e.target.checked } : m))) }), ' ループ')),
       el('td', {}, n.text),
       el('td', { className: 'row' },
