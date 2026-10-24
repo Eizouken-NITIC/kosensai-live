@@ -29,6 +29,7 @@ WEBSOCKET_HOST, WEBSOCKET_PORT = "127.0.0.1", 4455
 HOST_DIR = config.REPO / "hosts/obs"
 OVERLAYS = HOST_DIR / "overlays"
 SCENES_JSON = HOST_DIR / "scenes.json"
+SCRIPT = HOST_DIR / "channels.lua"
 # スライドショーに使う画像の拡張子
 SLIDE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 # obs-websocket の要求の結果のコード OutputRunning
@@ -238,6 +239,9 @@ def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, f
     録画のフィルターの設定を変えた場合も、起動中に録画を始めると OBS が落ちたため、起動し直す。
     グローバル音声デバイス(設定 → 音声)は、全トラックに入り、同期オフセットも scenes.json の入力と別になる。
     OBS は出力のチャンネルからシーンコレクションに保存し直すため、終了後にファイルから削除する。
+    channels.lua(「ツール → スクリプト」)は、シーンコレクションのスクリプトの一覧に無ければ、終了後に追加する。
+    obs-websocket にスクリプトを読み込む要求が無いため。読み込み済みの channels.lua の変更は、
+    「ツール → スクリプト」の「再読み込み」で反映する。
     """
     profile = profile_dir(scenes["profile"])
     rtmp_path = profile / "obs-multi-rtmp.json"
@@ -247,9 +251,14 @@ def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, f
     special = cl.get_special_inputs()
     global_audio = [n for n in (special.desktop1, special.desktop2, special.mic1, special.mic2,
                                 special.mic3, special.mic4) if n is not None]
+    collection = collection_file(scenes["collection"])
+    script = SCRIPT.resolve().as_posix()
+    scripts = json.loads(collection.read_text(encoding="utf-8-sig")).get("modules", {}).get("scripts-tool", [])
+    add_script = not any(Path(x.get("path", "")).resolve() == SCRIPT.resolve() for x in scripts)
     reasons = (["obs-multi-rtmp の出力"] if rtmp_changed else []) + (["Ch3 の録画の設定"] if params else []) \
         + (["Ch1・Ch2 の録画のフィルター"] if filters_changed else []) \
-        + ([f"グローバル音声デバイス({'・'.join(global_audio)})の削除"] if global_audio else [])
+        + ([f"グローバル音声デバイス({'・'.join(global_audio)})の削除"] if global_audio else []) \
+        + (["channels.lua の追加"] if add_script else [])
     if not reasons:
         print("OBS の再起動: 不要")
         return
@@ -267,12 +276,13 @@ def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, f
         rtmp_path.write_text(rtmp, encoding="utf-8")
     if params:
         set_ini(profile / "basic.ini", params)
-    if global_audio:
-        path = collection_file(scenes["collection"])
-        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    if global_audio or add_script:
+        data = json.loads(collection.read_text(encoding="utf-8-sig"))
         for key in GLOBAL_AUDIO_KEYS:
             data.pop(key, None)
-        path.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding="utf-8")
+        if add_script:
+            data.setdefault("modules", {}).setdefault("scripts-tool", []).append({"path": script, "settings": {}})
+        collection.write_text(json.dumps(data, ensure_ascii=False, indent=4), encoding="utf-8")
     print("書き込みました。OBS を起動してください")
 
 
