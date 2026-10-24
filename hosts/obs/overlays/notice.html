@@ -6,18 +6,23 @@
 <link rel="stylesheet" href="overlay.css">
 <style>
   /* お知らせを下端に表示する。表示するお知らせと時間は Overlay.noticeText で決定する(固定・即時・ループ)。
-     赤い線は 1 つの画面に 1 本にするため、帯ではなく同時に出るテロップの板に付ける。 */
+     赤い線は 1 つの画面に 1 本にするため、帯ではなく同時に出るテロップの板に付ける。
+     ?beside=ch1 では、第一体育館のテロップの「つぎ」が出ている間、その右に並べる。 */
   #wrap:not(.in) { visibility: hidden; }
   #wrap.out { visibility: visible; }
   .band {
     position: absolute;
     left: var(--safe);
     right: var(--safe);
-    bottom: 40px;
-    padding: 18px 32px 22px;
+    bottom: var(--row-bottom);
+    height: var(--row-h);
+    box-sizing: border-box;
+    padding: 0 32px;
     gap: 28px;
     font-size: var(--fs-m);
   }
+  .band.beside { left: calc(var(--safe) + var(--next-w) + 16px); }
+  #text { overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body>
@@ -32,7 +37,9 @@
   let s = Overlay.state();
   let shown = null;
   Overlay.onState((next) => { s = next; });
+  const beside = Overlay.params.get('beside') === 'ch1';
   Overlay.every(250, () => {
+    document.querySelector('.band').classList.toggle('beside', beside && Overlay.nextShown() != null);
     const text = Overlay.noticeText(s);
     if (text === shown) return;
     shown = text;

@@ -66,6 +66,13 @@
   const next = (ch, d = now(), s = state()) =>
     schedule(ch, d, s).find((it) => it.start > d && it.kind !== 'break' && it.kind !== 'ng') ?? null;
 
+  // 第一体育館のテロップ(lower-third.html)が「つぎ」に出す項目。演目の板を出している間だけ返す。
+  // お知らせ(notice.html?beside=ch1)は、これがある間は「つぎ」の右に並べる。
+  function nextShown(d = now(), s = state()) {
+    const cur = current('ch1', d, s);
+    return cur && cur.kind !== 'ng' ? next('ch1', d, s) : null;
+  }
+
   // 項目の経過の割合(0〜1)。
   const progress = (it, d = now()) => Math.min(1, Math.max(0, (d - it.start) / (it.end - it.start)));
 
@@ -258,7 +265,7 @@
   }
 
   window.Overlay = {
-    params, now, hhmm, date, dayKey, schedule, current, next, progress, events, nextShow,
+    params, now, hhmm, date, dayKey, schedule, current, next, nextShown, progress, events, nextShow,
     state, setState, onState, ch2Now, notices, noticeText, every, el, alignInk, gauge, clockFace, replay,
   };
 })();

@@ -19,6 +19,7 @@
     "テロップ 遊撃": {"type": "page", "page": "lower-third.html", "query": "ch=ch2"},
     "時計": {"type": "page", "page": "clock.html"},
     "お知らせ": {"type": "page", "page": "notice.html"},
+    "お知らせ 第一体育館": {"type": "page", "page": "notice.html", "query": "beside=ch1"},
     "ウォーターマーク": {"type": "page", "page": "watermark.html"},
     "操作パネル": {"type": "page", "page": "control.html", "width": 1280, "height": 1000},
     "受信の確認": {"type": "page", "page": "monitor.html"},
@@ -49,7 +50,7 @@
     "[出力] Ch1 第一体育館": [
       {"source": "Ch1 ATEM", "place": "full"},
       {"source": "テロップ 第一体育館", "place": "full"},
-      {"source": "お知らせ", "place": "full"},
+      {"source": "お知らせ 第一体育館", "place": "full"},
       {"source": "ウォーターマーク", "place": "full"},
       {"source": "配信休止", "place": "full", "hidden": true}
     ],
@@ -75,7 +76,7 @@
       {"source": "Ch1 ATEM", "place": "full"},
       {"source": "テロップ 第一体育館", "place": "full"},
       {"source": "時計", "place": "full"},
-      {"source": "お知らせ", "place": "full"},
+      {"source": "お知らせ 第一体育館", "place": "full"},
       {"source": "ウォーターマーク", "place": "full"},
       {"source": "配信休止", "place": "full", "hidden": true}
     ],

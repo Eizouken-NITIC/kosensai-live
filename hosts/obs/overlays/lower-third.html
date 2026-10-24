@@ -5,18 +5,19 @@
 <title>lower-third</title>
 <link rel="stylesheet" href="overlay.css">
 <style>
+  /* 下端の段に「つぎ」を置き、その上に演目の板を置く。お知らせ(notice.html?beside=ch1)は「つぎ」の
+     右に並ぶ。「つぎ」が無い時(遊撃、最後の演目)にお知らせが出たら、帯の高さの分だけ上げる。 */
   .lt {
     position: absolute;
     left: var(--safe);
-    bottom: var(--safe);
+    bottom: var(--row-bottom);
     transition: bottom 0.4s var(--ease);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 14px;
+    gap: 16px;
   }
-  /* お知らせ(notice.html)が出ている間は帯の高さの分だけ上げる。 */
-  .lt.lifted { bottom: calc(var(--safe) + 72px); }
+  .lt.lifted { bottom: calc(var(--row-bottom) + var(--row-h) + 16px); }
   .lt:not(.in) { visibility: hidden; }
   .lt.out { visibility: visible; }
   .main { min-width: 640px; padding: 24px 32px 27px; gap: 18px; align-items: stretch; }
@@ -24,13 +25,19 @@
   .main .caption .span { margin-left: auto; padding-left: 2em; }
   .name { font-size: var(--fs-xl); font-weight: 700; }
   .seg { width: 100%; }
-  .next { padding: 14px 32px 16px; gap: 0.8em; font-size: var(--fs-s); }
+  /* 演目が変わった時と、その後 BIG_EVERY_MS ごとに、BIG_MS の間だけ大きく出し、それ以外は 1 行にする。 */
+  .main.compact { min-width: 0; flex-direction: row; align-items: center; gap: 0.9em; padding: 0 32px; height: var(--row-h); box-sizing: border-box; }
+  .main.compact .name { order: -1; font-size: var(--fs-m); }
+  .main.compact .caption .span { margin-left: 0.8em; padding-left: 0; }
+  .main.compact .seg { display: none; }
+  .next { width: var(--next-w); height: var(--row-h); box-sizing: border-box; padding: 0 32px; gap: 0.8em; font-size: var(--fs-s); }
   .next .k { color: var(--lit-2); }
+  #nextTitle { overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body>
 <div class="lt" id="lt">
-  <div class="tile glow main" data-a="rise">
+  <div class="tile glow main" data-a="rise" id="main">
     <div class="caption">
       <span class="accent ink" id="venue"></span><span class="sep" id="sep"></span><span class="ink" id="kind"></span>
       <span class="span time ink" id="span"></span>
@@ -48,6 +55,10 @@
   // 項目が変わるたびに入れ替え、項目の無い時間と配信しない時間は隠す。
   const ch = Overlay.params.get('ch') ?? 'ch1';
   const SEGMENTS = 12;
+  const BIG_MS = 20000;
+  const BIG_EVERY_MS = 3 * 60000;
+  let shownAt = 0;
+  let bigKey = null;
   const $ = (id) => document.getElementById(id);
   const lt = $('lt');
   $('seg').replaceChildren(...Array.from({ length: SEGMENTS }, () => document.createElement('i')));
@@ -60,8 +71,14 @@
 
   Overlay.every(250, () => {
     const t = Overlay.now();
-    lt.classList.toggle('lifted', Overlay.noticeText(s, t) != null);
     const cur = ch === 'ch1' ? Overlay.current('ch1', t) : Overlay.ch2Now(s, t);
+    const nextShown = ch === 'ch1' ? Overlay.nextShown(t, s) : null;
+    lt.classList.toggle('lifted', Overlay.noticeText(s, t) != null && nextShown == null);
+    const compact = (Date.now() - shownAt) % BIG_EVERY_MS >= BIG_MS;
+    if ($('main').classList.contains('compact') !== compact) {
+      $('main').classList.toggle('compact', compact);
+      Overlay.alignInk(...lt.querySelectorAll('.ink'));
+    }
     const visible = cur && cur.kind !== 'ng';
     // 経過の区切りは演目の経過の割合の分だけ明るくする。遊撃の現在地には時刻が無いため出さない。
     const timed = visible && cur.start != null;
@@ -73,6 +90,12 @@
     const key = visible ? `${cur.title} ${cur.label} ${cur.start}` : null;
     if (key === shown) return;
     shown = key;
+    // 操作パネルの状態が変わった時(shown が null に戻る)は、演目が同じなら小さいままにする。
+    if (key !== bigKey) {
+      bigKey = key;
+      shownAt = Date.now();
+      $('main').classList.remove('compact');
+    }
     if (!visible) {
       lt.classList.replace('in', 'out');
       return;
@@ -83,7 +106,7 @@
     $('kind').hidden = $('sep').hidden = rest || !cur.label;
     $('name').textContent = rest ? '休憩中' : cur.title;
     if (timed) $('span').textContent = `${Overlay.hhmm(cur.start)} – ${Overlay.hhmm(cur.end)}`;
-    const nxt = ch === 'ch1' ? Overlay.next('ch1', t) : null;
+    const nxt = nextShown;
     $('next').hidden = !nxt;
     if (nxt) {
       $('nextTime').textContent = Overlay.hhmm(nxt.start);
