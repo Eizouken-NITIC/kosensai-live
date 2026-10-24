@@ -1,8 +1,8 @@
 """SRT の URL と視聴の URL を表示する。
 
 Ch の定義は config.json から、パスフレーズと IP は .env（既定: hosts/server/.env）から読み込む。
-OBS の SRT Listener と obs-multi-rtmp の出力は obs build が同じ関数で設定するため、
-ここでの表示は確認用である。スマートフォン（Moblin）には 1. の URL を入力する。
+本部 PC の中継（relay）の SRT Listener、OBS の入力、obs-multi-rtmp の出力は relay と obs build が
+同じ関数で設定するため、ここでの表示は確認用である。スマートフォン（Moblin）には 1. の URL を入力する。
 
   uv run kosensai-live urls
   uv run kosensai-live urls --env path/to/.env
@@ -17,10 +17,15 @@ OUT_LATENCY_US = 120000
 
 
 def listen_url(conf, env, cid):
-    """OBS のメディアソース（SRT Listener）の URL。OBS（FFmpeg の SRT）の latency はマイクロ秒。"""
+    """本部 PC の中継（relay の ffmpeg）の SRT Listener の URL。FFmpeg の SRT の latency はマイクロ秒。"""
     c = config.channel(conf, cid)
     passphrase = config.require(env, config.listen_var(cid))
     return f"srt://0.0.0.0:{c['obsListenPort']}?mode=listener&passphrase={passphrase}&latency={c['srtLatencyUs']}"
+
+
+def relay_url(conf, cid):
+    """中継（relay）から OBS のメディアソースへ渡す UDP の URL。"""
+    return f"udp://127.0.0.1:{config.channel(conf, cid)['relayPort']}"
 
 
 def caller_url(conf, env, cid):
@@ -42,7 +47,7 @@ def main(env_path):
     domain = conf["site"]["domain"]
 
     print("=" * 72)
-    print(" 1. ATEM・スマートフォン → 本部 OBS（SRT Listener）")
+    print(" 1. ATEM・スマートフォン → 本部 PC の中継（SRT Listener）→ 本部 OBS（UDP）")
     print("=" * 72)
     for c in conf["channels"]:
         if not c.get("obsListenPort"):
@@ -50,7 +55,8 @@ def main(env_path):
             continue
         passphrase = config.require(env, config.listen_var(c["id"]))
         print(f"\n[{c['label']}]")
-        print(f"  OBS          {listen_url(conf, env, c['id'])}")
+        print(f"  中継         {listen_url(conf, env, c['id'])}")
+        print(f"  OBS          {relay_url(conf, c['id'])}")
         print(f"  送信先       {caller_url(conf, env, c['id'])}")
         print(f"  パスフレーズ {passphrase}")
         # Moblin（libsrt の URL）の latency はミリ秒

@@ -144,8 +144,8 @@
     ]
   },
   "restart": [
-    {"id": "ch1", "name": "第一体育館", "source": "Ch1 ATEM"},
-    {"id": "ch2", "name": "遊撃", "source": "Ch2 iPhone"}
+    {"id": "ch1", "name": "第一体育館"},
+    {"id": "ch2", "name": "遊撃"}
   ],
   "hotkeys": {
     "restart.ch1": "F5",

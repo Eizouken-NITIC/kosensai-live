@@ -55,6 +55,7 @@
       "id": "ch1",
       "label": "第一体育館",
       "obsListenPort": 9001,
+      "relayPort": 19001,
       "srtLatencyUs": 200000,
       "bitrateKbps": 4500
     },
@@ -62,6 +63,7 @@
       "id": "ch2",
       "label": "遊撃",
       "obsListenPort": 9002,
+      "relayPort": 19002,
       "srtLatencyUs": 2000000,
       "bitrateKbps": 4500
     },
@@ -69,6 +71,7 @@
       "id": "ch3",
       "label": "総合",
       "obsListenPort": null,
+      "relayPort": null,
       "srtLatencyUs": null,
       "bitrateKbps": 5000
     }

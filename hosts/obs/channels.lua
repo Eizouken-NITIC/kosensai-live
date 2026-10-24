@@ -22,8 +22,9 @@
 --    全画面(full_source)を出す。lost_video を休止で隠している間も全画面にする。
 --    スライドショーは隠すと止まり、次に表示すると続きのスライドから進む。ホットキーの
 --    「CM 小窓: 自動で出す」「CM 小窓: 出さない」で切り替え、状態はスクリプトの設定に保存する。
--- 6. restart のソース(SRT の受信)を、ホットキーの「<会場> SRT を受け直す」で再起動する。送信元が途中で
---    消えた後、OBS が前の接続を保ったまま新しい接続を受け付けなくなった時に使う。Ch3 のシーンは変えない。
+-- 6. ホットキーの「<会場> SRT を受け直す」で、restart の Ch の中継(kosensai-live relay)の ffmpeg を
+--    起動し直す。.relay/restart-<Ch> のファイルを作ると、relay がその Ch の ffmpeg を終了させて起動し直す。
+--    送信元との接続が残ったまま映像が届かない時に使う。Ch3 のシーンは変えない。
 --
 -- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
 
@@ -39,7 +40,7 @@ local always_scene = nil
 local ch3 = {} -- { { video = ..., audio = ... }, ... }
 local pauses = {} -- { { id = ..., name = ..., show = { ... }, hide = { ... }, audio = ..., on = false }, ... }
 local signal_lost = {} -- { { video = ..., hide = { ... }, lost = nil }, ... }
-local restarts = {} -- { { id = ..., name = ..., source = ... }, ... }
+local restarts = {} -- { { id = ..., name = ... }, ... }
 local cm_corner = nil -- { scene = ..., source = ..., full_source = ..., lost_video = ..., every_min = ..., show_sec = ... }
 -- scenes.json の hotkeys。ホットキーの ID → キー(OBS_KEY_ を除いた名前)。
 local hotkey_keys = {}
@@ -116,7 +117,6 @@ local function load_config()
     table.insert(restarts, {
       id = obslua.obs_data_get_string(item, "id"),
       name = obslua.obs_data_get_string(item, "name"),
-      source = obslua.obs_data_get_string(item, "source"),
     })
   end)
   hotkey_keys = {}
@@ -413,17 +413,19 @@ local function set_paused(id, on)
   end
 end
 
-local function restart_source(name)
+local function restart_relay(r)
   return function(pressed)
     if not pressed then
       return
     end
-    local source = obslua.obs_get_source_by_name(name)
-    if source ~= nil then
-      obslua.obs_source_media_restart(source)
-      obslua.obs_source_release(source)
-      obslua.script_log(obslua.LOG_INFO, name .. " を再起動した")
+    local path = script_dir() .. "/.relay/restart-" .. r.id
+    local f, err = io.open(path, "w")
+    if f == nil then
+      obslua.script_log(obslua.LOG_WARNING, path .. " を作成できない(kosensai-live relay が動いていない?): " .. err)
+      return
     end
+    f:close()
+    obslua.script_log(obslua.LOG_INFO, r.name .. " の SRT の受け直しを要求した")
   end
 end
 
@@ -490,7 +492,7 @@ function script_load(settings)
     register_hotkey("pause." .. p.id .. ".off", p.name .. " 休止: 消す", set_paused(p.id, false))
   end
   for _, r in ipairs(restarts) do
-    register_hotkey("restart." .. r.id, r.name .. " SRT を受け直す", restart_source(r.source))
+    register_hotkey("restart." .. r.id, r.name .. " SRT を受け直す", restart_relay(r))
   end
   register_hotkey("cm.on", "CM 小窓: 自動で出す", set_cm_auto(true))
   register_hotkey("cm.off", "CM 小窓: 出さない", set_cm_auto(false))

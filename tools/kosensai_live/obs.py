@@ -7,7 +7,7 @@ obs-websocket で設定する。
 
 起動中の OBS に接続する。scenes.json のシーンは項目(ソース)の有無・並び・配置を scenes.json に合わせる。
 項目の表示・非表示は channels.lua が切り替えるため、新しく作る項目にだけ設定する。
-scenes.json に無いシーンには手を加えない。ソースの設定(SRT の URL とパスフレーズ、ページのファイルの場所、音声のデバイス)、音声のトラック、
+scenes.json に無いシーンには手を加えない。ソースの設定(中継の UDP の URL、ページのファイルの場所、音声のデバイス)、音声のトラック、
 映像の形式、obs-multi-rtmp の出力は毎回上書きする。
 obs-websocket のパスワードは同じ PC の OBS の設定ファイルから読む。
 """
@@ -36,6 +36,8 @@ OBS_OUTPUT_RUNNING = 500
 SOURCE_RECORD_URL = "https://github.com/exeldro/obs-source-record/releases/tag/0.4.8"
 # Source Record の record_mode の「録画」(OBS の録画の開始・停止に合わせる)
 SOURCE_RECORD_MODE_RECORDING = 3
+# 中継(relay)の UDP が届かなくなってから、映像が消えたと判定するまでのマイクロ秒(仕様補完)
+RELAY_TIMEOUT_US = 3_000_000
 # 作成したプロファイルの basic.ini が書き出されるまで待つ秒数
 PROFILE_WAIT_SEC = 5
 # シーンコレクションのファイルの、グローバル音声デバイス(設定 → 音声)のキー
@@ -351,9 +353,11 @@ def build(env_path, assets: Path) -> None:
     def source(spec: dict) -> tuple[str, dict]:
         match spec["type"]:
             case "srt":
+                # SRT は中継(relay)が受け、UDP で渡す。timeout が過ぎると読み込みが失敗し、映像が消える
+                # (幅が 0 になり、channels.lua が休止の画面を出す)。
                 return "ffmpeg_source", {
                     "is_local_file": False,
-                    "input": urls.listen_url(conf, env, spec["channel"]),
+                    "input": f"{urls.relay_url(conf, spec['channel'])}?timeout={RELAY_TIMEOUT_US}&overrun_nonfatal=1",
                     "input_format": "mpegts",
                     "hw_decode": True,
                     "restart_on_activate": False,

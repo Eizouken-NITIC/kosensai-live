@@ -7,8 +7,10 @@ export type Channel = {
   label: string;
   /** false にすると視聴ページのタブから外す。省略時は表示する。配信中に書き換えてよい。 */
   visible?: boolean;
-  /** OBS が Listener として待つポートである。Ch4 は OBS 内で合成するため null になる。 */
+  /** 本部 PC の中継（kosensai-live relay）が SRT Listener として待つポートである。Ch3 は OBS 内で合成するため null になる。 */
   obsListenPort: number | null;
+  /** 中継が OBS へ UDP で渡すポートである。Ch3 は null になる。 */
+  relayPort: number | null;
   srtLatencyUs: number | null;
   bitrateKbps: number;
 };

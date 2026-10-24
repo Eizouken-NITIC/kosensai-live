@@ -5,13 +5,14 @@
   uv run kosensai-live obs devices         音声入力のデバイスの名前を表示する
   uv run kosensai-live atem apply|check|get|start|stop|watch
                                            ATEM の映像の形式と配信を設定・確認する
+  uv run kosensai-live relay [--ffmpeg]    ATEM・スマートフォンの SRT を受け、OBS へ UDP で渡す(本部 PC で常駐させる)
   uv run kosensai-live urls                SRT の URL と視聴の URL を表示する
   uv run kosensai-live qr                  視聴ページの QR コードを生成する
   uv run kosensai-live render gauge|clock  計器と時計の画像を Blender で描画する
   uv run kosensai-live rehearsal reload|load-test
                                            ローカル検証環境を操作する
 
-.env は既定で hosts/server/.env を読む。check・obs・atem・urls の後に --env で別のファイルを指定できる。
+.env は既定で hosts/server/.env を読む。check・obs・atem・relay・urls の後に --env で別のファイルを指定できる。
 obs build は、その年の中身(kosensai-live-assets)を既定で同じ階層の kosensai-live-assets から読む。
 obs build --assets か環境変数 KOSENSAI_LIVE_ASSETS で別の場所を指定できる。
 """
@@ -45,6 +46,8 @@ def main():
     p.add_argument("action", choices=["apply", "check", "get", "start", "stop", "watch"])
     p.add_argument("arg", nargs="?", help="apply・check は Ch の id(既定: ch1)、watch は秒数(既定: 10)")
 
+    p = sub.add_parser("relay", parents=[env], help="ATEM・スマートフォンの SRT を受け、OBS へ UDP で渡す")
+    p.add_argument("--ffmpeg", help="ffmpeg の場所(既定: PATH の ffmpeg)")
     sub.add_parser("urls", parents=[env], help="SRT の URL と視聴の URL を表示する")
     sub.add_parser("qr", help="視聴ページの QR コードを生成する")
 
@@ -73,6 +76,9 @@ def main():
         ch = args.arg if args.action in ("apply", "check") and args.arg else "ch1"
         seconds = int(args.arg) if args.action == "watch" and args.arg else 10
         atem.main(args.env, args.action, ch, seconds)
+    elif args.cmd == "relay":
+        from . import relay
+        relay.main(args.env, args.ffmpeg)
     elif args.cmd == "urls":
         from . import urls
         urls.main(args.env)
