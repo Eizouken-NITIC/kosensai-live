@@ -166,8 +166,11 @@ def apply_profile(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict) -> Non
     # 出力中は obs-websocket が映像の設定の変更を拒否する(OutputRunning)。出力中かどうかを GetOutputList で
     # 調べないのは Source Record を入れた OBS 32.1.2 で GetOutputList の出力の列挙の中で OBS が落ちたため。
     w, h, num, den, _ = config.video_mode(conf)
+    v = cl.get_video_settings()
     try:
-        cl.set_video_settings(num, den, w, h, w, h)
+        # 同じ値でも出力中は拒否されるため、変わる時だけ設定する。
+        if (v.fps_numerator, v.fps_denominator, v.base_width, v.base_height, v.output_width, v.output_height) != (num, den, w, h, w, h):
+            cl.set_video_settings(num, den, w, h, w, h)
     except OBSSDKRequestError as e:
         if e.code != OBS_OUTPUT_RUNNING:
             raise
@@ -182,14 +185,19 @@ def profile_parameters(scenes: dict) -> list[tuple[str, str, str]]:
     (録画の品質「配信と同じ」)。配信は obs-multi-rtmp が行うため、この設定は録画だけに使われる。
     """
     rec = scenes["recordings"]
-    return [
+    encoder = platform_value(rec["program_encoder"], "recordings.program_encoder")
+    params = [
         ("Output", "Mode", "Simple"),
-        ("SimpleOutput", "StreamEncoder", platform_value(rec["program_encoder"], "recordings.program_encoder")),
+        ("SimpleOutput", "StreamEncoder", encoder),
         ("SimpleOutput", "VBitrate", str(rec["video_param"]["bitrate"])),
         ("SimpleOutput", "ABitrate", str(rec["audio_bitrate"])),
         ("SimpleOutput", "RecQuality", "Stream"),
         ("SimpleOutput", "RecFormat2", rec["format"]),
     ]
+    if encoder == "nvenc":
+        # NVENC は配信 3 本も同じ 1 基で行うため、既定の p5 より軽いプリセットにする。
+        params.append(("SimpleOutput", "NVENCPreset2", rec["program_nvenc_preset"]))
+    return params
 
 
 def set_ini(path: Path, values: list[tuple[str, str, str]]) -> None:

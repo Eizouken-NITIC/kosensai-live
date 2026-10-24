@@ -107,7 +107,7 @@
     "linux": "obs_x264"
   },
   "outputs": {
-    "video_param": {"rate_control": "CBR", "keyint_sec": 2},
+    "video_param": {"rate_control": "CBR", "keyint_sec": 2, "preset2": "p2", "multipass": "disabled"},
     "audio_bitrate": 160,
     "channels": [
       {"channel": "ch1", "scene": "[出力] Ch1 第一体育館", "track": 2},
@@ -121,6 +121,7 @@
     "audio_bitrate": 320,
     "format": "mkv",
     "program_encoder": {"win32": "nvenc", "darwin": "x264", "linux": "x264"},
+    "program_nvenc_preset": "p2",
     "scenes": [
       {"scene": "[録画] Ch1 第一体育館", "track": 2, "name": "Ch1"},
       {"scene": "[録画] Ch2 遊撃", "track": 3, "name": "Ch2"}
