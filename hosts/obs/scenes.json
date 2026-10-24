@@ -136,6 +136,17 @@
       {"video": "Ch1 ATEM", "audio": "Ch1 音声 (USB)"},
       {"video": "Ch2 iPhone", "audio": "Ch2 iPhone"}
     ],
-    "pause": {"source": "配信休止", "audio": "Ch1 音声 (USB)"}
+    "pause": [
+      {"id": "ch1", "name": "第一体育館", "show": [{"source": "配信休止"}], "hide": [], "audio": "Ch1 音声 (USB)"},
+      {"id": "ch2", "name": "遊撃", "show": [], "hide": [{"source": "Ch2 iPhone"}, {"source": "テロップ 遊撃"}], "audio": "Ch2 iPhone"}
+    ]
+  },
+  "hotkeys": {
+    "pause.ch2.on": "F7",
+    "pause.ch2.off": "F8",
+    "pause.ch1.on": "F9",
+    "pause.ch1.off": "F10",
+    "cm.on": "F11",
+    "cm.off": "F12"
   }
 }

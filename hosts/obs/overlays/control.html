@@ -119,7 +119,7 @@
     if (ng) {
       const on = ng.start <= t;
       $('ng').replaceChildren(el('h2', {}, on ? `配信休止の時間: ${ng.title}` : `次の配信休止: ${ng.title}`),
-        el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。開始時にホットキー「配信休止: 出す」、終了時に「配信休止: 消す」を押す。`));
+        el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。開始時にホットキー「第一体育館 休止: 出す」(F9)、終了時に「第一体育館 休止: 消す」(F10)を押す。`));
     }
 
     $('acts').replaceChildren(...items.map((it, i) => el('tr', { className: it === cur ? 'now' : it.end <= t ? 'past' : '' },

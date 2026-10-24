@@ -1,5 +1,5 @@
--- 本部 OBS の音声の振り分けと、第一体育館の配信休止。OBS の「ツール → スクリプト」でこのファイルを追加する。
--- ソースとシーンの名前は scenes.json(このファイルと同じフォルダ)の audio・signal_lost・cm_corner から読む。
+-- 本部 OBS の音声の振り分けと、会場ごとの配信休止。OBS の「ツール → スクリプト」でこのファイルを追加する。
+-- ソースとシーンの名前は scenes.json(このファイルと同じフォルダ)の audio・signal_lost・cm_corner・hotkeys から読む。
 --
 -- 1. audio.always のシーンを出力チャンネルに接続し、どのシーンをプログラムに出していても
 --    Ch1・Ch2 の音声がミキサーに入るようにする。obs-multi-rtmp がプログラム以外のシーンを
@@ -8,17 +8,19 @@
 -- 2. Ch3(トラック 1)には、プログラムのシーン(入れ子を含む)に表示されている映像のうち、
 --    audio.ch3 の順で最初に見つかった会場の音声だけを入れる。本部のモニターにも同じ音声を出し、
 --    本部では Ch3 の視聴者と同じ音を聞く。
--- 3. ホットキーの「配信休止: 出す」で、audio.pause.source を全シーンで表示し、audio.pause.audio を
---    ミュートする。「配信休止: 消す」で戻す。配信しない演目は時刻が押しや巻きでずれるため、
---    時刻では切り替えず、本部が演目の始まりと終わりを見て切り替える。
+-- 3. audio.pause の会場ごとに、ホットキーの「<会場> 休止: 出す」で、show のソースを全シーンで表示し、
+--    hide のソースを全シーンで隠し、audio をミュートする。「<会場> 休止: 消す」で戻す。配信しない演目は
+--    時刻が押しや巻きでずれるため、時刻では切り替えず、本部が演目の始まりと終わりを見て切り替える。
 --    休止の状態はスクリプトの設定に保存し、OBS を再起動しても残す。
 --    ミュートは音声のトラックの割り当てを変えないので、休止中に OBS を再起動しても割り当ては残る。
 -- 4. signal_lost の映像(遊撃のスマートフォン)の SRT が切れて映像が消えている間は、hide のソース
 --    (遊撃のテロップ)を全シーンで隠す。映像の下に配置した休止の画面が表示されるため、その上に演目を出さない。
+--    休止と signal_lost の両方が隠すソースは、どちらか一方でも隠す理由があれば隠す。
 --    SRT は数秒の途切れでは切断と判断しないため、短い途切れでは切り替わらない。
 -- 5. cm_corner の scene に、毎時 every_min 分ごとに CM のスライドショーを show_sec 秒だけ表示する。
 --    普段は右下の小窓(source)を出し、lost_video(遊撃)の映像が消えて休止の画面が出ている間は、
---    全画面(full_source)を出す。スライドショーは隠すと止まり、次に表示すると続きのスライドから進む。ホットキーの
+--    全画面(full_source)を出す。lost_video を休止で隠している間も全画面にする。
+--    スライドショーは隠すと止まり、次に表示すると続きのスライドから進む。ホットキーの
 --    「CM 小窓: 自動で出す」「CM 小窓: 出さない」で切り替え、状態はスクリプトの設定に保存する。
 --
 -- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
@@ -33,17 +35,19 @@ local TRACK1 = 1
 -- scenes.json の audio。
 local always_scene = nil
 local ch3 = {} -- { { video = ..., audio = ... }, ... }
-local pause = {} -- { source = ..., audio = ... }
+local pauses = {} -- { { id = ..., name = ..., show = { ... }, hide = { ... }, audio = ..., on = false }, ... }
 local signal_lost = {} -- { { video = ..., hide = { ... }, lost = nil }, ... }
 local cm_corner = nil -- { scene = ..., source = ..., full_source = ..., lost_video = ..., every_min = ..., show_sec = ... }
-local paused = false
+-- scenes.json の hotkeys。ホットキーの ID → キー(OBS_KEY_ を除いた名前)。
+local hotkey_keys = {}
+-- 最後に設定した各ソースの表示。変わった時だけ全シーンに反映する。
+local applied_visible = {}
 -- 右下の CM。cm_auto は自動で出すかどうか、cm_shown_at は表示を始めた時刻(表示していなければ nil)、
 -- cm_slot は最後に表示した回(毎時 every_min 分ごとの区切りの番号)。
 local cm_auto = true
 local cm_shown_at = nil
 local cm_shown_source = nil
 local cm_slot = nil
-local hotkeys = {}
 
 local function script_dir()
   return script_path():gsub("[/\\]$", "")
@@ -80,13 +84,43 @@ local function load_config()
   each(audio, "ch3", function(item)
     table.insert(ch3, { video = obslua.obs_data_get_string(item, "video"), audio = obslua.obs_data_get_string(item, "audio") })
   end)
-  local p = obslua.obs_data_get_obj(audio, "pause")
-  pause = {
-    source = obslua.obs_data_get_string(p, "source"),
-    audio = obslua.obs_data_get_string(p, "audio"),
-  }
-  obslua.obs_data_release(p)
+  -- 読み直しても休止の状態は残す。
+  local was = {}
+  for _, p in ipairs(pauses) do
+    was[p.id] = p.on
+  end
+  pauses = {}
+  each(audio, "pause", function(item)
+    local p = {
+      id = obslua.obs_data_get_string(item, "id"),
+      name = obslua.obs_data_get_string(item, "name"),
+      show = {},
+      hide = {},
+      audio = obslua.obs_data_get_string(item, "audio"),
+    }
+    p.on = was[p.id] or false
+    each(item, "show", function(x)
+      table.insert(p.show, obslua.obs_data_get_string(x, "source"))
+    end)
+    each(item, "hide", function(x)
+      table.insert(p.hide, obslua.obs_data_get_string(x, "source"))
+    end)
+    table.insert(pauses, p)
+  end)
   obslua.obs_data_release(audio)
+  hotkey_keys = {}
+  local keys = obslua.obs_data_get_obj(scenes, "hotkeys")
+  if keys ~= nil then
+    local ids = { "cm.on", "cm.off" }
+    for _, p in ipairs(pauses) do
+      table.insert(ids, "pause." .. p.id .. ".on")
+      table.insert(ids, "pause." .. p.id .. ".off")
+    end
+    for _, id in ipairs(ids) do
+      hotkey_keys[id] = obslua.obs_data_get_string(keys, id)
+    end
+    obslua.obs_data_release(keys)
+  end
   signal_lost = {}
   each(scenes, "signal_lost", function(item)
     local entry = { video = obslua.obs_data_get_string(item, "video"), hide = {}, lost = nil }
@@ -159,6 +193,15 @@ local function set_track1(name, on)
   obslua.obs_source_release(source)
 end
 
+local function paused_audio(name)
+  for _, p in ipairs(pauses) do
+    if p.on and p.audio == name then
+      return true
+    end
+  end
+  return false
+end
+
 -- Ch3(トラック 1)の音声と本部のモニター。休止中は休止する会場の音声を候補から外し、2 画面ではもう一方の会場の音声にする。
 local function update_track1()
   local scene = obslua.obs_frontend_get_current_scene()
@@ -171,7 +214,7 @@ local function update_track1()
 
   local chosen = nil
   for _, pair in ipairs(ch3) do
-    if chosen == nil and found[pair.video] and not (paused and pair.audio == pause.audio) then
+    if chosen == nil and found[pair.video] and not paused_audio(pair.audio) then
       chosen = pair.audio
     end
   end
@@ -207,28 +250,76 @@ local function video_lost(name)
   return lost
 end
 
-local function update_signal_lost()
-  for _, entry in ipairs(signal_lost) do
-    local lost = video_lost(entry.video)
-    if lost ~= entry.lost then
-      entry.lost = lost
-      for _, name in ipairs(entry.hide) do
-        set_visible_everywhere(name, not lost)
+-- 休止と signal_lost が扱うソースの表示を決め、変わったものだけ全シーンに反映する。show のソースは
+-- 休止中の会場が 1 つでもあれば表示し、hide のソースは隠す理由が 1 つでもあれば隠す。
+-- force のときは変わっていなくても反映する(シーンを作り直した後など)。
+local function apply_visibility(force)
+  local visible = {}
+  for _, p in ipairs(pauses) do
+    for _, name in ipairs(p.show) do
+      visible[name] = visible[name] or p.on
+    end
+    for _, name in ipairs(p.hide) do
+      if visible[name] == nil then
+        visible[name] = true
       end
-      obslua.script_log(obslua.LOG_INFO, entry.video .. (lost and " の映像が消えた" or " の映像が戻った"))
+      visible[name] = visible[name] and not p.on
+    end
+  end
+  for _, entry in ipairs(signal_lost) do
+    for _, name in ipairs(entry.hide) do
+      if visible[name] == nil then
+        visible[name] = true
+      end
+      visible[name] = visible[name] and not entry.lost
+    end
+  end
+  for name, v in pairs(visible) do
+    if force or applied_visible[name] ~= v then
+      applied_visible[name] = v
+      set_visible_everywhere(name, v)
     end
   end
 end
 
--- 全シーンの休止の画面の表示と、休止する会場の音声のミュートを paused に合わせる。
-local function apply_pause()
-  set_visible_everywhere(pause.source, paused)
-  local audio = pause.audio and obslua.obs_get_source_by_name(pause.audio)
-  if audio ~= nil then
-    obslua.obs_source_set_muted(audio, paused)
-    obslua.obs_source_release(audio)
+local function update_signal_lost()
+  local changed = false
+  for _, entry in ipairs(signal_lost) do
+    local lost = video_lost(entry.video)
+    if lost ~= entry.lost then
+      entry.lost = lost
+      changed = true
+      obslua.script_log(obslua.LOG_INFO, entry.video .. (lost and " の映像が消えた" or " の映像が戻った"))
+    end
+  end
+  if changed then
+    apply_visibility(false)
+  end
+end
+
+-- 全シーンの休止の画面の表示と、休止する会場の音声のミュートを、各会場の休止の状態に合わせる。
+local function apply_pause(force)
+  apply_visibility(force)
+  for _, p in ipairs(pauses) do
+    local audio = p.audio ~= "" and obslua.obs_get_source_by_name(p.audio)
+    if audio then
+      obslua.obs_source_set_muted(audio, p.on)
+      obslua.obs_source_release(audio)
+    end
   end
   update_track1()
+end
+
+-- 休止で隠している映像か。
+local function paused_video(name)
+  for _, p in ipairs(pauses) do
+    for _, h in ipairs(p.hide) do
+      if p.on and h == name then
+        return true
+      end
+    end
+  end
+  return false
 end
 
 -- scene_name のシーンの name のソースの表示を切り替える。全画面の CM は Ch3 CM のシーンにもあるため、
@@ -264,8 +355,9 @@ local function update_cm()
     local slot = math.floor(os.time() / (cm_corner.every_min * 60))
     if slot ~= cm_slot then
       cm_slot = slot
-      -- 遊撃の映像が消えて休止の画面が出ている間は、全画面で出す。
-      cm_shown_source = video_lost(cm_corner.lost_video) and cm_corner.full_source or cm_corner.source
+      -- 遊撃の映像が消えるか休止で隠れて、休止の画面が出ている間は、全画面で出す。
+      local off = video_lost(cm_corner.lost_video) or paused_video(cm_corner.lost_video)
+      cm_shown_source = off and cm_corner.full_source or cm_corner.source
       -- スライドの画像が無ければ(幅が 0)出さない。
       if not video_lost(cm_shown_source) then
         cm_shown_at = os.time()
@@ -292,12 +384,17 @@ local function tick()
   update_cm()
 end
 
-local function set_paused(on)
+local function set_paused(id, on)
   return function(pressed)
-    if pressed and on ~= paused then
-      paused = on
-      obslua.script_log(obslua.LOG_INFO, paused and "配信休止を表示した" or "配信休止を解除した")
-      apply_pause()
+    if not pressed then
+      return
+    end
+    for _, p in ipairs(pauses) do
+      if p.id == id and p.on ~= on then
+        p.on = on
+        obslua.script_log(obslua.LOG_INFO, p.name .. (on and " の配信休止を表示した" or " の配信休止を解除した"))
+        apply_pause(false)
+      end
     end
   end
 end
@@ -305,7 +402,7 @@ end
 local function on_event(event)
   if event == obslua.OBS_FRONTEND_EVENT_FINISHED_LOADING or event == obslua.OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED then
     attach_always_scene(true)
-    apply_pause()
+    apply_pause(true)
     -- 前回の終了時に表示していた CM が残らないよう隠す(script_load の時点ではシーンがまだ無い)。
     if cm_corner ~= nil then
       hide_cm()
@@ -322,7 +419,7 @@ end
 
 function script_description()
   return "Ch1・Ch2 の音声をミキサーに常時入れ、Ch3 の音声と本部のモニターを表示中の会場に合わせる。"
-    .. "ホットキーで第一体育館の休止の画面を表示し、その会場の音声をミュートする。"
+    .. "ホットキーで会場ごとに休止の画面を表示し、その会場の音声をミュートする。"
     .. "遊撃の映像が消えている間は、遊撃のテロップを隠す。"
 end
 
@@ -331,7 +428,7 @@ function script_properties()
   obslua.obs_properties_add_button(props, "reload", "scenes.json を読み直す", function()
     load_config()
     attach_always_scene(true)
-    apply_pause()
+    apply_pause(true)
     return false
   end)
   return props
@@ -341,39 +438,44 @@ function script_defaults(settings)
   obslua.obs_data_set_default_bool(settings, "cm_auto", true)
 end
 
+-- ホットキーに scenes.json の hotkeys のキーを割り当てる。OBS の設定画面で変えたキーは、読み込みのたびに
+-- scenes.json の値に戻る。
+local function register_hotkey(id, label, callback)
+  local hotkey = obslua.obs_hotkey_register_frontend("kosensai." .. id, label, callback)
+  local binding = obslua.obs_data_array_create()
+  if hotkey_keys[id] ~= nil and hotkey_keys[id] ~= "" then
+    local key = obslua.obs_data_create()
+    obslua.obs_data_set_string(key, "key", "OBS_KEY_" .. hotkey_keys[id])
+    obslua.obs_data_array_push_back(binding, key)
+    obslua.obs_data_release(key)
+  end
+  obslua.obs_hotkey_load(hotkey, binding)
+  obslua.obs_data_array_release(binding)
+end
+
 function script_load(settings)
-  paused = obslua.obs_data_get_bool(settings, "paused")
   cm_auto = obslua.obs_data_get_bool(settings, "cm_auto")
   load_config()
-  local defs = {
-    { "kosensai.pause.on", "配信休止: 出す", set_paused(true) },
-    { "kosensai.pause.off", "配信休止: 消す", set_paused(false) },
-    { "kosensai.cm.on", "CM 小窓: 自動で出す", set_cm_auto(true) },
-    { "kosensai.cm.off", "CM 小窓: 出さない", set_cm_auto(false) },
-  }
-  for _, d in ipairs(defs) do
-    local id = obslua.obs_hotkey_register_frontend(d[1], d[2], d[3])
-    local saved = obslua.obs_data_get_array(settings, d[1])
-    obslua.obs_hotkey_load(id, saved)
-    obslua.obs_data_array_release(saved)
-    hotkeys[d[1]] = id
+  for _, p in ipairs(pauses) do
+    p.on = obslua.obs_data_get_bool(settings, "paused_" .. p.id)
+    register_hotkey("pause." .. p.id .. ".on", p.name .. " 休止: 出す", set_paused(p.id, true))
+    register_hotkey("pause." .. p.id .. ".off", p.name .. " 休止: 消す", set_paused(p.id, false))
   end
+  register_hotkey("cm.on", "CM 小窓: 自動で出す", set_cm_auto(true))
+  register_hotkey("cm.off", "CM 小窓: 出さない", set_cm_auto(false))
   obslua.obs_frontend_add_event_callback(on_event)
   attach_always_scene(false)
-  apply_pause()
+  apply_pause(true)
   -- 起動した回は出さず、次の区切りから出す。
   cm_slot = cm_corner and math.floor(os.time() / (cm_corner.every_min * 60))
   obslua.timer_add(tick, 1000)
 end
 
 function script_save(settings)
-  obslua.obs_data_set_bool(settings, "paused", paused)
-  obslua.obs_data_set_bool(settings, "cm_auto", cm_auto)
-  for name, id in pairs(hotkeys) do
-    local arr = obslua.obs_hotkey_save(id)
-    obslua.obs_data_set_array(settings, name, arr)
-    obslua.obs_data_array_release(arr)
+  for _, p in ipairs(pauses) do
+    obslua.obs_data_set_bool(settings, "paused_" .. p.id, p.on)
   end
+  obslua.obs_data_set_bool(settings, "cm_auto", cm_auto)
 end
 
 function script_unload()
