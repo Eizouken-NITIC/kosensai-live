@@ -22,6 +22,8 @@
 --    全画面(full_source)を出す。lost_video を休止で隠している間も全画面にする。
 --    スライドショーは隠すと止まり、次に表示すると続きのスライドから進む。ホットキーの
 --    「CM 小窓: 自動で出す」「CM 小窓: 出さない」で切り替え、状態はスクリプトの設定に保存する。
+-- 6. restart のソース(SRT の受信)を、ホットキーの「<会場> SRT を受け直す」で再起動する。送信元が途中で
+--    消えた後、OBS が前の接続を保ったまま新しい接続を受け付けなくなった時に使う。Ch3 のシーンは変えない。
 --
 -- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
 
@@ -37,6 +39,7 @@ local always_scene = nil
 local ch3 = {} -- { { video = ..., audio = ... }, ... }
 local pauses = {} -- { { id = ..., name = ..., show = { ... }, hide = { ... }, audio = ..., on = false }, ... }
 local signal_lost = {} -- { { video = ..., hide = { ... }, lost = nil }, ... }
+local restarts = {} -- { { id = ..., name = ..., source = ... }, ... }
 local cm_corner = nil -- { scene = ..., source = ..., full_source = ..., lost_video = ..., every_min = ..., show_sec = ... }
 -- scenes.json の hotkeys。ホットキーの ID → キー(OBS_KEY_ を除いた名前)。
 local hotkey_keys = {}
@@ -108,10 +111,21 @@ local function load_config()
     table.insert(pauses, p)
   end)
   obslua.obs_data_release(audio)
+  restarts = {}
+  each(scenes, "restart", function(item)
+    table.insert(restarts, {
+      id = obslua.obs_data_get_string(item, "id"),
+      name = obslua.obs_data_get_string(item, "name"),
+      source = obslua.obs_data_get_string(item, "source"),
+    })
+  end)
   hotkey_keys = {}
   local keys = obslua.obs_data_get_obj(scenes, "hotkeys")
   if keys ~= nil then
     local ids = { "cm.on", "cm.off" }
+    for _, r in ipairs(restarts) do
+      table.insert(ids, "restart." .. r.id)
+    end
     for _, p in ipairs(pauses) do
       table.insert(ids, "pause." .. p.id .. ".on")
       table.insert(ids, "pause." .. p.id .. ".off")
@@ -399,6 +413,20 @@ local function set_paused(id, on)
   end
 end
 
+local function restart_source(name)
+  return function(pressed)
+    if not pressed then
+      return
+    end
+    local source = obslua.obs_get_source_by_name(name)
+    if source ~= nil then
+      obslua.obs_source_media_restart(source)
+      obslua.obs_source_release(source)
+      obslua.script_log(obslua.LOG_INFO, name .. " を再起動した")
+    end
+  end
+end
+
 local function on_event(event)
   if event == obslua.OBS_FRONTEND_EVENT_FINISHED_LOADING or event == obslua.OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED then
     attach_always_scene(true)
@@ -460,6 +488,9 @@ function script_load(settings)
     p.on = obslua.obs_data_get_bool(settings, "paused_" .. p.id)
     register_hotkey("pause." .. p.id .. ".on", p.name .. " 休止: 出す", set_paused(p.id, true))
     register_hotkey("pause." .. p.id .. ".off", p.name .. " 休止: 消す", set_paused(p.id, false))
+  end
+  for _, r in ipairs(restarts) do
+    register_hotkey("restart." .. r.id, r.name .. " SRT を受け直す", restart_source(r.source))
   end
   register_hotkey("cm.on", "CM 小窓: 自動で出す", set_cm_auto(true))
   register_hotkey("cm.off", "CM 小窓: 出さない", set_cm_auto(false))

@@ -141,7 +141,13 @@
       {"id": "ch2", "name": "遊撃", "show": [], "hide": [{"source": "Ch2 iPhone"}, {"source": "テロップ 遊撃"}], "audio": "Ch2 iPhone"}
     ]
   },
+  "restart": [
+    {"id": "ch1", "name": "第一体育館", "source": "Ch1 ATEM"},
+    {"id": "ch2", "name": "遊撃", "source": "Ch2 iPhone"}
+  ],
   "hotkeys": {
+    "restart.ch1": "F5",
+    "restart.ch2": "F6",
     "pause.ch2.on": "F7",
     "pause.ch2.off": "F8",
     "pause.ch1.on": "F9",

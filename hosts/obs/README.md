@@ -76,6 +76,7 @@ obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch1�
 
    | 操作 | キー |
    | --- | --- |
+   | 第一体育館 SRT を受け直す / 遊撃 SRT を受け直す | F5 / F6 |
    | 遊撃 休止: 出す / 消す | F7 / F8 |
    | 第一体育館 休止: 出す / 消す | F9 / F10 |
    | CM 小窓: 自動で出す / 出さない | F11 / F12 |
@@ -208,6 +209,8 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 
 `Ch2 iPhone` の下に `遊撃 休止`（`overlays/pause.html?ch=ch2`）を配置しています。スマートフォンからの SRT が切れて映像が消えると、「配信休止中 | 遊撃」の画面が見えます。映像が消えている間は、`channels.lua` が遊撃のテロップを隠します（`scenes.json` の `signal_lost`）。SRT は数秒の途切れでは切断にならないため、短い途切れでは画面は変わらず、直前の映像が止まって見えます。
 
+
+送信元 (iPhone や ATEM) が途中で消えた後、OBS が前の接続を保ったまま新しい接続を受け付けなくなることがあります。iPhone の Moblin が「接続できませんでした」を繰り返し、映像が止まったままの場合は、ホットキーの「遊撃 SRT を受け直す」(F6) を押します (第一体育館は F5)。`channels.lua` が SRT の受信のソースを再起動します。Ch3 のシーンは変わりません。
 ### 3-8. 操作パネル
 
 `[操作] パネル` の `操作パネル`（`overlays/control.html`）を右クリックし「対話」で開きます。配信には映らないため、画面のデザインは使用しません。
@@ -275,7 +278,8 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 | `audio.always` | 音声のソースを置き、常にミキサーに入れるシーン |
 | `audio.ch3` | Ch3（トラック 1）の音声の候補 `{video, audio}`。プログラムに `video` が映っていると、`audio` をトラック 1 に入れる（先の項目を優先） |
 | `audio.pause` | 会場ごとの配信休止 `{id, name, show, hide, audio}`。ホットキーの「`name` 休止: 出す」で、`show` のソースを表示し、`hide` のソースを隠し、`audio` をミュートする |
-| `hotkeys` | ホットキーの ID（`pause.<id>.on`・`pause.<id>.off`・`cm.on`・`cm.off`）→ キー（`F9` のように `OBS_KEY_` を除いた名前）。`channels.lua` が読み込むたびに割り当てる |
+| `restart` | ホットキーの「`name` SRT を受け直す」で再起動する SRT の受信のソース `{id, name, source}` |
+| `hotkeys` | ホットキーの ID（`restart.<id>`・`pause.<id>.on`・`pause.<id>.off`・`cm.on`・`cm.off`）→ キー（`F9` のように `OBS_KEY_` を除いた名前）。`channels.lua` が読み込むたびに割り当てる |
 | `cm` | CM のスライドショー。`folder` は kosensai-live-assets の中の画像のフォルダ、`slide_sec` は 1 枚を表示する秒数 |
 | `cm_corner` | `scene` に、毎時 `every_min` 分ごとに CM を `show_sec` 秒表示する。普段は `source`（右下）を、`lost_video` の映像が消えている間は `full_source`（全画面）を出す |
 | `signal_lost` | 映像が消えた時に隠すソース。`video` の幅が 0 の間（SRT が切れている間）、`hide` のソースを全シーンで隠す |
