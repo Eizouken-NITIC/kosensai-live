@@ -62,7 +62,7 @@ def video_mode(conf):
 
 
 def channel_ids(conf, listen=False):
-    """Ch の id。listen=True のときは本部 OBS が SRT Listener で受ける Ch（obsListenPort を持つ Ch）だけ。"""
+    """Ch の id。listen=True のときは本部 PC の中継が SRT Listener で受ける Ch（obsListenPort を持つ Ch）だけ。"""
     return [c["id"] for c in conf["channels"] if not listen or c.get("obsListenPort")]
 
 
@@ -261,7 +261,7 @@ def main():
     p.add_argument("key", help=". 区切りのキー（例: site.domain）")
 
     p = sub.add_parser("channels", help="Ch の id を 1 行 1 件で表示する")
-    p.add_argument("--listen", action="store_true", help="本部 OBS が SRT Listener で受ける Ch だけ")
+    p.add_argument("--listen", action="store_true", help="本部 PC の中継が SRT Listener で受ける Ch だけ")
 
     p = sub.add_parser("env", help=".env の値を表示する")
     p.add_argument("key")

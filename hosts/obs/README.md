@@ -19,7 +19,8 @@
 
 | もの | バージョン | 入手先・用途 |
 | --- | --- | --- |
-| OBS Studio | 32.1.2 で確認 | <https://obsproject.com/>。SRT の受信と送出は OBS に含まれる FFmpeg（libsrt）で行うため、SRT のプラグインは不要です |
+| OBS Studio | 32.1.2 で確認 | <https://obsproject.com/>。SRT の送出は OBS に含まれる FFmpeg（libsrt）で行うため、SRT のプラグインは不要です |
+| ffmpeg | 9.0.2（gyan.dev の essentials）で確認 | <https://www.gyan.dev/ffmpeg/builds/>。SRT に対応したビルド。ATEM・スマートフォンの SRT を受ける中継（[3-9.](#3-9-中継relay)）が使用します。Windows は zip を展開し、`ffmpeg.exe` の場所を中継に渡します |
 | obs-multi-rtmp | 0.7.4 | <https://github.com/sorayuki/obs-multi-rtmp/releases/tag/0.7.4>。Ch ごとの送出。`kosensai-live obs build` は、このバージョンの設定ファイルを書き出します |
 | Source Record | 0.4.8 | <https://github.com/exeldro/obs-source-record/releases/tag/0.4.8>。Ch ごとのクリーンフィードの録画。無い場合、`obs build` はエラーで止まります |
 | uv、Git | ― | <https://docs.astral.sh/uv/>。`kosensai-live` を実行します。Python 3.12 は uv が用意します（`.python-version`） |
@@ -45,6 +46,13 @@ kosensai-live-assets を別の場所に置いた場合は、`uv run kosensai-liv
    ```
 
 4. OBS を起動し、「ツール → WebSocket サーバー設定」でサーバーを有効にします。
+5. Windows では、管理者の PowerShell で次を実行し、中継（[3-9.](#3-9-中継relay)）を PC の起動時に動かすタスクと、SRT のポート（`config.json` の `obsListenPort`）の受信の許可を登録します。登録の直後は `schtasks /run /tn "kosensai-live relay"` で起動します。
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File hosts\obs\relay-task.ps1 -Ffmpeg <ffmpeg.exe の場所>
+   ```
+
+   macOS・Linux では、`uv run kosensai-live relay` を別の端末で動かし続けます。
 
 ---
 
@@ -63,7 +71,7 @@ uv run kosensai-live obs build
 | プロファイル | `KOSENSAI-LIVE`。映像の形式は `config.json` の `video.mode`（1080p29.97） |
 | スタジオモード | 無効（[3-1.](#3-1-シーン)） |
 | シーンコレクション | `KOSENSAI-LIVE`。`scenes.json` のシーンは、項目の有無・並び・配置を `scenes.json` に合わせます。項目の表示・非表示は変えません（`channels.lua` が切り替えるため）。`scenes.json` に無いシーンには手を加えません |
-| ソース | SRT Listener の URL とパスフレーズ、ページのファイルの場所（URL の `?assets=` に kosensai-live-assets の場所を付けます）、CM のスライドの一覧、音声のデバイス・トラック・同期オフセット。毎回上書きします |
+| ソース | 中継（[3-9.](#3-9-中継relay)）の TCP の URL、ページのファイルの場所（URL の `?assets=` に kosensai-live-assets の場所を付けます）、CM のスライドの一覧、音声のデバイス・トラック・同期オフセット。毎回上書きします |
 | グローバル音声デバイス | 「設定 → 音声」のデスクトップ音声・マイク音声を削除します（[3-2.](#3-2-音声)） |
 | 録画 | `[録画] …` のシーンの Source Record のフィルター（[3-4.](#3-4-録画)） |
 | obs-multi-rtmp の出力 | Ch1・Ch2・Ch3 の 3 つ（[3-3.](#3-3-出力obs-multi-rtmp)）。送出先の URL とパスフレーズは `.env` から作ります |
@@ -101,7 +109,7 @@ uv run kosensai-live atem apply      # 映像の形式・配信サービス・UR
 uv run kosensai-live atem check      # 確認だけを行う
 ```
 
-ATEM の映像の形式を `config.json` の `video.mode` に、配信の送信先を本部 PC の Ch1 の SRT Listener に設定します。配信中は設定できないため、`uv run kosensai-live atem stop` の後に実行します。品質（`HyperDeck Low`）は ATEM Software Control で設定します（ATEM 本体に保存されるため、設営時に 1 回だけ設定します）。
+ATEM の映像の形式を `config.json` の `video.mode` に、配信の送信先を本部 PC の中継（Ch1 の SRT Listener）に設定します。配信中は設定できないため、`uv run kosensai-live atem stop` の後に実行します。品質（`HyperDeck Low`）は ATEM Software Control で設定します（ATEM 本体に保存されるため、設営時に 1 回だけ設定します）。
 
 | コマンド | 内容 |
 | --- | --- |
@@ -212,7 +220,8 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 `Ch2 iPhone` の下に `遊撃 休止`（`overlays/pause.html?ch=ch2`）を配置しています。スマートフォンからの SRT が切れて映像が消えると、「配信休止中 | 遊撃」の画面が見えます。映像が消えている間は、`channels.lua` が遊撃のテロップを隠します（`scenes.json` の `signal_lost`）。SRT は数秒の途切れでは切断にならないため、短い途切れでは画面は変わらず、直前の映像が止まって見えます。
 
 
-送信元 (iPhone や ATEM) が途中で消えた後、OBS が前の接続を保ったまま新しい接続を受け付けなくなることがあります。iPhone の Moblin が「接続できませんでした」を繰り返し、映像が止まったままの場合は、ホットキーの「遊撃 SRT を受け直す」(F6) を押します (第一体育館は F5)。`channels.lua` が SRT の受信のソースを再起動します。Ch3 のシーンは変わりません。
+送信元との接続が残ったまま映像が届かない場合は、ホットキーの「遊撃 SRT を受け直す」（F6）を押します（第一体育館は F5）。中継がその Ch の ffmpeg を起動し直し、送信元がつなぎ直します（Moblin では約 20 秒）。Ch3 のシーンは変わりません。
+
 ### 3-8. 操作パネル
 
 `[操作] パネル` の `操作パネル`（`overlays/control.html`）を右クリックし「対話」で開きます。配信には映らないため、画面のデザインは使用しません。
@@ -228,6 +237,21 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 状態はブラウザソースの localStorage に保存され、OBS を再起動しても残ります。
 
 ---
+
+### 3-9. 中継（relay）
+
+ATEM とスマートフォンの SRT は、OBS ではなく本部 PC の中継（`uv run kosensai-live relay`、`tools/kosensai_live/relay.py`）が受けます。
+
+```
+ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP──▶ OBS の Ch1 ATEM・Ch2 iPhone（127.0.0.1:relayPort に接続）
+```
+
+- 中継は `obsListenPort` を持つ Ch ごとに ffmpeg を 1 つ動かし、SRT で受けた MPEG-TS を `tcp://127.0.0.1:<relayPort>` で待ち受けて、接続した OBS へそのまま送ります。ポートは `config.json` の `obsListenPort`（SRT）と `relayPort`（TCP）です。ATEM・スマートフォンの送信先は変わりません。
+- 送信元が切断すると ffmpeg は終了して TCP も切れ、OBS の映像が消えます（休止の画面が出ます）。中継は 1 秒後に ffmpeg を起動し直し、送信元がつなぎ直すと映像が戻ります。OBS の再起動は不要です。
+- OBS のメディアソースは、入力が切断した後も待ち受けのソケットを閉じずに持ち続け、同じポートで待ち受け直せなくなります（SRT・UDP のどちらでも起きました）。そのため待ち受けは中継が行い、OBS は接続する側にしています。
+- ホットキーの「<会場> SRT を受け直す」は `hosts/obs/.relay/restart-<Ch>` を作成し、中継がその Ch の ffmpeg を起動し直します。
+- 中継の出力（ffmpeg の警告を含む）は、タスクで動かす場合 `hosts/obs/.relay/relay.log` に追記されます。
+- 中継を止める場合は、`schtasks /end` では子のプロセス（Python と ffmpeg）が残るため、`kosensai-live.exe`（`relay`）のプロセスを子ごと終了します。
 
 ## 4. テロップ（overlays/）
 
@@ -272,7 +296,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 | `profile` | プロファイルの名前。映像の形式と obs-multi-rtmp の出力を設定する |
 | `program_scene` | 作成後にプログラムに出すシーン |
 | `places` | 配置の名前 → `{x, y, w, h}`。`pane-left`・`pane-right` は `overlays/split.html` の映像の枠と一致させる |
-| `inputs` | 入力の名前 → 種類と設定。`type` は `srt`（`channel` の SRT Listener、ポートとパスフレーズは `config.json` と `.env`）、`audio`（音声入力のデバイス）、`page`（`overlays/` の `page`、`query` で引数、`replay` で表示のたびに読み込み直す、`width`・`height` でページの大きさ。既定は 1920x1080）、`slides`（`cm` のフォルダの画像のスライドショー。`behavior` は隠している間の動作で、`always_play` は進み、`pause_unpause` は止まる）、`media`（動画・音楽のファイル。OBS で指定する。`restart` が false なら同じ入力を持つシーンの間で切り替えても続きから再生し、`loop` が false なら 1 回だけ再生する）。`tracks` は音声のトラックの番号。`audio` の `device` はデバイスの名前の一部（`kosensai-live obs devices` で確認する）。`sync_offset_ms` は同期オフセット（ms、既定は 0）。`monitor` が true の入力は常に本部のモニターに出す |
+| `inputs` | 入力の名前 → 種類と設定。`type` は `srt`（`channel` の中継の TCP。中継の SRT のポートとパスフレーズは `config.json` と `.env`）、`audio`（音声入力のデバイス）、`page`（`overlays/` の `page`、`query` で引数、`replay` で表示のたびに読み込み直す、`width`・`height` でページの大きさ。既定は 1920x1080）、`slides`（`cm` のフォルダの画像のスライドショー。`behavior` は隠している間の動作で、`always_play` は進み、`pause_unpause` は止まる）、`media`（動画・音楽のファイル。OBS で指定する。`restart` が false なら同じ入力を持つシーンの間で切り替えても続きから再生し、`loop` が false なら 1 回だけ再生する）。`tracks` は音声のトラックの番号。`audio` の `device` はデバイスの名前の一部（`kosensai-live obs devices` で確認する）。`sync_offset_ms` は同期オフセット（ms、既定は 0）。`monitor` が true の入力は常に本部のモニターに出す |
 | `scenes` | シーンの名前 → 下から順の `{source, place, hidden}`。`hidden` の項目は `channels.lua` が必要な時だけ表示する |
 | `video_encoder` | OS（`win32`・`darwin`・`linux`）ごとの映像のエンコーダーの ID。出力と録画に使用する |
 | `outputs` | obs-multi-rtmp の出力。`video_param` はエンコーダーの設定、`audio_bitrate` は音声のビットレート（kbps）、`channels` は Ch ごとの映像のシーン（無ければプログラム）と音声のトラック。映像のビットレートは `config.json` の `bitrateKbps` |
@@ -280,7 +304,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 | `audio.always` | 音声のソースを置き、常にミキサーに入れるシーン |
 | `audio.ch3` | Ch3（トラック 1）の音声の候補 `{video, audio}`。プログラムに `video` が映っていると、`audio` をトラック 1 に入れる（先の項目を優先） |
 | `audio.pause` | 会場ごとの配信休止 `{id, name, show, hide, audio}`。ホットキーの「`name` 休止: 出す」で、`show` のソースを表示し、`hide` のソースを隠し、`audio` をミュートする |
-| `restart` | ホットキーの「`name` SRT を受け直す」で再起動する SRT の受信のソース `{id, name, source}` |
+| `restart` | ホットキーの「`name` SRT を受け直す」で、中継が ffmpeg を起動し直す Ch `{id, name}`（`id` は Ch の id） |
 | `hotkeys` | ホットキーの ID（`restart.<id>`・`pause.<id>.on`・`pause.<id>.off`・`cm.on`・`cm.off`）→ キー（`F9` のように `OBS_KEY_` を除いた名前）。`channels.lua` が読み込むたびに割り当てる |
 | `cm` | CM のスライドショー。`folder` は kosensai-live-assets の中の画像のフォルダ、`slide_sec` は 1 枚を表示する秒数 |
 | `cm_corner` | `scene` に、毎時 `every_min` 分ごとに CM を `show_sec` 秒表示する。普段は `source`（右下）を、`lost_video` の映像が消えている間は `full_source`（全画面）を出す |

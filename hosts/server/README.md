@@ -77,7 +77,7 @@ docker compose up -d
 | 変数 | 用途 |
 | --- | --- |
 | `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` | 本部 OBS → 配信サーバーの送出に使うパスフレーズです。**ATEM・スマートフォンには設定しません。** |
-| `OBS_<Ch>_LISTEN_PASSPHRASE` | ATEM・スマートフォン → 本部 OBS（SRT Listener）に使うパスフレーズです。ATEM とスマートフォンに設定するのはこちらです。`obsListenPort` を持つ Ch にだけ設定します。ATEM のパスフレーズの欄は 63 文字までのため、10〜63 文字にします。 |
+| `OBS_<Ch>_LISTEN_PASSPHRASE` | ATEM・スマートフォン → 本部 PC の中継（SRT Listener、`kosensai-live relay`）に使うパスフレーズです。ATEM とスマートフォンに設定するのはこちらです。`obsListenPort` を持つ Ch にだけ設定します。ATEM のパスフレーズの欄は 63 文字までのため、10〜63 文字にします。 |
 | `HQ_IP` | 本部 PC の IPv4 アドレスです。配信サーバーへの送出は、この IP とサーバー自身からだけ受け付けます。ATEM・スマートフォンの送信先もこの IP です。 |
 | `SERVER_IP` | 本部 PC から見た配信サーバーの IPv4 アドレスです。`kosensai-live obs build` が obs-multi-rtmp の送出先の URL に使用します。 |
 | `ATEM_IP` | ATEM の IPv4 アドレスです。`kosensai-live atem` が使用します。 |
