@@ -162,7 +162,7 @@ obs-multi-rtmp でプログラム以外のシーンを送出しても、その�
 | Ch2 | `[出力] Ch2 遊撃` | 3 | 同上 |
 | Ch3 | プログラム（OBS のシーンの切り替え） | 1 | 同上 |
 
-エンコーダーは `scenes.json` の `video_encoder` で OS ごとに指定します（Windows は NVENC、macOS は VideoToolbox、Linux は x264）。CBR、キーフレーム間隔 2 秒です（29.97fps では 59 フレーム、約 1.97 秒）。配信サーバーの `hosts/server/mediamtx.yml` の `hlsSegmentDuration` はキーフレーム間隔より短くし、HLS のセグメントをキーフレームごとに区切ります。
+エンコーダーは `scenes.json` の `video_encoder` で OS ごとに指定します（Windows は NVENC、macOS は VideoToolbox、Linux は x264）。CBR、キーフレーム間隔 2 秒です（29.97fps では 59 フレーム、約 1.97 秒）。NVENC は `outputs.video_param` でプリセット p2、1 パス（`multipass: disabled`）にし、エンコーダーの負荷を下げています。配信サーバーの `hosts/server/mediamtx.yml` の `hlsSegmentDuration` はキーフレーム間隔より短くし、HLS のセグメントをキーフレームごとに区切ります。
 
 ### 3-4. 録画
 
@@ -174,7 +174,7 @@ OBS の「録画開始」で、次の 3 つが同時に始まります。保存�
 | `<日時> Ch2.mkv` | `[録画] Ch2 遊撃`（スマートフォンの映像だけ）と、トラック 3（遊撃の音声） |
 | `<日時>.mkv` | プログラム（Ch3）。OBS の通常の録画で、テロップを含みます |
 
-3 つとも `scenes.json` の `recordings` の設定（CBR 12 Mbps、音声 320 kbps、mkv）で録画します。Ch1・Ch2 は Source Record のフィルターが、Ch3 は OBS の出力の「シンプル」の設定（`obs build` がプロファイルに書く）が録画します。配信休止の間は、録画も休止の画面になり、音声はミュートされます。
+3 つとも `scenes.json` の `recordings` の設定（CBR 12 Mbps、音声 320 kbps、mkv）で録画します。Ch1・Ch2 は Source Record のフィルターが、Ch3 は OBS の出力の「シンプル」の設定（`obs build` がプロファイルに書く）が録画します。エンコーダーは、Ch1・Ch2 が `recordings.encoder`（Windows は x264 の veryfast）、Ch3 が `recordings.program_encoder`（Windows は NVENC の `program_nvenc_preset`）です。配信休止の間は、録画も休止の画面になり、音声はミュートされます。
 
 ### 3-5. 配信休止
 
@@ -274,7 +274,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 | `scenes` | シーンの名前 → 下から順の `{source, place, hidden}`。`hidden` の項目は `channels.lua` が必要な時だけ表示する |
 | `video_encoder` | OS（`win32`・`darwin`・`linux`）ごとの映像のエンコーダーの ID。出力と録画に使用する |
 | `outputs` | obs-multi-rtmp の出力。`video_param` はエンコーダーの設定、`audio_bitrate` は音声のビットレート（kbps）、`channels` は Ch ごとの映像のシーン（無ければプログラム）と音声のトラック。映像のビットレートは `config.json` の `bitrateKbps` |
-| `recordings` | 録画。`video_param` はエンコーダーの設定（ビットレートを含む）、`audio_bitrate`、`format` はファイルの形式、`scenes` は Source Record で録画するシーン・音声のトラック・ファイル名に付ける名前、`program_encoder` は Ch3（OBS の通常の録画）の OS ごとのエンコーダー（出力の「シンプル」の名前） |
+| `recordings` | 録画。`video_param` はエンコーダーの設定（ビットレートを含む）、`audio_bitrate`、`format` はファイルの形式、`scenes` は Source Record で録画するシーン・音声のトラック・ファイル名に付ける名前、`encoder` は Source Record の OS ごとのエンコーダー、`program_encoder` は Ch3（OBS の通常の録画）の OS ごとのエンコーダー（出力の「シンプル」の名前）、`program_nvenc_preset` はその NVENC のプリセット |
 | `audio.always` | 音声のソースを置き、常にミキサーに入れるシーン |
 | `audio.ch3` | Ch3（トラック 1）の音声の候補 `{video, audio}`。プログラムに `video` が映っていると、`audio` をトラック 1 に入れる（先の項目を優先） |
 | `audio.pause` | 会場ごとの配信休止 `{id, name, show, hide, audio}`。ホットキーの「`name` 休止: 出す」で、`show` のソースを表示し、`hide` のソースを隠し、`audio` をミュートする |
@@ -285,7 +285,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 | `signal_lost` | 映像が消えた時に隠すソース。`video` の幅が 0 の間（SRT が切れている間）、`hide` のソースを全シーンで隠す |
 
 - `Ch1 音声 (USB)` の `device` は、Windows の表示名 `ライン (2- USB AUDIO  CODEC)` から、USB ポートで変わる番号（`2-`）を除いたものです（空白は 2 つ）。
-- TODO：Windows の NVENC（`obs_nvenc_h264_tex`）の出力は、本番機で未確認です。NVENC は obs-multi-rtmp の 3 出力、Source Record の 2 つ、Ch3 の録画の 6 か所で同時に使用します（Sunshine を使う場合は 7 か所）。GPU とドライバーが同時に扱えるセッション数を本番機で確認します。
+- 本番機（RTX 3070、NVENC 1 基）では、6 か所すべてを NVENC（p5、2 パス）で符号化すると、エンコーダーの使用率が 99% になり、Ch3 の録画のフレームの 44% がスキップされました。Ch1・Ch2 の録画を x264（CPU は i7-7820X）に移し、NVENC を p2・1 パスにすると、NVENC は 4 セッション・使用率 75%、全出力でスキップは 0 になりました。
 - macOS の Ch3 の録画は x264 にしています。Ch3 の録画に VideoToolbox を使うと、Source Record の VideoToolbox のエンコーダーが「Unsupported color format」で動かず、Ch1・Ch2 のファイルが作られませんでした（OBS 32.1.2、Source Record 0.4.8）。
 - 仕様補完：obs-multi-rtmp の音声のビットレートは 160 kbps としました（OBS の既定値）。
 - 仕様補完：録画は Ch1〜Ch3 とも CBR 12 Mbps（ATEM の送出の品質 `HyperDeck Low` と同じ）、音声 320 kbps、mkv（録画中に OBS が落ちてもファイルが残る形式）としました。
