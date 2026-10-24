@@ -457,10 +457,10 @@ def build(env_path, assets: Path) -> None:
 
     # OBS の初期のシーン(「シーン」)は使用しないので削除する。
     program = scenes["program_scene"]
+    # 配信中に実行しても Ch3 を切り替えないよう、プログラムを設定するのは初期のシーンを削除する時だけにする。
     if "シーン" in {s["sceneName"] for s in cl.get_scene_list().scenes}:
         cl.set_current_program_scene(program)
         cl.remove_scene("シーン")
-    cl.set_current_program_scene(program)
     # 待機画面などの replay のページは、本番に出た時に読み込み直す。スタジオモードではプレビューに
     # 出た時と本番に出た時がずれ、意図した表示にならないため、スタジオモードを使用しない。
     cl.set_studio_mode_enabled(False)
