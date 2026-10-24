@@ -259,7 +259,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 | `profile` | プロファイルの名前。映像の形式と obs-multi-rtmp の出力を設定する |
 | `program_scene` | 作成後にプログラムに出すシーン |
 | `places` | 配置の名前 → `{x, y, w, h}`。`pane-left`・`pane-right` は `overlays/split.html` の映像の枠と一致させる |
-| `inputs` | 入力の名前 → 種類と設定。`type` は `srt`（`channel` の SRT Listener、ポートとパスフレーズは `config.json` と `.env`）、`audio`（音声入力のデバイス）、`page`（`overlays/` の `page`、`query` で引数、`replay` で表示のたびに読み込み直す）、`slides`（`cm` のフォルダの画像のスライドショー。`behavior` は隠している間の動作で、`always_play` は進み、`pause_unpause` は止まる）、`media`（動画・音楽のファイル。OBS で指定する。`restart` が false なら同じ入力を持つシーンの間で切り替えても続きから再生し、`loop` が false なら 1 回だけ再生する）。`tracks` は音声のトラックの番号。`audio` の `device` はデバイスの名前の一部（`kosensai-live obs devices` で確認する）。`monitor` が true の入力は常に本部のモニターに出す |
+| `inputs` | 入力の名前 → 種類と設定。`type` は `srt`（`channel` の SRT Listener、ポートとパスフレーズは `config.json` と `.env`）、`audio`（音声入力のデバイス）、`page`（`overlays/` の `page`、`query` で引数、`replay` で表示のたびに読み込み直す、`width`・`height` でページの大きさ。既定は 1920x1080）、`slides`（`cm` のフォルダの画像のスライドショー。`behavior` は隠している間の動作で、`always_play` は進み、`pause_unpause` は止まる）、`media`（動画・音楽のファイル。OBS で指定する。`restart` が false なら同じ入力を持つシーンの間で切り替えても続きから再生し、`loop` が false なら 1 回だけ再生する）。`tracks` は音声のトラックの番号。`audio` の `device` はデバイスの名前の一部（`kosensai-live obs devices` で確認する）。`monitor` が true の入力は常に本部のモニターに出す |
 | `scenes` | シーンの名前 → 下から順の `{source, place, hidden}`。`hidden` の項目は `channels.lua` が必要な時だけ表示する |
 | `video_encoder` | OS（`win32`・`darwin`・`linux`）ごとの映像のエンコーダーの ID。出力と録画に使用する |
 | `outputs` | obs-multi-rtmp の出力。`video_param` はエンコーダーの設定、`audio_bitrate` は音声のビットレート（kbps）、`channels` は Ch ごとの映像のシーン（無ければプログラム）と音声のトラック。映像のビットレートは `config.json` の `bitrateKbps` |

@@ -8,11 +8,11 @@
      画面のデザインは使用しない。テロップのブラウザソースと同じ origin になるため、
      localStorage と BroadcastChannel で状態を渡す。
      OBS のブラウザソースが既定で入れる CSS(背景の透明、余白、overflow: hidden)を詳細度の高いセレクターで上書きする。
-     「対話」の窓は 1920x1080 のページを縮小して表示するため、文字を大きくしている。 */
+     ソースの大きさは scenes.json で 1280x1000 にし、「対話」の窓でほぼ等倍に表示する。 */
   :root {
     --bg: #18181b; --panel: #27272a; --line: #3f3f46; --text: #f4f4f5; --sub: #a1a1aa; --dim: #71717a;
     --button: #3f3f46; --now: #423a10; --warn-bg: #4c1d1d; --warn-line: #ef4444;
-    font-size: 26px;
+    font-size: 22px;
     color-scheme: dark;
   }
   html, body { background: var(--bg); overflow: auto; }

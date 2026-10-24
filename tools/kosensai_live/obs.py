@@ -75,18 +75,17 @@ def absolute_path(path: Path) -> str:
     return "/" + path.as_posix().lstrip("/")
 
 
-def browser(page: str, replay: bool, assets: Path, query: str = "") -> dict:
+def browser(page: str, replay: bool, assets: Path, query: str = "", width: int = 1920, height: int = 1080) -> dict:
     # replay=True の画面は表示するたびに読み込み直して入りのアニメーションを再生する。
     # 画面は進行を ?assets= の場所から読む(overlays/overlay.js)。引数を付けるため、全ての画面を
     # OBS がローカルファイルに使用する http://absolute/<パス> の URL で開く。
-    # TODO: Windows で http://absolute/C:/... の形で開けることを本番機で確認する(macOS では確認済み)。
     # フレームレートは指定しない(fps_custom が無効なら OBS の映像のフレームレートで描画する)。
     params = urlencode({"assets": absolute_path(assets), **dict(parse_qsl(query))})
     return {
         "is_local_file": False,
         "url": f"http://absolute{quote(absolute_path(OVERLAYS / page))}?{params}",
-        "width": 1920,
-        "height": 1080,
+        "width": width,
+        "height": height,
         "reroute_audio": False,
         "shutdown": replay,
         "restart_when_active": replay,
@@ -336,7 +335,8 @@ def build(env_path, assets: Path) -> None:
                 # デバイスは作成後に OBS が返すデバイスの一覧から選ぶ(audio_device_id)。
                 return audio_input_kind(), {}
             case "page":
-                return "browser_source", browser(spec["page"], spec.get("replay", False), assets, spec.get("query", ""))
+                return "browser_source", browser(spec["page"], spec.get("replay", False), assets, spec.get("query", ""),
+                                                 spec.get("width", 1920), spec.get("height", 1080))
             case "slides":
                 # always_play: 表示していない間も進む(全画面の CM)。pause_unpause: 隠すと止まり、
                 # 次に表示すると続きから進む(自動の CM。毎回、前回の続きのスライドから出す)。
