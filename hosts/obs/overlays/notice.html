@@ -7,7 +7,8 @@
 <style>
   /* お知らせを下端に表示する。表示するお知らせと時間は Overlay.noticeText で決定する(固定・即時・ループ)。
      赤い線は 1 つの画面に 1 本にするため、帯ではなく同時に出るテロップの板に付ける。
-     ?beside=ch1 では、第一体育館のテロップの「つぎ」が出ている間、その右に並べる。 */
+     ?beside=ch1 では、第一体育館のテロップの「つぎ」が出ている間、その右に並べる。
+     帯に収まらない文言は横に流す。 */
   #wrap:not(.in) { visibility: hidden; }
   #wrap.out { visibility: visible; }
   .band {
@@ -22,13 +23,14 @@
     font-size: var(--fs-m);
   }
   .band.beside { left: calc(var(--safe) + var(--next-w) + 16px); }
-  #text { overflow: hidden; text-overflow: ellipsis; }
+  #text { flex: 1; min-width: 0; overflow: hidden; }
+  #line { display: inline-block; }
 </style>
 </head>
 <body>
 <div id="wrap">
   <div class="tile across band" data-a="rise">
-    <span class="caption"><span class="accent">お知らせ</span><span class="sep"></span></span><span id="text"></span>
+    <span class="caption"><span class="accent">お知らせ</span><span class="sep"></span></span><span id="text"><span id="line"></span></span>
   </div>
 </div>
 <script src="overlay.js"></script>
@@ -38,8 +40,37 @@
   let shown = null;
   Overlay.onState((next) => { s = next; });
   const beside = Overlay.params.get('beside') === 'ch1';
+  let besideShown = null;
+
+  // 収まらない文言は、先頭で HOLD ミリ秒止めてから SPEED px/秒で末尾まで流し、末尾で HOLD ミリ秒止めて
+  // 先頭に戻る。表示している間は繰り返す。
+  const SPEED = 120;
+  const HOLD = 2000;
+  let scroll = null;
+  function fit() {
+    scroll?.cancel();
+    const box = document.getElementById('text');
+    const line = document.getElementById('line');
+    const over = line.scrollWidth - box.clientWidth;
+    if (over <= 0) return;
+    const move = (over / SPEED) * 1000;
+    const total = HOLD + move + HOLD;
+    const end = `translateX(${-over}px)`;
+    scroll = line.animate([
+      { transform: 'none', offset: 0 },
+      { transform: 'none', offset: HOLD / total },
+      { transform: end, offset: (HOLD + move) / total },
+      { transform: end, offset: 1 },
+    ], { duration: total, iterations: Infinity });
+  }
+
   Overlay.every(250, () => {
-    document.querySelector('.band').classList.toggle('beside', beside && Overlay.nextShown() != null);
+    const b = beside && Overlay.nextShown() != null;
+    if (b !== besideShown) {
+      besideShown = b;
+      document.querySelector('.band').classList.toggle('beside', b);
+      fit();
+    }
     const text = Overlay.noticeText(s);
     if (text === shown) return;
     shown = text;
@@ -47,7 +78,9 @@
       wrap.classList.replace('in', 'out');
       return;
     }
-    document.getElementById('text').textContent = text;
+    document.getElementById('line').textContent = text;
+    // 幅は文字の形で決まるため、フォントの読み込みを待ってから測る。
+    document.fonts.ready.then(fit);
     Overlay.replay(wrap);
   });
 </script>
