@@ -9,7 +9,7 @@
 | `design/` | 画面のフォント、計器と時計の画像と、画像を描画する Blender のスクリプト |
 | `channels.lua` | 音声の振り分け、本部のモニター、配信休止、CM の自動表示を行う OBS のスクリプト |
 
-その年の中身（進行の `program.json`、CM のスライド）は、別のリポジトリ [kosensai-live-assets]()（非公開）にあります。OBS・ATEM の設定は、リポジトリの CLI（`kosensai-live`、[tools/kosensai_live/](../../tools/kosensai_live/)）が `config.json`・`.env`・`scenes.json` と kosensai-live-assets から行います。
+その年の中身（進行の `program.json`、CM のスライド）は、このリポジトリには含めず、kosensai-live-assets のフォルダに置きます。OBS・ATEM の設定は、リポジトリの CLI（`kosensai-live`、[tools/kosensai_live/](../../tools/kosensai_live/)）が `config.json`・`.env`・`scenes.json` と kosensai-live-assets から行います。
 
 ---
 
@@ -27,11 +27,10 @@
 
 プラグインは、OBS を終了した状態で各リリースのインストーラー（Windows は `.exe`、macOS は `.pkg`）を実行して入れます。
 
-kosensai-live と kosensai-live-assets を同じ階層に clone し、kosensai-live の場所で作業します。
+kosensai-live を clone し、同じ階層に kosensai-live-assets のフォルダを置いて、kosensai-live の場所で作業します。
 
 ```bash
 git clone https://github.com/Eizouken-NITIC/kosensai-live.git
-git clone 
 cd kosensai-live
 ```
 

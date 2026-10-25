@@ -178,7 +178,7 @@ docker compose up -d         # 起動前に init-mediamtx・init-caddy が設定
 
 **3. 本部 PC（OBS）を設定する**
 
-本部 PC は Windows・macOS・Linux のどれでも構いません。OBS に obs-multi-rtmp と Source Record のプラグインをインストールし、本部 OBS（シーン・送出・録画）と ATEM は `kosensai-live` が `config.json`・`.env`・`hosts/obs/scenes.json` と [kosensai-live-assets]()（その年の進行と CM のスライド。非公開）から設定します。必要なものと手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
+本部 PC は Windows・macOS・Linux のどれでも構いません。OBS に obs-multi-rtmp と Source Record のプラグインをインストールし、本部 OBS（シーン・送出・録画）と ATEM は `kosensai-live` が `config.json`・`.env`・`hosts/obs/scenes.json` と kosensai-live-assets のフォルダ（その年の進行と CM のスライド。このリポジトリには含めません）から設定します。必要なものと手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
 
 **4. サイネージ端末を用意する（任意）**
 
