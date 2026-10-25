@@ -22,7 +22,7 @@ recordings/
 # 一度きりの切り分けに使う実験コード
 scratch/
 
-# 本部 PC の中継(kosensai-live relay)のログと、受け直しの要求のファイル
+# 本部 PC の中継(kosensai-live relay)のログ
 hosts/obs/.relay/
 
 # Python の実行で生成される

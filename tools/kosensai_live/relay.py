@@ -6,15 +6,13 @@ config.json の obsListenPort を持つ Ch ごとに、tcp://127.0.0.1:<relayPor
 OBS が接続したら ffmpeg を起動し、SRT Listener で受けた MPEG-TS を標準出力から OBS へそのまま送る。
 
 OBS のメディアソースは、入力が切断した後も待ち受けのソケットを閉じずに持ち続け、同じポートで
-待ち受け直せなくなる(SRT・UDP のどちらでも起きた)。待ち受けは中継が行い、OBS は接続する側にする。
+待ち受け直せなくなる。待ち受けは中継が行い、OBS は接続する側にする。
 
 OBS は受け取った最初のデータから実時間で再生するため、OBS に渡す前に溜まったデータは、そのまま
 遅れとして残る。OBS が接続してから SRT の受信を始め、ffmpeg の入力の解析も最小限にして、溜めない。
-送信元が切断すると ffmpeg が終了し、OBS への接続を閉じる(OBS は映像が消えたことを検出し、
-接続し直す)。OBS が切断した場合は ffmpeg を終了させる。
-
-OBS のホットキーの「<会場> SRT を受け直す」は、RESTART_DIR に restart-<Ch> のファイルを作る。
-このファイルを見つけたら、その Ch の ffmpeg を終了させる。
+送信元が切断すると(SRT の接続が途切れたと判断すると) ffmpeg が終了し、OBS への接続を閉じる
+(OBS は映像が消えたことを検出し、接続し直す)。OBS が切断した場合は、OBS への送信が失敗した時点で
+ffmpeg を終了させる。
 """
 
 import os
@@ -27,12 +25,8 @@ import time
 
 from . import config, urls
 
-# 受け直しのファイルを確かめる間隔(秒)
-POLL_SEC = 0.5
 # ffmpeg の標準出力から一度に読む大きさ
 CHUNK = 64 * 1024
-# channels.lua と同じ場所(hosts/obs/.relay)
-RESTART_DIR = config.REPO / "hosts/obs/.relay"
 
 
 def log(cid, message):
@@ -61,27 +55,15 @@ def command(ffmpeg, conf, env, cid):
             "-flush_packets", "1", "-f", "mpegts", "pipe:1"]
 
 
-def pump(proc, conn):
-    """ffmpeg の標準出力を OBS へ送る。どちらかが終わったら戻る。"""
+def serve(conn, cmd, cid):
+    """ffmpeg の標準出力を OBS へ送る。ffmpeg が終了するか、OBS への送信が失敗したら戻る。"""
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     fd = proc.stdout.fileno()
     try:
         while data := os.read(fd, CHUNK):
             conn.sendall(data)
-    except OSError:
-        pass
-
-
-def serve(conn, cmd, cid, flag):
-    flag.unlink(missing_ok=True)
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    t = threading.Thread(target=pump, args=(proc, conn), daemon=True)
-    t.start()
-    while t.is_alive():
-        if flag.exists():
-            log(cid, "受け直しの要求で ffmpeg を終了する")
-            flag.unlink(missing_ok=True)
-            break
-        t.join(POLL_SEC)
+    except OSError as e:
+        log(cid, f"OBS への送信が失敗した: {e}")
     proc.terminate()
     proc.wait()
     conn.close()
@@ -93,13 +75,12 @@ def run_channel(conf, cmd, cid):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(("127.0.0.1", port))
     server.listen(1)
-    flag = RESTART_DIR / f"restart-{cid}"
     log(cid, f"OBS の接続を待つ({urls.relay_url(conf, cid)})")
     while True:
         conn, _ = server.accept()
         conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         log(cid, f"OBS が接続した。SRT の待ち受けを開始する(:{config.channel(conf, cid)['obsListenPort']})")
-        serve(conn, cmd, cid, flag)
+        serve(conn, cmd, cid)
 
 
 def main(env_path, ffmpeg_path):
@@ -107,7 +88,6 @@ def main(env_path, ffmpeg_path):
     env = config.load_env(env_path)
     ffmpeg = find_ffmpeg(ffmpeg_path)
     log("relay", f"ffmpeg: {ffmpeg}")
-    RESTART_DIR.mkdir(exist_ok=True)
     threads = [threading.Thread(target=run_channel, args=(conf, command(ffmpeg, conf, env, cid), cid), daemon=True)
                for cid in config.channel_ids(conf, listen=True)]
     for t in threads:

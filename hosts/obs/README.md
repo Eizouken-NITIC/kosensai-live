@@ -85,7 +85,6 @@ obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch1�
 | 受信の確認を開く | F1 |
 | 操作パネルを開く | F2 |
 | 第一体育館 転換: 出す / 消す | F3 / F4 |
-| 第一体育館 SRT を受け直す / 遊撃 SRT を受け直す | F5 / F6 |
 | 遊撃 休止: 出す / 消す | F7 / F8 |
 | 第一体育館 休止: 出す / 消す | F9 / F10 |
 | CM 小窓: 自動で出す / 出さない | F11 / F12 |
@@ -220,10 +219,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 
 ### 3-7. 遊撃の映像が切れた時
 
-`Ch2 iPhone` の下に `遊撃 休止`（`overlays/pause.html?ch=ch2`）を配置しています。スマートフォンからの SRT が切れて映像が消えると、「配信休止中 | 遊撃」の画面が見えます。映像が消えている間は、`channels.lua` が遊撃のテロップを隠します（`scenes.json` の `signal_lost`）。SRT は数秒の途切れでは切断にならないため、短い途切れでは画面は変わらず、直前の映像が止まって見えます。
-
-
-送信元との接続が残ったまま映像が届かない場合は、ホットキーの「遊撃 SRT を受け直す」（F6）を押します（第一体育館は F5）。中継がその Ch の ffmpeg を起動し直し、送信元がつなぎ直します（Moblin では約 20 秒）。Ch3 のシーンは変わりません。
+`Ch2 iPhone` の下に `遊撃 休止`（`overlays/pause.html?ch=ch2`）を配置しています。スマートフォンからの SRT が切れて映像が消えると、「配信休止中 | 遊撃」の画面が見えます。映像が消えている間は、`channels.lua` が遊撃のテロップを隠します（`scenes.json` の `signal_lost`）。SRT は数秒の途切れでは切断にならないため、短い途切れでは画面は変わらず、直前の映像が止まって見えます。送信元がつなぎ直すと、映像は自動で戻ります（[3-9.](#3-9-中継relay)）。
 
 ### 3-8. 操作パネル
 
@@ -252,7 +248,6 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 
 - 中継は `relayPort` で OBS の接続を待ち、OBS が接続したら ffmpeg を起動して `obsListenPort` で SRT を受け、映像と音声をそのまま OBS へ送ります。ポートは `config.json` の `obsListenPort`（SRT）と `relayPort`（TCP）です。
 - 送信元が切断すると、中継は OBS への接続を閉じ、OBS の映像が消えます（休止の画面が出ます）。OBS が接続し直すと中継は SRT の待ち受けを再開し、送信元がつなぎ直すと映像が戻ります。OBS の再起動は不要です。
-- ホットキーの「<会場> SRT を受け直す」は `hosts/obs/.relay/restart-<Ch>` を作成し、中継がその Ch の ffmpeg を終了させます。
 - 中継の出力（ffmpeg の警告を含む）は、タスクで動かす場合 `hosts/obs/.relay/relay.log` に追記されます。
 - 中継を止める場合は、`schtasks /end` では子のプロセス（Python と ffmpeg）が残るため、`kosensai-live.exe`（`relay`）のプロセスを子ごと終了します。
 
@@ -322,11 +317,10 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 | `audio.always` | 音声のソースを置き、常にミキサーに入れるシーン |
 | `audio.ch3` | Ch3（トラック 1）の音声の候補 `{video, audio}`。プログラムに `video` が映っていると、`audio` をトラック 1 に入れる（先の項目を優先） |
 | `audio.pause` | 会場ごとの配信休止 `{id, name, show, hide, audio}`。ホットキーの「`name` 休止: 出す」で、`show` のソースを表示し、`hide` のソースを隠し、`audio` をミュートする |
-| `restart` | ホットキーの「`name` SRT を受け直す」で、中継が ffmpeg を起動し直す Ch `{id, name}`（`id` は Ch の id） |
 | `transition` | 会場ごとの転換の画面 `{id, name, show}`。ホットキーの「`name` 転換: 出す」で `show` のソースを表示し、「`name` 転換: 消す」で隠す |
 | `monitor` | 受信の確認。`scene` はウィンドウ プロジェクターで開くシーン（配信休止では隠さない）、`inputs` は受信の状態を出す会場 `{name, video}`、`pages` は状態とホットキーの一覧を送るブラウザソース `{source}` |
 | `panel` | 操作パネル。`source` はホットキーの「操作パネルを開く」で「対話」のウィンドウを開くブラウザソース |
-| `hotkeys` | ホットキーの ID（`monitor.open`・`panel.open`・`restart.<id>`・`pause.<id>.on`・`pause.<id>.off`・`transition.<id>.on`・`transition.<id>.off`・`cm.on`・`cm.off`）→ キー（`F9` のように `OBS_KEY_` を除いた名前）。`channels.lua` が読み込むたびに割り当てる |
+| `hotkeys` | ホットキーの ID（`monitor.open`・`panel.open`・`pause.<id>.on`・`pause.<id>.off`・`transition.<id>.on`・`transition.<id>.off`・`cm.on`・`cm.off`）→ キー（`F9` のように `OBS_KEY_` を除いた名前）。`channels.lua` が読み込むたびに割り当てる |
 | `cm` | CM のスライドショー。`folder` は kosensai-live-assets の中の画像のフォルダ、`slide_sec` は 1 枚を表示する秒数 |
 | `cm_corner` | `scene` に、毎時 `every_min` 分ごとに CM を `show_sec` 秒表示する。普段は `source`（右下）を、`lost_video` の映像が消えている間は `full_source`（全画面）を出す |
 | `signal_lost` | 映像が消えた時に隠すソース。`video` の幅が 0 の間（SRT が切れている間）、`hide` のソースを全シーンで隠す |

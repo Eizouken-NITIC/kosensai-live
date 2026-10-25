@@ -156,10 +156,6 @@
   "transition": [
     {"id": "ch1", "name": "第一体育館", "show": [{"source": "UP NEXT 第一体育館"}]}
   ],
-  "restart": [
-    {"id": "ch1", "name": "第一体育館"},
-    {"id": "ch2", "name": "遊撃"}
-  ],
   "monitor": {
     "scene": "[確認] 受信",
     "inputs": [
@@ -174,8 +170,6 @@
     "panel.open": "F2",
     "transition.ch1.on": "F3",
     "transition.ch1.off": "F4",
-    "restart.ch1": "F5",
-    "restart.ch2": "F6",
     "pause.ch2.on": "F7",
     "pause.ch2.off": "F8",
     "pause.ch1.on": "F9",

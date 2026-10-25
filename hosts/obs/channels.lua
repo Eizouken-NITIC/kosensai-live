@@ -23,17 +23,14 @@
 --    全画面(full_source)を出す。lost_video を休止で隠している間も全画面にする。
 --    スライドショーは隠すと止まり、次に表示すると続きのスライドから進む。ホットキーの
 --    「CM 小窓: 自動で出す」「CM 小窓: 出さない」で切り替え、状態はスクリプトの設定に保存する。
--- 6. ホットキーの「<会場> SRT を受け直す」で、restart の Ch の中継(kosensai-live relay)の ffmpeg を
---    起動し直す。.relay/restart-<Ch> のファイルを作ると、relay がその Ch の ffmpeg を終了させて起動し直す。
---    送信元との接続が残ったまま映像が届かない時に使う。Ch3 のシーンは変えない。
--- 7. ホットキーの「受信の確認を開く」で、monitor.scene(各会場の受信の映像を並べたシーン)の
+-- 6. ホットキーの「受信の確認を開く」で、monitor.scene(各会場の受信の映像を並べたシーン)の
 --    ウィンドウ プロジェクターを開く。monitor.inputs の受信の状態(映像が消えた時刻を含む)、休止の状態、
 --    ホットキーの一覧を、毎秒 monitor.pages のブラウザソースへ kosensaiStatus のイベントで送る。
 --    monitor.scene は休止で隠すソースを含むが、受信を確かめるためのシーンなので、休止では隠さない。
--- 8. transition の会場ごとに、ホットキーの「<会場> 転換: 出す」で show のソース(次の出演の画面)を全シーンで
+-- 7. transition の会場ごとに、ホットキーの「<会場> 転換: 出す」で show のソース(次の出演の画面)を全シーンで
 --    表示し、「<会場> 転換: 消す」で隠す。演目の間の転換は予定表に無いため、本部が転換の始まりと終わりを見て
 --    切り替える。音声はミュートしない。状態はスクリプトの設定に保存し、OBS を再起動しても残す。
--- 9. ホットキーの「操作パネルを開く」で、panel.source のブラウザソースの「対話」のウィンドウを開く。
+-- 8. ホットキーの「操作パネルを開く」で、panel.source のブラウザソースの「対話」のウィンドウを開く。
 --
 -- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
 
@@ -53,7 +50,6 @@ local transitions = {} -- { { id = ..., name = ..., show = { ... }, on = false }
 -- scenes.json の panel.source。
 local panel_source = nil
 local signal_lost = {} -- { { video = ..., hide = { ... }, lost = nil }, ... }
-local restarts = {} -- { { id = ..., name = ... }, ... }
 local cm_corner = nil -- { scene = ..., source = ..., full_source = ..., lost_video = ..., every_min = ..., show_sec = ... }
 local monitor = nil -- { scene = ..., inputs = { { name = ..., video = ..., lost = nil, since = nil }, ... }, pages = { ... } }
 -- 登録したホットキー。{ { id = ..., label = ... }, ... }
@@ -151,20 +147,10 @@ local function load_config()
     panel_source = obslua.obs_data_get_string(panel, "source")
     obslua.obs_data_release(panel)
   end
-  restarts = {}
-  each(scenes, "restart", function(item)
-    table.insert(restarts, {
-      id = obslua.obs_data_get_string(item, "id"),
-      name = obslua.obs_data_get_string(item, "name"),
-    })
-  end)
   hotkey_keys = {}
   local keys = obslua.obs_data_get_obj(scenes, "hotkeys")
   if keys ~= nil then
     local ids = { "cm.on", "cm.off", "monitor.open", "panel.open" }
-    for _, r in ipairs(restarts) do
-      table.insert(ids, "restart." .. r.id)
-    end
     for _, p in ipairs(pauses) do
       table.insert(ids, "pause." .. p.id .. ".on")
       table.insert(ids, "pause." .. p.id .. ".off")
@@ -584,22 +570,6 @@ local function set_paused(id, on)
   end
 end
 
-local function restart_relay(r)
-  return function(pressed)
-    if not pressed then
-      return
-    end
-    local path = script_dir() .. "/.relay/restart-" .. r.id
-    local f, err = io.open(path, "w")
-    if f == nil then
-      obslua.script_log(obslua.LOG_WARNING, path .. " を作成できない(kosensai-live relay が動いていない?): " .. err)
-      return
-    end
-    f:close()
-    obslua.script_log(obslua.LOG_INFO, r.name .. " の SRT の受け直しを要求した")
-  end
-end
-
 local function on_event(event)
   if event == obslua.OBS_FRONTEND_EVENT_FINISHED_LOADING or event == obslua.OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED then
     attach_always_scene(true)
@@ -663,9 +633,6 @@ function script_load(settings)
     p.on = obslua.obs_data_get_bool(settings, "paused_" .. p.id)
     register_hotkey("pause." .. p.id .. ".on", p.name .. " 休止: 出す", set_paused(p.id, true))
     register_hotkey("pause." .. p.id .. ".off", p.name .. " 休止: 消す", set_paused(p.id, false))
-  end
-  for _, r in ipairs(restarts) do
-    register_hotkey("restart." .. r.id, r.name .. " SRT を受け直す", restart_relay(r))
   end
   register_hotkey("cm.on", "CM 小窓: 自動で出す", set_cm_auto(true))
   register_hotkey("cm.off", "CM 小窓: 出さない", set_cm_auto(false))
