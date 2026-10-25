@@ -282,7 +282,7 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 | `clock.html` | 左上の時計 |
 | `notice.html` | お知らせの帯。操作パネルの固定・即時・ループのお知らせを出す。帯に収まらない文言は、先頭で 2 秒止めてから 120 px/秒で末尾まで流し、末尾で 2 秒止めて先頭に戻ることを繰り返す。`?beside=ch1` では、第一体育館のテロップの「つぎ」が出ている間、その右に並べる（`お知らせ 第一体育館`） |
 | `watermark.html` | 右上のロゴの透かし |
-| `lobby.html` | `standby.html` と `timetable.html` を交互に出す（次の出演の 5 分前からは待機画面に固定） |
+| `lobby.html` | `standby.html`（20 秒）・`upnext.html`（15 秒）・`timetable.html`（15 秒）を順に出す（次の出演の 5 分前からは待機画面に固定） |
 | `standby.html` | 待機画面（開始前と休憩中の残り時間、配信休止中、終了後） |
 | `upnext.html` | 次の演目の全画面の告知 |
 | `timetable.html` | 当日のタイムテーブル |

@@ -19,14 +19,16 @@
 </head>
 <body>
 <iframe id="standby"></iframe>
+<iframe id="upnext"></iframe>
 <iframe id="timetable"></iframe>
 <script src="overlay.js"></script>
 <script>
-  // 待機画面とタイムテーブルを交互に表示する。次の出演の開始が近づいたら待機画面に固定する。
+  // 待機画面・UP NEXT・タイムテーブルを ORDER の順に表示する。次の出演の開始が近づいたら待機画面に固定する。
   // 表示の秒数と、待機画面に固定する次の出演までの残り時間(分)。
-  const SECONDS = { standby: 20, timetable: 15 };
+  const ORDER = ['standby', 'upnext', 'timetable'];
+  const SECONDS = { standby: 20, upnext: 15, timetable: 15 };
   const HOLD_MINUTES = 5;
-  const frames = { standby: document.getElementById('standby'), timetable: document.getElementById('timetable') };
+  const frames = Object.fromEntries(ORDER.map((name) => [name, document.getElementById(name)]));
   // URL の引数(?assets=、確認用の ?now=)は中の画面にもそのまま渡す。
   for (const [name, frame] of Object.entries(frames)) frame.src = `${name}.html${location.search}`;
 
@@ -52,12 +54,12 @@
   function cycle() {
     const name = holdStandby() ? 'standby' : next;
     show(name);
-    next = name === 'standby' ? 'timetable' : 'standby';
+    next = ORDER[(ORDER.indexOf(name) + 1) % ORDER.length];
     setTimeout(cycle, SECONDS[name] * 1000);
   }
   frames.standby.addEventListener('load', () => frames.standby.classList.add('on'), { once: true });
   shown = 'standby';
-  next = 'timetable';
+  next = ORDER[1];
   setTimeout(cycle, SECONDS.standby * 1000);
 </script>
 </body>
