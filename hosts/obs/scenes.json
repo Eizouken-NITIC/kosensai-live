@@ -25,6 +25,7 @@
     "受信の確認": {"type": "page", "page": "monitor.html"},
     "待機画面": {"type": "page", "page": "lobby.html", "replay": true},
     "UP NEXT": {"type": "page", "page": "upnext.html", "replay": true},
+    "UP NEXT 第一体育館": {"type": "page", "page": "upnext.html", "replay": true},
     "タイムテーブル": {"type": "page", "page": "timetable.html", "replay": true},
     "2 画面 背景": {"type": "page", "page": "split.html", "replay": true},
     "配信休止": {"type": "page", "page": "pause.html", "replay": true},
@@ -51,6 +52,7 @@
       {"source": "Ch1 ATEM", "place": "full"},
       {"source": "テロップ 第一体育館", "place": "full"},
       {"source": "お知らせ 第一体育館", "place": "full"},
+      {"source": "UP NEXT 第一体育館", "place": "full", "hidden": true},
       {"source": "ウォーターマーク", "place": "full"},
       {"source": "配信休止", "place": "full", "hidden": true}
     ],
@@ -77,6 +79,7 @@
       {"source": "テロップ 第一体育館", "place": "full"},
       {"source": "時計", "place": "full"},
       {"source": "お知らせ 第一体育館", "place": "full"},
+      {"source": "UP NEXT 第一体育館", "place": "full", "hidden": true},
       {"source": "ウォーターマーク", "place": "full"},
       {"source": "配信休止", "place": "full", "hidden": true}
     ],
@@ -152,6 +155,9 @@
       {"id": "ch2", "name": "遊撃", "show": [], "hide": [{"source": "Ch2 iPhone"}, {"source": "テロップ 遊撃"}], "audio": "Ch2 iPhone"}
     ]
   },
+  "transition": [
+    {"id": "ch1", "name": "第一体育館", "show": [{"source": "UP NEXT 第一体育館"}]}
+  ],
   "restart": [
     {"id": "ch1", "name": "第一体育館"},
     {"id": "ch2", "name": "遊撃"}
@@ -164,8 +170,12 @@
     ],
     "pages": [{"source": "操作パネル"}, {"source": "受信の確認"}]
   },
+  "panel": {"source": "操作パネル"},
   "hotkeys": {
     "monitor.open": "F1",
+    "panel.open": "F2",
+    "transition.ch1.on": "F3",
+    "transition.ch1.off": "F4",
     "restart.ch1": "F5",
     "restart.ch2": "F6",
     "pause.ch2.on": "F7",

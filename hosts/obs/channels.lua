@@ -29,6 +29,10 @@
 --    ウィンドウ プロジェクターを開く。monitor.inputs の受信の状態(映像が消えた時刻を含む)、休止の状態、
 --    ホットキーの一覧を、毎秒 monitor.pages のブラウザソースへ kosensaiStatus のイベントで送る。
 --    monitor.scene は休止で隠すソースを含むが、受信を確かめるためのシーンなので、休止では隠さない。
+-- 8. transition の会場ごとに、ホットキーの「<会場> 転換: 出す」で show のソース(次の出演の画面)を全シーンで
+--    表示し、「<会場> 転換: 消す」で隠す。演目の間の転換は予定表に無いため、本部が転換の始まりと終わりを見て
+--    切り替える。音声はミュートしない。状態はスクリプトの設定に保存し、OBS を再起動しても残す。
+-- 9. ホットキーの「操作パネルを開く」で、panel.source のブラウザソースの「対話」のウィンドウを開く。
 --
 -- 休止の画面を表示するかどうかはこのスクリプトだけで制御する。overlays/pause.html は再開の時刻を表示するだけである。
 
@@ -43,6 +47,10 @@ local TRACK1 = 1
 local always_scene = nil
 local ch3 = {} -- { { video = ..., audio = ... }, ... }
 local pauses = {} -- { { id = ..., name = ..., show = { ... }, hide = { ... }, audio = ..., on = false }, ... }
+-- scenes.json の transition。
+local transitions = {} -- { { id = ..., name = ..., show = { ... }, on = false }, ... }
+-- scenes.json の panel.source。
+local panel_source = nil
 local signal_lost = {} -- { { video = ..., hide = { ... }, lost = nil }, ... }
 local restarts = {} -- { { id = ..., name = ... }, ... }
 local cm_corner = nil -- { scene = ..., source = ..., full_source = ..., lost_video = ..., every_min = ..., show_sec = ... }
@@ -84,6 +92,15 @@ local function each(data, key, fn)
   obslua.obs_data_array_release(arr)
 end
 
+-- obs_data の key の配列 [{source}, ...] のソースの名前の一覧。
+local function source_names(data, key)
+  local names = {}
+  each(data, key, function(x)
+    table.insert(names, obslua.obs_data_get_string(x, "source"))
+  end)
+  return names
+end
+
 local function load_config()
   local scenes = load_json("scenes.json")
   if scenes == nil then
@@ -95,30 +112,44 @@ local function load_config()
   each(audio, "ch3", function(item)
     table.insert(ch3, { video = obslua.obs_data_get_string(item, "video"), audio = obslua.obs_data_get_string(item, "audio") })
   end)
-  -- 読み直しても休止の状態は残す。
+  -- 読み直しても休止と転換の状態は残す。
   local was = {}
   for _, p in ipairs(pauses) do
     was[p.id] = p.on
   end
   pauses = {}
   each(audio, "pause", function(item)
-    local p = {
-      id = obslua.obs_data_get_string(item, "id"),
+    local id = obslua.obs_data_get_string(item, "id")
+    table.insert(pauses, {
+      id = id,
       name = obslua.obs_data_get_string(item, "name"),
-      show = {},
-      hide = {},
+      show = source_names(item, "show"),
+      hide = source_names(item, "hide"),
       audio = obslua.obs_data_get_string(item, "audio"),
-    }
-    p.on = was[p.id] or false
-    each(item, "show", function(x)
-      table.insert(p.show, obslua.obs_data_get_string(x, "source"))
-    end)
-    each(item, "hide", function(x)
-      table.insert(p.hide, obslua.obs_data_get_string(x, "source"))
-    end)
-    table.insert(pauses, p)
+      on = was[id] or false,
+    })
   end)
   obslua.obs_data_release(audio)
+  was = {}
+  for _, t in ipairs(transitions) do
+    was[t.id] = t.on
+  end
+  transitions = {}
+  each(scenes, "transition", function(item)
+    local id = obslua.obs_data_get_string(item, "id")
+    table.insert(transitions, {
+      id = id,
+      name = obslua.obs_data_get_string(item, "name"),
+      show = source_names(item, "show"),
+      on = was[id] or false,
+    })
+  end)
+  panel_source = nil
+  local panel = obslua.obs_data_get_obj(scenes, "panel")
+  if panel ~= nil then
+    panel_source = obslua.obs_data_get_string(panel, "source")
+    obslua.obs_data_release(panel)
+  end
   restarts = {}
   each(scenes, "restart", function(item)
     table.insert(restarts, {
@@ -129,13 +160,17 @@ local function load_config()
   hotkey_keys = {}
   local keys = obslua.obs_data_get_obj(scenes, "hotkeys")
   if keys ~= nil then
-    local ids = { "cm.on", "cm.off", "monitor.open" }
+    local ids = { "cm.on", "cm.off", "monitor.open", "panel.open" }
     for _, r in ipairs(restarts) do
       table.insert(ids, "restart." .. r.id)
     end
     for _, p in ipairs(pauses) do
       table.insert(ids, "pause." .. p.id .. ".on")
       table.insert(ids, "pause." .. p.id .. ".off")
+    end
+    for _, t in ipairs(transitions) do
+      table.insert(ids, "transition." .. t.id .. ".on")
+      table.insert(ids, "transition." .. t.id .. ".off")
     end
     for _, id in ipairs(ids) do
       hotkey_keys[id] = obslua.obs_data_get_string(keys, id)
@@ -285,11 +320,16 @@ local function video_lost(name)
   return lost
 end
 
--- 休止と signal_lost が扱うソースの表示を決め、変わったものだけ全シーンに反映する。show のソースは
--- 休止中の会場が 1 つでもあれば表示し、hide のソースは隠す理由が 1 つでもあれば隠す。
+-- 休止・転換・signal_lost が扱うソースの表示を決め、変わったものだけ全シーンに反映する。show のソースは
+-- 休止中・転換中の会場が 1 つでもあれば表示し、hide のソースは隠す理由が 1 つでもあれば隠す。
 -- force のときは変わっていなくても反映する(シーンを作り直した後など)。
 local function apply_visibility(force)
   local visible = {}
+  for _, t in ipairs(transitions) do
+    for _, name in ipairs(t.show) do
+      visible[name] = visible[name] or t.on
+    end
+  end
   for _, p in ipairs(pauses) do
     for _, name in ipairs(p.show) do
       visible[name] = visible[name] or p.on
@@ -452,6 +492,15 @@ local function send_status()
   end
   obslua.obs_data_set_array(data, "pauses", paused)
   obslua.obs_data_array_release(paused)
+  local shown = obslua.obs_data_array_create()
+  for _, t in ipairs(transitions) do
+    push_object(shown, function(item)
+      obslua.obs_data_set_string(item, "name", t.name)
+      obslua.obs_data_set_bool(item, "on", t.on)
+    end)
+  end
+  obslua.obs_data_set_array(data, "transitions", shown)
+  obslua.obs_data_array_release(shown)
   obslua.obs_data_set_bool(data, "cm_auto", cm_auto)
   local hotkeys = obslua.obs_data_array_create()
   for _, h in ipairs(hotkey_list) do
@@ -482,6 +531,34 @@ local function open_monitor(pressed)
   if pressed and monitor ~= nil then
     -- monitor は -1 でウィンドウ、geometry は空で既定の大きさ。
     obslua.obs_frontend_open_projector("Scene", -1, "", monitor.scene)
+  end
+end
+
+local function open_panel(pressed)
+  if not pressed or panel_source == nil then
+    return
+  end
+  local source = obslua.obs_get_source_by_name(panel_source)
+  if source == nil then
+    obslua.script_log(obslua.LOG_WARNING, panel_source .. " のソースがない")
+    return
+  end
+  obslua.obs_frontend_open_source_interaction(source)
+  obslua.obs_source_release(source)
+end
+
+local function set_transition(id, on)
+  return function(pressed)
+    if not pressed then
+      return
+    end
+    for _, t in ipairs(transitions) do
+      if t.id == id and t.on ~= on then
+        t.on = on
+        obslua.script_log(obslua.LOG_INFO, t.name .. (on and " の転換の画面を表示した" or " の転換の画面を消した"))
+        apply_visibility(false)
+      end
+    end
   end
 end
 
@@ -543,6 +620,7 @@ end
 function script_description()
   return "Ch1・Ch2 の音声をミキサーに常時入れ、Ch3 の音声と本部のモニターを表示中の会場に合わせる。"
     .. "ホットキーで会場ごとに休止の画面を表示し、その会場の音声をミュートする。"
+    .. "ホットキーで会場ごとに転換の画面(次の出演)を表示する。"
     .. "遊撃の映像が消えている間は、遊撃のテロップを隠す。"
 end
 
@@ -590,7 +668,13 @@ function script_load(settings)
   end
   register_hotkey("cm.on", "CM 小窓: 自動で出す", set_cm_auto(true))
   register_hotkey("cm.off", "CM 小窓: 出さない", set_cm_auto(false))
+  for _, t in ipairs(transitions) do
+    t.on = obslua.obs_data_get_bool(settings, "transition_" .. t.id)
+    register_hotkey("transition." .. t.id .. ".on", t.name .. " 転換: 出す", set_transition(t.id, true))
+    register_hotkey("transition." .. t.id .. ".off", t.name .. " 転換: 消す", set_transition(t.id, false))
+  end
   register_hotkey("monitor.open", "受信の確認を開く", open_monitor)
+  register_hotkey("panel.open", "操作パネルを開く", open_panel)
   obslua.obs_frontend_add_event_callback(on_event)
   attach_always_scene(false)
   apply_pause(true)
@@ -602,6 +686,9 @@ end
 function script_save(settings)
   for _, p in ipairs(pauses) do
     obslua.obs_data_set_bool(settings, "paused_" .. p.id, p.on)
+  end
+  for _, t in ipairs(transitions) do
+    obslua.obs_data_set_bool(settings, "transition_" .. t.id, t.on)
   end
   obslua.obs_data_set_bool(settings, "cm_auto", cm_auto)
 end

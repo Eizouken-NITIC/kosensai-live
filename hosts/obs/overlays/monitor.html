@@ -33,13 +33,15 @@
     $('wait').hidden = true;
     s.inputs.forEach((input, i) => {
       const paused = s.pauses.find((p) => p.name === input.name)?.on;
+      const transition = s.transitions.find((x) => x.name === input.name)?.on;
       $(`in${i}`).innerHTML = '';
       $(`in${i}`).append(Object.assign(document.createElement('b'), { textContent: input.name }),
         Object.assign(document.createElement('span'), {
           className: input.lost ? 'ng' : 'ok',
           textContent: input.lost ? `切断中(${hhmm(input.since)} から)` : '受信中',
         }),
-        Object.assign(document.createElement('span'), { className: 'ng', textContent: paused ? '休止中' : '' }));
+        Object.assign(document.createElement('span'), { className: 'ng', textContent: paused ? '休止中' : '' }),
+        Object.assign(document.createElement('span'), { textContent: transition ? '転換中' : '' }));
     });
     const fkey = (k) => Number(k.replace(/^F/, '')) || 99;
     $('keys').replaceChildren(...s.hotkeys.filter((h) => h.key).sort((a, b) => fkey(a.key) - fkey(b.key)).map((h) => {

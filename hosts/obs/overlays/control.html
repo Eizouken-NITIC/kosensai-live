@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>control</title>
 <style>
-  /* 操作パネル。OBS でこのブラウザソースを右クリックし「対話」で開いて操作する。配信には映らないため、
+  /* 操作パネル。ホットキーの「操作パネルを開く」(channels.lua)で、このブラウザソースの「対話」のウィンドウを開いて操作する。配信には映らないため、
      画面のデザインは使用しない。テロップのブラウザソースと同じ origin になるため、
      localStorage と BroadcastChannel で状態を渡す。
      OBS のブラウザソースが既定で入れる CSS(背景の透明、余白、overflow: hidden)を詳細度の高いセレクターで上書きする。
@@ -142,6 +142,7 @@
   };
   $('autoPlace').onclick = () => Overlay.setState({ ch2Place: null });
 
+  let listsShown = null;
   function draw() {
     const t = Overlay.now();
     const items = Overlay.schedule('ch1', t, s);
@@ -162,7 +163,9 @@
         `${input.name} `,
         el('span', { className: input.lost ? 'ng' : 'ok' },
           input.lost ? `切断中(${hhmm(new Date(input.since * 1000))} から)` : '受信中'),
-        lua.pauses.find((p) => p.name === input.name)?.on ? '・休止中 ' : ' ',
+        lua.pauses.find((p) => p.name === input.name)?.on ? '・休止中' : '',
+        lua.transitions.find((x) => x.name === input.name)?.on ? '・転換中' : '',
+        ' ',
       ]) : ['channels.lua からの状態を待っています'])),
     );
     $('keys').replaceChildren(...(lua ? [...lua.hotkeys].filter((h) => h.key).sort((a, b) => fkey(a.key) - fkey(b.key))
@@ -177,6 +180,14 @@
         el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。開始時にホットキー「第一体育館 休止: 出す」(${key('第一体育館 休止: 出す')})、終了時に「第一体育館 休止: 消す」(${key('第一体育館 休止: 消す')})を押す。`));
     }
 
+    // 表のボタンを毎秒作り直すと、押している間にボタンが置き換わり、クリックにならない。
+    // 表は、状態・時刻(分)・表の位置のどれかが変わった時だけ作り直す。
+    const list = Overlay.notices(s);
+    noticesTop = Math.max(0, Math.min(noticesTop, list.length - NOTICE_ROWS));
+    const shown = JSON.stringify([s, hhmm(t), actsTop, noticesTop]);
+    if (shown === listsShown) return;
+    listsShown = shown;
+
     const top = Math.max(0, Math.min(actsTop ?? autoTop(), items.length - ACT_ROWS));
     $('acts').replaceChildren(...items.map((it, i) => [it, i]).slice(top, top + ACT_ROWS).map(([it, i]) => el('tr', { className: it.at === cur?.at ? 'now' : it.end <= t ? 'past' : '' },
       el('td', { className: 'time' }, `予定 ${plan[i].at}`),
@@ -185,8 +196,6 @@
       el('td', {}, button('開始', () => started(it))),
     )));
 
-    const list = Overlay.notices(s);
-    noticesTop = Math.max(0, Math.min(noticesTop, list.length - NOTICE_ROWS));
     $('notices').replaceChildren(...list.map((n, i) => [n, i]).slice(noticesTop, noticesTop + NOTICE_ROWS).map(([n, i]) => el('tr', {},
       el('td', {}, el('label', {}, el('input', { type: 'checkbox', checked: n.loop, onchange: (e) => setNotices(list.map((m, j) => (j === i ? { ...m, loop: e.target.checked } : m))) }), ' ループ')),
       el('td', {}, n.text),
