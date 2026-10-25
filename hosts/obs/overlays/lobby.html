@@ -23,7 +23,7 @@
 <script src="overlay.js"></script>
 <script>
   // 待機画面とタイムテーブルを交互に表示する。次の出演の開始が近づいたら待機画面に固定する。
-  // 仕様補完: 表示の秒数と待機画面に固定する残り時間。
+  // 表示の秒数と、待機画面に固定する次の出演までの残り時間(分)。
   const SECONDS = { standby: 20, timetable: 15 };
   const HOLD_MINUTES = 5;
   const frames = { standby: document.getElementById('standby'), timetable: document.getElementById('timetable') };

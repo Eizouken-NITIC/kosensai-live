@@ -127,7 +127,6 @@
   // 固定(s.noticePin)があればそれを、「即時」(s.noticeNow)から NOTICE_SHOW 秒の間はそれを出す。
   // それ以外はループに入れたお知らせを NOTICE_CYCLE 秒ごとに 1 件ずつ、最初の NOTICE_SHOW 秒だけ出す。
   // 時刻だけで決まるため、お知らせの帯とテロップ(帯の分だけ上げる)が同じ判定になる。
-  // 仕様補完: 表示 15 秒、間隔 60 秒。
   const NOTICE_SHOW = 15000;
   const NOTICE_CYCLE = 60000;
   function noticeText(s = state(), d = now()) {

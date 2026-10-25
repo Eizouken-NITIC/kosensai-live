@@ -320,10 +320,6 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 
 - `Ch1 音声 (USB)` の `device` は、Windows の表示名 `ライン (2- USB AUDIO  CODEC)` から、USB ポートで変わる番号（`2-`）を除いたものです（空白は 2 つ）。
 - macOS の Ch3 の録画は x264 にしています。Ch3 の録画に VideoToolbox を使うと、Source Record の VideoToolbox のエンコーダーが「Unsupported color format」で動かず、Ch1・Ch2 のファイルが作られませんでした（OBS 32.1.2、Source Record 0.4.8）。
-- 仕様補完：obs-multi-rtmp の音声のビットレートは 160 kbps としました（OBS の既定値）。
-- 仕様補完：録画は Ch1〜Ch3 とも CBR 12 Mbps（ATEM の送出の品質 `HyperDeck Low` と同じ）、音声 320 kbps、mkv（録画中に OBS が落ちてもファイルが残る形式）としました。
-- 仕様補完：CM は 1 枚 6 秒、`Ch3 遊撃` に 5 分ごとに 30 秒、右下の小窓は 480x270 としました。遊撃の休止中も同じ間隔で、全画面で出します。
-- 仕様補完：Linux のエンコーダーは、GPU によらず使用できる x264 としました。
 
 ## 6. program.json
 
@@ -340,9 +336,3 @@ kosensai-live-assets の `program.json` の形式です。
 | `notices` | お知らせの初期値。操作パネルで登録・削除すると、操作パネルの状態が優先する |
 
 遊撃の発表の枠は、`events` の `ch` が `ch2` の項目です。
-
-
-- 2 日目の軽音楽部は 14:00 まで、公式の枠は 14:30 までなので、14:00〜14:30 は休憩にしています。
-- ダンス部は 14:50 以降の撮影と録画をしないため、`ng` にしています。`ng` は待機画面とタイムテーブルの表示に使用し、配信休止はホットキーで切り替えます。
-- 仕様補完：遊撃の発表の枠の外に出す現在地の既定値を「校内の様子（校内各所）」としました。
-- 仕様補完：お知らせのループは、1 分ごとに 1 件を 15 秒出すとしました（`overlays/overlay.js` の `NOTICE_CYCLE`・`NOTICE_SHOW`）。
