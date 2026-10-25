@@ -38,10 +38,8 @@
   "scenes": {
     "[音声] 常時": [
       {"source": "Ch1 音声 (USB)"},
-      {"source": "Ch2 iPhone", "place": "offscreen"}
-    ],
-    "[操作] パネル": [
-      {"source": "操作パネル", "place": "full"}
+      {"source": "Ch2 iPhone", "place": "offscreen"},
+      {"source": "操作パネル", "place": "offscreen"}
     ],
     "[確認] 受信": [
       {"source": "受信の確認", "place": "full"},
