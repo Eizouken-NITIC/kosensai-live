@@ -1,18 +1,16 @@
 # kosensai-live
 
-映像研究部が、高専祭のライブ配信のために作った配信システムです！
+映像研究部が高専祭のライブ配信に使用する配信システムです。
 
-実運用では、メイン会場にカメラ、スイッチャー、本部 PC（OBS）を配置します。音響の音声をスイッチャーに入れ、スイッチングした映像と一緒に SRT で本部 PC へ入力し、移動中継のスマートフォンの映像も SRT で本部 PC へ集約します。本部 PC でテロップ等を合成し、配信サーバー（MediaMTX + Caddy）へ送出します。本部 PC では各チャンネルの録画も行います。
-その後 MediaMTX で HLS に remux し、視聴ページに配信します。
+第一体育館のカメラの映像を ATEM でスイッチングし、配信用ミキサーの音声と一緒に SRT で本部 PC へ送ります。遊撃のスマートフォンの映像も SRT で本部 PC へ送ります。本部 PC の OBS がテロップ等を合成し、チャンネルごとに配信サーバー（MediaMTX + Caddy）へ送出します。MediaMTX が HLS に remux し、視聴ページとサイネージに配信します。
 
-外部サービスには映像を送出せず、イベント会場内で配信が完結しているのが大きな特徴です。
-配信サーバーは、2026高専祭 ネットワークチームが構築した特設ネットワーク上で運用しています。視聴者は会場の特設 Wi-Fi AP に接続して視聴します。
+映像は外部のサービスへ送出せず、会場内のネットワークで配信します。視聴者は会場の Wi-Fi に接続して視聴します。
 
 | 領域 | 技術 |
 | --- | --- |
 | 映像伝送 | SRT |
 | 本部 PC | OBS Studio + obs-multi-rtmp（チャンネルごとの送出）+ Source Record（遊撃のクリーンフィードの録画） |
-| 本部 PC の設定 | `kosensai-live`（Python、uv で Windows・macOS・Linux 共通） |
+| 本部 PC と ATEM の設定 | `kosensai-live`（Python、uv で Windows・macOS・Linux 共通） |
 | 配信 | HLS（MediaMTX が SRT → HLS に remux） |
 | Web サーバー / TLS 終端 | Caddy |
 | 視聴ページ / サイネージ | SvelteKit + TypeScript（静的プリレンダリング） |
@@ -24,58 +22,60 @@
 
 ## 1. システム構成
 
-安定した伝送のため、プロトコルには SRT を採用しています。
-
 ```
-メイン会場のカメラ
-   │  HDMI等
+第一体育館のカメラ
+   │  HDMI 等
    ▼
-スイッチャー (ATEM、音響の音声をマイク入力で受ける) / 移動中継のスマートフォン
+ATEM（配信用ミキサーの出力を MIC 1 に入れる） / 遊撃のスマートフォン
    │  SRT Caller（会場の LAN / Wi-Fi）
    ▼
-本部の PC (OBS)  ← hosts/obs/
+本部 PC（OBS）  ← hosts/obs/
    │  チャンネルごとにエンコードし、SRT Caller で送信
-   │  （Ch2 はテロップの無い映像、Ch3 はプログラムを録画。Ch1 は ATEM が収録）
    │  streamid=publish:chN
    ▼
-配信サーバー (MediaMTX + Caddy)             ← hosts/server/
+配信サーバー（MediaMTX + Caddy）  ← hosts/server/
    │  SRT 受信 → HLS 生成 → Caddy が TLS 終端して配信
    ├───────────────► 視聴者のブラウザ
    └───────────────► サイネージ端末
 ```
 
-配信サーバーでは MediaMTX が SRT ストリームを受信し、トランスコードも ABR も行わずに HLS へ remux します。Caddy が TLS 終端・リバースプロキシ・静的配信を担い、視聴ページとサイネージページも同じサーバーから配信します。
+| 録画 | 行うもの |
+| --- | --- |
+| Ch1（第一体育館のクリーンフィード） | ATEM（USB ディスクへの収録） |
+| Ch2（遊撃のクリーンフィード） | 本部 PC の OBS（Source Record） |
+| Ch3（プログラム） | 本部 PC の OBS（通常の録画） |
 
-TLS 証明書は、配信サーバーがプライベートネットワーク上にあり HTTP-01 チャレンジが到達しないため、Let's Encrypt の DNS-01 チャレンジで取得しています。
+配信サーバーでは、MediaMTX が SRT のストリームを受信し、トランスコードと ABR を行わずに HLS へ remux します。Caddy が TLS 終端・リバースプロキシ・静的配信を行い、視聴ページとサイネージのページも同じサーバーから配信します。
+
+TLS 証明書は Let's Encrypt の DNS-01 チャレンジで取得します。
 
 ### 視聴ページ
 
-- チャンネル切り替え（前回の選択を記憶）
+- チャンネルの切り替え（前回の選択を記憶）
 - 配信開始前・回線切断時の自動再接続
 - 初めて開いた人へのオンボーディング
-- 外部サイトの iframe 埋め込みとリサイズ可能なパネル
-- Media Session API 対応
-- ピクチャー・イン・ピクチャー対応
+- 外部サイトの iframe の埋め込みとリサイズできるパネル
+- Media Session API
+- ピクチャー・イン・ピクチャー
 
 ### サイネージ
 
-無人運用するディスプレイ向けのページです。
-Raspberry Pi 上で Chromium Kiosk モードでの運用を想定しています。
+無人で運用するディスプレイ向けのページです。Raspberry Pi の Chromium のキオスクモードで表示します。
 
-- 配信開始の自動検出と再生開始
-- ライブ先端への自動追従（遅れを再生速度とシークで詰め戻し）
-- 長時間運転向けのページ自動リロード（6時間周期）
-- QR コード表示
+- 配信開始の自動検出と再生の開始
+- ライブの先端への自動追従（遅れを再生速度とシークで詰める）
+- ページの自動リロード（6 時間ごと）
+- QR コードの表示
 
 ### ローカル検証環境
 
-Docker Compose で動きます。視聴ページの挙動確認、チャンネル切り替え、回線切断時の自動復帰、サイネージの表示確認、負荷テストまで手元で実行できます。
+Docker Compose で起動します。視聴ページの動作、チャンネルの切り替え、回線切断からの自動復帰、サイネージの表示、負荷テストを手元で確認できます。
 
 ---
 
 ## 2. ディレクトリ構成
 
-各マシンに対して `hosts/` 配下の 1 つのフォルダが対応しています。どのファイルがどのマシンに配置されるかを、ディレクトリ構成だけで判断できるように設計しています。
+`hosts/` の下の 1 つのフォルダが 1 つのマシンに対応します。
 
 ```
 kosensai-live/
@@ -83,24 +83,26 @@ kosensai-live/
 ├─ hosts/                     マシンごとのデプロイ単位
 │  ├─ server/                 配信サーバー
 │  │  ├─ compose.yml / mediamtx.yml / Caddyfile / .env.example
-│  │  ├─ certs/               証明書格納ディレクトリ（Git 管理外）
-│  │  ├─ logs/                アクセスログ格納ディレクトリ（Git 管理外）
+│  │  ├─ certs/               証明書（Git 管理外）
+│  │  ├─ logs/                アクセスログ（Git 管理外）
 │  │  └─ scripts/             get-cert / smoke-test
-│  ├─ obs/                    本部配信用 PC
-│  │  ├─ channels.lua         音声の振り分け・本部のモニター・配信休止・CM の自動表示を行う OBS のスクリプト
+│  ├─ obs/                    本部 PC
 │  │  ├─ scenes.json          OBS の構成（シーン・出力・録画）
+│  │  ├─ atem.json            ATEM の配信の品質と音声のミキサー
+│  │  ├─ channels.lua         音声の振り分け、配信休止、転換の画面、CM の自動表示、受信の確認と操作パネルを行う OBS のスクリプト
+│  │  ├─ relay-task.ps1       中継を Windows の起動時に動かすタスクの登録
 │  │  ├─ design/              画面のフォント・画像と、画像を描画する Blender のスクリプト
 │  │  └─ overlays/            テロップと全画面の画面（ブラウザソース）
 │  └─ signage/                サイネージ端末
 │     └─ setup.sh / signage.service
 ├─ app/                       配信サイトのソースコード
-│  ├─ src/routes/             視聴ページ (/) とサイネージページ (/signage/)
+│  ├─ src/routes/             視聴ページ (/) とサイネージのページ (/signage/)
 │  ├─ src/lib/                プレイヤーの状態管理・ロゴ・設定の読み込み
 │  ├─ src/styles/             共通 CSS
 │  └─ static/                 QR コード・ロゴ・ライセンス
 ├─ web/                       app/ のビルド成果物
 │
-├─ rehearsal/                 ローカル検証
+├─ rehearsal/                 ローカル検証環境
 ├─ tools/                     複数のマシンから使用する共通スクリプト
 │  ├─ kosensai_live/          本部 PC と開発用の PC の CLI（kosensai-live）
 │  │  └─ config.py            config.json と .env の読み込みと検証（配信サーバーでも使用する）
@@ -114,20 +116,21 @@ kosensai-live/
 
 | 対象マシン・用途 | 参照ドキュメント |
 | --- | --- |
-| **配信サーバーの構築・管理** | [hosts/server/README.md](hosts/server/README.md) |
-| **本部 PC（OBS）の設定** | [hosts/obs/README.md](hosts/obs/README.md) |
-| **サイネージ端末のセットアップ** | [hosts/signage/README.md](hosts/signage/README.md) |
-| **ローカル検証環境** | [rehearsal/README.md](rehearsal/README.md) |
+| 配信サーバーの構築・管理 | [hosts/server/README.md](hosts/server/README.md) |
+| 本部 PC（OBS）と ATEM の設定 | [hosts/obs/README.md](hosts/obs/README.md) |
+| サイネージ端末のセットアップ | [hosts/signage/README.md](hosts/signage/README.md) |
+| ローカル検証環境 | [rehearsal/README.md](rehearsal/README.md) |
 
 ### スクリプトの実行
 
-本部 PC（Windows）と開発用の PC（macOS・Windows）で行う操作は CLI の `kosensai-live` にまとめてあり、OS によらず [uv](https://docs.astral.sh/uv/) で実行します。依存は `pyproject.toml` と `uv.lock` にあり、uv がリポジトリの `.venv/` に用意します。
+本部 PC と開発用の PC で行う操作は CLI の `kosensai-live` にまとめてあり、OS によらず [uv](https://docs.astral.sh/uv/) で実行します。依存は `pyproject.toml` と `uv.lock` にあり、uv がリポジトリの `.venv/` に用意します。
 
 | コマンド | 内容 |
 | --- | --- |
 | `uv run kosensai-live check` | `.env` と `config.json` を検証する |
-| `uv run kosensai-live obs build` | 本部 OBS のプロファイル・シーン・出力を設定する |
-| `uv run kosensai-live atem apply` / `check` / `get` / `start` / `stop` / `watch` | ATEM の映像の形式と配信を設定・確認する |
+| `uv run kosensai-live obs build` | 本部 PC の OBS のプロファイル・シーン・出力・録画を設定する |
+| `uv run kosensai-live atem apply` / `check` / `get` / `start` / `stop` / `watch` | ATEM の映像の形式・配信・品質（ビットレート）・音声のミキサーを設定・確認する |
+| `uv run kosensai-live relay` | ATEM とスマートフォンの SRT を受け、OBS へ TCP で渡す |
 | `uv run kosensai-live urls` | SRT の URL と視聴の URL を表示する |
 | `uv run kosensai-live qr` | 視聴ページの QR コードを生成する |
 | `uv run kosensai-live render gauge` / `clock` | 計器と時計の画像を Blender で描画する |
@@ -135,7 +138,7 @@ kosensai-live/
 
 `.env` は既定で `hosts/server/.env` を読みます。別のファイルは `uv run kosensai-live check --env <パス>` のように、サブコマンドの後に `--env` を付けて指定します。
 
-配信サーバー（Linux）とサイネージ端末（Raspberry Pi OS）のシェルスクリプト、コンテナの中の処理はそのマシンの `bash` と `python3` で実行します。
+配信サーバー（Linux）とサイネージ端末（Raspberry Pi OS）のシェルスクリプトと、コンテナの中の処理はそのマシンの `bash` と `python3` で実行します。
 
 ---
 
@@ -148,41 +151,41 @@ uv run kosensai-live rehearsal reload   # app/ の変更をビルドして検証
 docker compose down -v   # 停止
 ```
 
-負荷テストや LAN の実機からの確認方法は [rehearsal/README.md](rehearsal/README.md) にあります。
+負荷テストと LAN の実機からの確認の手順は [rehearsal/README.md](rehearsal/README.md) にあります。
 
 ---
 
 ## 4. 本番環境の構築
 
-自分のイベントで運用する場合は、まず `config.json` を書き換えたうえで（[5 章](#5-設定の編集)）、マシンごとに次の順で構築します。
+`config.json` を書き換えた後（[5.](#5-設定の編集)）、マシンごとに次の順で構築します。
 
-**1. 配信サイトをビルドする**
+### 4-1. 配信サイトをビルドする
 
 ```bash
 cd app
 pnpm install
-pnpm lint        # Prettier と svelte-check の実行
-pnpm build       # 成果物は web/ に出力されます
+pnpm lint        # Prettier と svelte-check を実行する
+pnpm build       # 成果物は web/ に出力される
 ```
 
-**2. 配信サーバーを構築する（MediaMTX + Caddy）**
+### 4-2. 配信サーバーを構築する（MediaMTX + Caddy）
 
 ```bash
 cd hosts/server
-cp .env.example .env     # SRT パスフレーズ（送出用・受信用）と各マシンの IP を設定します
-sudo ./scripts/get-cert.sh   # DNS-01 チャレンジで取得します
-docker compose up -d         # 起動前に init-mediamtx・init-caddy が設定・証明書・カーネルパラメータを検証します
+cp .env.example .env         # パスフレーズ（送出用・受信用）と各マシンの IP を設定する
+sudo ./scripts/get-cert.sh   # DNS-01 チャレンジで証明書を取得する
+docker compose up -d
 ```
 
-システム要件、SRT 用カーネルパラメータの設定、疎通テストの手順は [hosts/server/README.md](hosts/server/README.md) にあります。
+システム要件、SRT のカーネルパラメータ、起動前の検証、疎通テストの手順は [hosts/server/README.md](hosts/server/README.md) にあります。
 
-**3. 本部 PC（OBS）を設定する**
+### 4-3. 本部 PC（OBS）と ATEM を設定する
 
-本部 PC は Windows・macOS・Linux のどれでも構いません。OBS に obs-multi-rtmp と Source Record のプラグインをインストールし、本部 OBS（シーン・送出・録画）と ATEM は `kosensai-live` が `config.json`・`.env`・`hosts/obs/scenes.json` と kosensai-live-assets のフォルダ（その年の進行と CM のスライド。このリポジトリには含めません）から設定します。必要なものと手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
+OBS に obs-multi-rtmp と Source Record のプラグインをインストールします。OBS と ATEM は、`kosensai-live` が `config.json`・`.env`・`hosts/obs/scenes.json`・`hosts/obs/atem.json` と kosensai-live-assets のフォルダ（その年の進行と CM のスライド。このリポジトリには含めません）から設定します。必要なものと手順は [hosts/obs/README.md](hosts/obs/README.md) にあります。
 
-**4. サイネージ端末を用意する（任意）**
+### 4-4. サイネージ端末を用意する（任意）
 
-Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium のキオスク起動と自動復帰の設定までを行います。詳細は [hosts/signage/README.md](hosts/signage/README.md) にあります。
+Raspberry Pi で `hosts/signage/setup.sh` を実行し、Chromium のキオスクモードの自動起動を設定します。手順は [hosts/signage/README.md](hosts/signage/README.md) にあります。
 
 ---
 
@@ -190,42 +193,43 @@ Raspberry Pi 上で `hosts/signage/setup.sh` を実行すると、Chromium の�
 
 ### config.json
 
-複数のマシン間で共通する設定値はすべてリポジトリ直下の `config.json` に集約されています。
+複数のマシン間で共通する設定値はリポジトリの直下の `config.json` にあります。
 
 | 設定キー | 内容 |
 | --- | --- |
-| `site` | 配信サイトの名称・ホスト名・GitHub リポジトリの URL |
-| `video` | ATEM と本部 OBS の映像の形式 |
-| `channels` | チャンネル ID・表示名・OBS 待受ポート・SRT レイテンシ・ビットレート |
+| `site` | 配信サイトの名前・ホスト名・GitHub リポジトリの URL |
+| `video` | ATEM と本部 PC の OBS の映像の形式 |
+| `channels` | チャンネルの ID・表示名・OBS の待ち受けのポート・SRT のレイテンシ・ビットレート |
 | `externalSite` | 視聴ページとサイネージに iframe で埋め込む外部サイトの表示名と URL |
-| `viewer` | 視聴ページのデフォルトチャンネル |
-| `signage` | サイネージページのデフォルトチャンネルおよび QR コード横のテキスト |
-| `welcome` | オンボーディング案内文 |
+| `viewer` | 視聴ページの既定のチャンネル |
+| `signage` | サイネージのページの既定のチャンネルと、QR コードの横のテキスト |
+| `welcome` | オンボーディングの案内文 |
 
-- **適用のタイミング**: `app/` はビルド時にこの設定をインポートします。`hosts/`、`rehearsal/`、`tools/` の各種スクリプトは実行時に `tools/kosensai_live/config.py` を経由して読み込みます。
+`app/` はビルド時にこのファイルをインポートします。`hosts/`、`rehearsal/`、`tools/` のスクリプトは実行時に `tools/kosensai_live/config.py` を経由して読み込みます。
 
 ### .env
 
-パスフレーズと各マシンの IP は `hosts/server/.env`（Git 管理外）に設定します。配信サーバーの compose に加えて、本部 PC の `kosensai-live` もこのファイルを読みます。設定項目は [hosts/server/README.md](hosts/server/README.md) にあります。
+パスフレーズと各マシンの IP は `hosts/server/.env`（Git 管理外）に設定します。配信サーバーの compose と、本部 PC の `kosensai-live` がこのファイルを読みます。設定項目は [hosts/server/README.md](hosts/server/README.md#env-の設定項目) にあります。
 
 ### 設定の検証と反映
 
-`config.json` と `.env` の値は、他の設定ファイルへ書き写しません。
+`config.json` と `.env` の値は他の設定ファイルへ書き写しません。
 
-- `Caddyfile` のホスト名は `{$SITE_DOMAIN}` です。compose の init-caddy が `config.json` から書き出した値を、Caddy が起動時に読み込みます。
+- `Caddyfile` のホスト名は `{$SITE_DOMAIN}` です。compose の init-caddy が `config.json` から書き出した値を Caddy が起動時に読み込みます。
 - MediaMTX のパス（Ch）は `.env` の `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` から作成します。`mediamtx.yml` には Ch を書きません。
 
-`docker compose up` のたびに、init-mediamtx と init-caddy が `tools/kosensai_live/config.py check` を実行し、`.env` の Ch と `config.json` の一致、パスフレーズ、証明書のホスト名と期限などを検証します。NG があれば、MediaMTX または Caddy を起動しません。証明書は Caddy だけが使用するため、証明書が無くても MediaMTX は起動します。運用中に `config.json` や `.env` を変更した場合は `docker compose run --rm init` で OK を確認してから `docker compose up -d` を実行してください。`.env` を変更すると、compose は init-mediamtx の完了を待たずに MediaMTX を作り直すため、NG のまま `up -d` を実行すると受信が止まります（`docker compose restart` では検証が実行されません）。
+`docker compose up` のたびに init-mediamtx と init-caddy が `.env` と `config.json` を検証します。検証の項目と、運用中に設定を変更する手順は [hosts/server/README.md](hosts/server/README.md#起動前の検証) にあります。
 
 ### QR コード
 
-サイネージに表示する QR コードは `uv run kosensai-live qr` で生成します。config のドメインを変更した場合に実行してください。
+サイネージに表示する QR コードは `uv run kosensai-live qr` で生成します。`config.json` の `site.domain` を変更した場合に実行します。
 
 ### エンドポイント
 
-- **視聴用 Web ページ**: `https://<domain>/`
-- **サイネージ用ページ**: `https://<domain>/signage/`
-- **HLS ストリーミング**: `https://<domain>/hls/<ch>/index.m3u8`
+`<domain>` は `config.json` の `site.domain` です。
 
-> [!NOTE]
-> `<domain>` は `config.json` の `site.domain` に対応します。
+| 用途 | URL |
+| --- | --- |
+| 視聴ページ | `https://<domain>/` |
+| サイネージのページ | `https://<domain>/signage/` |
+| HLS | `https://<domain>/hls/<ch>/index.m3u8` |
