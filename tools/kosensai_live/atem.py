@@ -1,23 +1,25 @@
-"""ATEM の映像の形式と配信の設定を config.json と .env から設定・確認する。
+"""ATEM の映像の形式、配信の設定、音声のミキサーを config.json・.env・hosts/obs/atem.json から設定・確認する。
 
-    uv run kosensai-live atem apply [ch]   映像の形式・サービス名・URL・キー・パスフレーズを設定し、check を行う
+    uv run kosensai-live atem apply [ch]   映像の形式・配信(サービス名・URL・キー・パスフレーズ・品質)・音声のミキサーを設定し、check を行う
     uv run kosensai-live atem check [ch]   設定値が期待値と一致するかを確認する
     uv run kosensai-live atem get          現在の設定を表示する(パスフレーズも表示する)
     uv run kosensai-live atem start|stop   配信を開始・停止する
     uv run kosensai-live atem watch [秒]   配信の状態とビットレートを 1 秒ごとに表示する
 
 ATEM の IP は .env の ATEM_IP、送信先は HQ_IP と config.json の obsListenPort、パスフレーズは
-OBS_<Ch>_LISTEN_PASSPHRASE、映像の形式は config.json の video.mode から決める。
+OBS_<Ch>_LISTEN_PASSPHRASE、映像の形式は config.json の video.mode、品質と音声のミキサーは atem.json から決める。
 ATEM のプロトコルは pyatem で扱う。SRT のパスフレーズは配信の認証(SAth)の password に対応する。
 pyatem は SAth の送信のコマンドを持たないため、ここで組み立てる。
 """
 
+import json
 import struct
 import sys
 import threading
 import time
 
-from pyatem.command import Command, StreamingServiceSetCommand, StreamingStatusSetCommand, VideoModeCommand
+from pyatem.command import (Command, FairlightStripPropertiesCommand, StreamingServiceSetCommand,
+                            StreamingStatusSetCommand, VideoModeCommand)
 from pyatem.protocol import AtemProtocol
 
 from . import config, urls
@@ -29,6 +31,9 @@ CONNECT_TIMEOUT_SEC = 5
 APPLY_TIMEOUT_SEC = 3
 # 配信の状態(StRS)のビット
 STATUS_BITS = {1: "idle", 2: "connecting", 4: "streaming", 32: "stopping"}
+ATEM_JSON = config.REPO / "hosts/obs/atem.json"
+# 音声のミキサーの入力の状態(Fairlight の strip の state のビット)
+STRIP_STATES = {"off": 1, "on": 2, "afv": 4}
 
 
 class AuthenticationCommand(Command):
@@ -81,6 +86,10 @@ class Atem:
             "key": service.key,
             "user": user,
             "passphrase": password,
+            "bitrate": {"min": service.min, "max": service.max},
+            "audio": {strip_id: {"state": next((n for n, b in STRIP_STATES.items() if strip.state & b), strip.state),
+                                 "gain_db": strip.gain / 100}
+                      for strip_id, strip in self.proto.mixerstate.get("fairlight-strip-properties", {}).items()},
             "status": status,
         }
 
@@ -94,19 +103,23 @@ def expected(conf, env, cid):
     c = config.channel(conf, cid)
     if not c.get("obsListenPort"):
         sys.exit(f"Ch {cid} は本部 OBS が SRT で受信しない Ch です")
+    atem = json.loads(ATEM_JSON.read_text(encoding="utf-8"))
     return {
         "video_mode": config.video_mode(conf)[4],
         "service": SERVICE,
         "url": urls.caller_url(conf, env, cid),
         "key": "",
         "passphrase": config.require(env, config.listen_var(cid)),
+        "bitrate": atem["bitrate"],
+        # 分割していない(ステレオの)入力の strip の ID は「<入力の番号>.0」。
+        "audio": {f"{a['source']}.0": {"state": a["state"], "gain_db": a["gain_db"]} for a in atem["audio"]},
     }
 
 
 def compare(have, want):
     """(OK か NG, 説明) の一覧。パスフレーズは値を表示しない。"""
     results = []
-    for name in ["video_mode", "service", "url", "key"]:
+    for name in ["video_mode", "service", "url", "key", "bitrate"]:
         if have[name] == want[name]:
             results.append(("OK", f"{name}: {have[name]!r}"))
         else:
@@ -117,6 +130,12 @@ def compare(have, want):
         results.append(("OK", "passphrase: 一致"))
     else:
         results.append(("NG", "passphrase: 不一致"))
+    for strip_id, w in want["audio"].items():
+        h = have["audio"].get(strip_id)
+        if h == w:
+            results.append(("OK", f"audio {strip_id}: {h}"))
+        else:
+            results.append(("NG", f"audio {strip_id}: {h}（期待値: {w}）"))
     return results
 
 
@@ -127,8 +146,12 @@ def apply(atem, want):
         sys.exit(f"配信中（{status_text(have['status'])}）のため設定できません。stop してから実行してください")
     if have["video_mode"] != want["video_mode"]:
         atem.send(VideoModeCommand(want["video_mode"]))
-    atem.send(StreamingServiceSetCommand(name=want["service"], url=want["url"], key=want["key"]),
-              AuthenticationCommand("", want["passphrase"]))
+    atem.send(StreamingServiceSetCommand(name=want["service"], url=want["url"], key=want["key"],
+                                         bitrate_min=want["bitrate"]["min"], bitrate_max=want["bitrate"]["max"]),
+              AuthenticationCommand("", want["passphrase"]),
+              *[FairlightStripPropertiesCommand(int(strip_id.split(".")[0]), -1, gain=round(a["gain_db"] * 100),
+                                                state=STRIP_STATES[a["state"]])
+                for strip_id, a in want["audio"].items()])
     deadline = time.monotonic() + APPLY_TIMEOUT_SEC
     while time.monotonic() < deadline:
         if all(status == "OK" for status, _ in compare(atem.values(), want)):

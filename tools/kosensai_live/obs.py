@@ -7,7 +7,7 @@ obs-websocket で設定する。
 起動中の OBS に接続する。scenes.json のシーンは項目(ソース)の有無・並び・配置を scenes.json に合わせる。
 項目の表示・非表示は channels.lua が切り替えるため、新しく作る項目にだけ設定する。
 scenes.json に無いシーンには手を加えない。ソースの設定(中継の TCP の URL、ページのファイルの場所)、音声のトラック、
-映像の形式、obs-multi-rtmp の出力は毎回上書きする。
+映像の形式、録画の保存先(.env の OBS_RECORD_DIR)、obs-multi-rtmp の出力は毎回上書きする。
 obs-websocket のパスワードは同じ PC の OBS の設定ファイルから読む。
 """
 
@@ -362,6 +362,7 @@ def build(env_path, assets: Path) -> None:
     if not (assets / "program.json").is_file():
         sys.exit(f"{assets} に program.json がありません。--assets で kosensai-live-assets のリポジトリの最上位を指定してください")
     print(f"assets: {assets}")
+    record_dir = config.require(env, "OBS_RECORD_DIR")
     cl = connect()
     if "source_record_filter" not in cl.get_source_filter_kind_list().source_filter_kinds:
         sys.exit(f"Source Record のプラグインがありません。{SOURCE_RECORD_URL} からインストールしてください")
@@ -401,6 +402,8 @@ def build(env_path, assets: Path) -> None:
     collection = scenes["collection"]
 
     apply_profile(cl, conf, env, scenes)
+    # Source Record も OBS の録画の保存先に保存する。
+    cl.set_record_directory(record_dir)
 
     if collection not in cl.get_scene_collection_list().scene_collections:
         cl.create_scene_collection(collection)

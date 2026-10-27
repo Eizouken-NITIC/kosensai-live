@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "ATEM の配信の品質と音声のミキサーの設定。kosensai-live の atem apply が設定し、atem check が確認する。",
+    "bitrate: 配信と USB ディスクへの収録の品質(bps)。min は 24/25/30fps、max は 50/60fps の映像に使用される。",
+    "  12000000 / 20000000 は ATEM Software Control の HyperDeck Low と同じ値である。",
+    "audio: 音声のミキサーの入力(source は入力の番号。HDMI 1〜4 は 1〜4、MIC 1・2 は 1301・1302)。",
+    "  state は on・off・afv(映像を切り替えた入力の音声だけを出す)、gain_db は入力のゲイン(dB)。",
+    "  第一体育館の音声は、配信用ミキサーの出力を MIC 1 に入れる。カメラの内蔵マイクは使用しない。"
+  ],
+  "bitrate": {"min": 12000000, "max": 20000000},
+  "audio": [
+    {"source": 1, "state": "off", "gain_db": 0},
+    {"source": 2, "state": "off", "gain_db": 0},
+    {"source": 3, "state": "off", "gain_db": 0},
+    {"source": 4, "state": "off", "gain_db": 0},
+    {"source": 1301, "state": "on", "gain_db": 0},
+    {"source": 1302, "state": "off", "gain_db": 0}
+  ]
+}
