@@ -113,7 +113,7 @@ uv run kosensai-live atem check      # 確認だけを行う
 | 映像の形式 | `config.json` の `video.mode` |
 | 配信 | サービス `Custom URL H.264`、送信先は本部 PC の中継（Ch1 の SRT Listener）、キーは空、パスフレーズは `.env` の `OBS_CH1_LISTEN_PASSPHRASE` |
 | 品質 | `atem.json` の `bitrate`（HyperDeck Low。配信と USB ディスクへの収録に適用される） |
-| 音声のミキサー | `atem.json` の `audio`。MIC 1 を ON、カメラの入力と MIC 2 を OFF |
+| 音声のミキサー | `atem.json` の `audio`。MIC 1 を ON、カメラの入力と MIC 2 を OFF。MIC 1 のレベルは `gain_db` で合わせる（`atem apply` のたびにこの値になる） |
 
 ISO 収録（カメラごとの収録）は、ATEM Software Control で有効にします（ATEM 本体に保存されます）。
 
