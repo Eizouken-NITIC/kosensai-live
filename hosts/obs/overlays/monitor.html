@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <title>monitor</title>
 <style>
-  /* 受信の確認。[確認] 受信 のシーンの背景に置き、受信の映像(scenes.json の monitor-left・monitor-right)の
-     上にラベルと受信の状態、下にホットキーの一覧を出す。配信には映らないため、画面のデザインは使用しない。
-     状態は channels.lua が毎秒 kosensaiStatus のイベントで送る。 */
+  /* 受信の確認。[確認] 受信 のシーンの背景に置き、受信の映像の上に会場の名前と状態、下にホットキーの一覧を出す。
+     会場は scenes.json の venues の順に、左(monitor-left)・右(monitor-right)の映像に対応する。
+     配信には映らないため、画面のデザインは使用しない。 */
   :root { --bg: #18181b; --line: #3f3f46; --text: #f4f4f5; --sub: #a1a1aa; --ok: #22c55e; --ng: #ef4444; color-scheme: dark; }
   html body { margin: 0; width: 1920px; height: 1080px; background: var(--bg); color: var(--text);
     font: 32px/1.4 system-ui, sans-serif; overflow: hidden; }
@@ -31,17 +31,12 @@
   const hhmm = (sec) => { const d = new Date(sec * 1000); return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
   window.addEventListener('kosensaiStatus', ({ detail: s }) => {
     $('wait').hidden = true;
-    s.inputs.forEach((input, i) => {
-      const paused = s.pauses.find((p) => p.name === input.name)?.on;
-      const transition = s.transitions.find((x) => x.name === input.name)?.on;
-      $(`in${i}`).innerHTML = '';
-      $(`in${i}`).append(Object.assign(document.createElement('b'), { textContent: input.name }),
-        Object.assign(document.createElement('span'), {
-          className: input.lost ? 'ng' : 'ok',
-          textContent: input.lost ? `切断中(${hhmm(input.since)} から)` : '受信中',
-        }),
-        Object.assign(document.createElement('span'), { className: 'ng', textContent: paused ? '休止中' : '' }),
-        Object.assign(document.createElement('span'), { textContent: transition ? '転換中' : '' }));
+    s.venues.forEach((v, i) => {
+      const span = (className, textContent) => Object.assign(document.createElement('span'), { className, textContent });
+      $(`in${i}`).replaceChildren(Object.assign(document.createElement('b'), { textContent: v.name }),
+        span(v.lost ? 'ng' : 'ok', v.lost ? `切断中(${hhmm(v.since)} から)` : '受信中'),
+        span('ng', v.paused ? '休止中' : ''),
+        span('', v.transition ? '転換中' : ''));
     });
     const fkey = (k) => Number(k.replace(/^F/, '')) || 99;
     $('keys').replaceChildren(...s.hotkeys.filter((h) => h.key).sort((a, b) => fkey(a.key) - fkey(b.key)).map((h) => {

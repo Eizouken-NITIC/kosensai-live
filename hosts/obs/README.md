@@ -314,16 +314,17 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 | `video_encoder` | OS（`win32`・`darwin`・`linux`）ごとの映像のエンコーダーの ID。出力と録画に使用する |
 | `outputs` | obs-multi-rtmp の出力。`video_param` はエンコーダーの設定、`audio_bitrate` は音声のビットレート（kbps）、`channels` は Ch ごとの映像のシーン（無ければプログラム）と音声のトラック。映像のビットレートは `config.json` の `bitrateKbps` |
 | `recordings` | 録画。`video_param` はエンコーダーの設定（ビットレートを含む）、`audio_bitrate`、`format` はファイルの形式、`scenes` は Source Record で録画するシーン・音声のトラック・ファイル名に付ける名前、`encoder` は Source Record の OS ごとのエンコーダー、`program_encoder` は Ch3（OBS の通常の録画）の OS ごとのエンコーダー（出力の「シンプル」の名前）、`program_nvenc_preset` はその NVENC のプリセット |
+| `venues` | 会場 `{id, name, video, audio}`。`id` は Ch の id、`name` は操作パネル等とホットキーに出す名前、`video`・`audio` は会場の映像と音声の入力。`audio`・`transition`・`signal_lost`・`cm_corner` は会場を `id` で指定する。`overlays/monitor.html` は、この順に左（`monitor-left`）・右（`monitor-right`）の映像に会場の状態を出す |
 | `audio.always` | 音声のソースを置き、常にミキサーに入れるシーン |
-| `audio.ch3` | Ch3（トラック 1）の音声の候補 `{video, audio}`。プログラムに `video` が映っていると、`audio` をトラック 1 に入れる（先の項目を優先） |
-| `audio.pause` | 会場ごとの配信休止 `{id, name, show, hide, audio}`。ホットキーの「`name` 休止: 出す」で、`show` のソースを表示し、`hide` のソースを隠し、`audio` をミュートする |
-| `transition` | 会場ごとの転換の画面 `{id, name, show}`。ホットキーの「`name` 転換: 出す」で `show` のソースを表示し、「`name` 転換: 消す」で隠す |
-| `monitor` | 受信の確認。`scene` はウィンドウ プロジェクターで開くシーン（配信休止では隠さない）、`inputs` は受信の状態を出す会場 `{name, video}`、`pages` は状態とホットキーの一覧を送るブラウザソース `{source}` |
+| `audio.ch3` | Ch3（トラック 1）の音声の候補の会場 `{venue}`。プログラムに会場の映像が映っていると、その会場の音声をトラック 1 に入れる（先の項目を優先し、休止中の会場は除く） |
+| `audio.pause` | 会場ごとの配信休止 `{venue, show, hide}`。ホットキーの「<会場> 休止: 出す」で、`show` のソースを表示し、`hide` のソースを隠し、会場の音声をミュートする |
+| `transition` | 会場ごとの転換の画面 `{venue, show}`。ホットキーの「<会場> 転換: 出す」で `show` のソースを表示し、「<会場> 転換: 消す」で隠す |
+| `monitor` | 受信の確認。`scene` はウィンドウ プロジェクターで開くシーン（配信休止では隠さない）、`pages` は会場ごとの状態とホットキーの一覧を送るブラウザソース `{source}` |
 | `panel` | 操作パネル。`source` はホットキーの「操作パネルを開く」で「対話」のウィンドウを開くブラウザソース |
-| `hotkeys` | ホットキーの ID（`monitor.open`・`panel.open`・`pause.<id>.on`・`pause.<id>.off`・`transition.<id>.on`・`transition.<id>.off`・`cm.on`・`cm.off`）→ キー（`F9` のように `OBS_KEY_` を除いた名前）。`channels.lua` が読み込むたびに割り当てる |
+| `hotkeys` | ホットキーの ID（`monitor.open`・`panel.open`・`pause.<会場の id>.on`・`pause.<会場の id>.off`・`transition.<会場の id>.on`・`transition.<会場の id>.off`・`cm.on`・`cm.off`）→ キー（`F9` のように `OBS_KEY_` を除いた名前）。`channels.lua` が読み込むたびと「scenes.json を読み直す」のたびに割り当てる |
 | `cm` | CM のスライドショー。`folder` は kosensai-live-assets の中の画像のフォルダ、`slide_sec` は 1 枚を表示する秒数 |
-| `cm_corner` | `scene` に、毎時 `every_min` 分ごとに CM を `show_sec` 秒表示する。普段は `source`（右下）を、`lost_video` の映像が消えている間は `full_source`（全画面）を出す |
-| `signal_lost` | 映像が消えた時に隠すソース。`video` の幅が 0 の間（SRT が切れている間）、`hide` のソースを全シーンで隠す |
+| `cm_corner` | `scene` に、毎時 `every_min` 分ごとに CM を `show_sec` 秒表示する。普段は `source`（右下）を、`lost_venue` の会場の映像が消えているか休止している間は `full_source`（全画面）を出す |
+| `signal_lost` | 映像が消えた時に隠すソース `{venue, hide}`。会場の映像の幅が 0 の間（SRT が切れている間）、`hide` のソースを全シーンで隠す |
 
 - `Ch1 音声 (USB)` の `device` は、Windows の表示名 `ライン (2- USB AUDIO  CODEC)` から、USB ポートで変わる番号（`2-`）を除いたものです（空白は 2 つ）。
 - macOS の Ch3 の録画は x264 にしています。Ch3 の録画に VideoToolbox を使うと、Source Record の VideoToolbox のエンコーダーが「Unsupported color format」で動かず、Ch1・Ch2 のファイルが作られませんでした（OBS 32.1.2、Source Record 0.4.8）。

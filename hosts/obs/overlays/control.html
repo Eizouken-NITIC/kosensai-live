@@ -4,14 +4,8 @@
 <meta charset="utf-8">
 <title>control</title>
 <style>
-  /* 操作パネル。ホットキーの「操作パネルを開く」(channels.lua)で、このブラウザソースの「対話」のウィンドウを開いて操作する。配信には映らないため、
-     画面のデザインは使用しない。テロップのブラウザソースと同じ origin になるため、
-     localStorage と BroadcastChannel で状態を渡す。
-     OBS のブラウザソースが既定で入れる CSS(背景の透明、余白、overflow: hidden)を詳細度の高いセレクターで上書きする。
-     ソースの大きさは scenes.json で 1280x1000 にし、「対話」の窓でほぼ等倍に表示する。
-     「対話」の窓ではスクロールの操作が届かないことがあるため、スクロールせずに収まるように、
-     タブで表示を切り替え、長い表は「▲」「▼」で送る。受信の状態とホットキーの一覧は、
-     channels.lua が毎秒 kosensaiStatus のイベントで送る。 */
+  /* 操作パネル(「対話」のウィンドウで操作する)。配信には映らないため、画面のデザインは使用しない。
+     OBS のブラウザソースが既定で入れる CSS(背景の透明、余白、overflow: hidden)を詳細度の高いセレクターで上書きする。 */
   :root {
     --bg: #18181b; --panel: #27272a; --line: #3f3f46; --text: #f4f4f5; --sub: #a1a1aa; --dim: #71717a;
     --button: #3f3f46; --now: #423a10; --warn-bg: #4c1d1d; --warn-line: #ef4444;
@@ -96,11 +90,11 @@
     for (const sec of sections) sec.hidden = sec.dataset.tab !== tab;
   }
   drawTabs();
-  $('actsUp').onclick = () => { actsTop = Math.max(0, (actsTop ?? autoTop()) - 3); draw(); };
-  $('actsDown').onclick = () => { actsTop = (actsTop ?? autoTop()) + 3; draw(); };
-  $('actsNow').onclick = () => { actsTop = null; draw(); };
-  $('noticesUp').onclick = () => { noticesTop = Math.max(0, noticesTop - 3); draw(); };
-  $('noticesDown').onclick = () => { noticesTop += 3; draw(); };
+  $('actsUp').onclick = () => { actsTop = Math.max(0, (actsTop ?? autoTop()) - 3); drawLists(); };
+  $('actsDown').onclick = () => { actsTop = (actsTop ?? autoTop()) + 3; drawLists(); };
+  $('actsNow').onclick = () => { actsTop = null; drawLists(); };
+  $('noticesUp').onclick = () => { noticesTop = Math.max(0, noticesTop - 3); drawLists(); };
+  $('noticesDown').onclick = () => { noticesTop += 3; drawLists(); };
   function autoTop() {
     const t = Overlay.now();
     const items = Overlay.schedule('ch1', t, s);
@@ -108,21 +102,21 @@
     return Math.max(0, (i < 0 ? items.length : i) - 1);
   }
 
-  // ---- channels.lua からの受信の状態とホットキー ----
+  // ---- channels.lua からの会場ごとの状態とホットキー ----
   let lua = null;
-  window.addEventListener('kosensaiStatus', ({ detail }) => { lua = detail; });
+  window.addEventListener('kosensaiStatus', ({ detail }) => { lua = detail; drawStatus(); });
   const fkey = (k) => Number(k.replace(/^F/, '')) || 99;
-  const key = (label) => lua?.hotkeys.find((h) => h.label === label)?.key ?? '?';
+  const key = (id) => lua?.hotkeys.find((h) => h.id === id)?.key ?? '?';
 
   // ---- 遅れ ----
   // 押した演目の予定の開始から、今までの差を遅れとする。その演目より後の指定は消す。
   function started(it) {
     const t = Overlay.now();
-    const key = Overlay.dayKey(t);
+    const day = Overlay.dayKey(t);
     const scheduled = Overlay.schedule('ch1', t, {}).find((x) => x.at === it.at);
     const min = Math.round((t - scheduled.start) / 60000);
-    const kept = (s.delays?.[key] ?? []).filter((d) => d.from < it.at);
-    Overlay.setState({ delays: { ...s.delays, [key]: [...kept, { from: it.at, min }] } });
+    const kept = (s.delays?.[day] ?? []).filter((d) => d.from < it.at);
+    Overlay.setState({ delays: { ...s.delays, [day]: [...kept, { from: it.at, min }] } });
   }
   $('clearDelay').onclick = () => Overlay.setState({ delays: { ...s.delays, [Overlay.dayKey(Overlay.now())]: [] } });
 
@@ -142,29 +136,26 @@
   };
   $('autoPlace').onclick = () => Overlay.setState({ ch2Place: null });
 
-  let listsShown = null;
-  function draw() {
+  // 状態の欄と配信休止の予告。ボタンを含まないため、毎秒と channels.lua の状態が届くたびに描き直す。
+  function drawStatus() {
     const t = Overlay.now();
     const items = Overlay.schedule('ch1', t, s);
-    const plan = Overlay.schedule('ch1', t, {});
     const delays = s.delays?.[Overlay.dayKey(t)] ?? [];
     const delay = delays.length ? delays[delays.length - 1].min : 0;
     const cur = Overlay.current('ch1', t, s);
     const ch2 = Overlay.ch2Now(s, t);
     const notice = Overlay.noticeText(s, t);
-
     $('status').replaceChildren(
       el('dt', {}, '時刻'), el('dd', {}, hhmm(t)),
       el('dt', {}, '第一体育館'), el('dd', {}, cur ? `${cur.title}(${hhmm(cur.start)}〜${hhmm(cur.end)})` : 'なし'),
       el('dt', {}, '遅延'), el('dd', {}, delay ? `${delay > 0 ? '+' : ''}${delay} 分` : 'なし'),
       el('dt', {}, 'お知らせ'), el('dd', {}, s.noticePin ? `固定: ${s.noticePin}` : (notice ?? '(ループ待機中)')),
       el('dt', {}, '遊撃'), el('dd', {}, ch2 ? `${ch2.title}(${ch2.place})` : 'なし'),
-      el('dt', {}, '受信'), el('dd', {}, ...(lua ? lua.inputs.flatMap((input) => [
-        `${input.name} `,
-        el('span', { className: input.lost ? 'ng' : 'ok' },
-          input.lost ? `切断中(${hhmm(new Date(input.since * 1000))} から)` : '受信中'),
-        lua.pauses.find((p) => p.name === input.name)?.on ? '・休止中' : '',
-        lua.transitions.find((x) => x.name === input.name)?.on ? '・転換中' : '',
+      el('dt', {}, '受信'), el('dd', {}, ...(lua ? lua.venues.flatMap((v) => [
+        `${v.name} `,
+        el('span', { className: v.lost ? 'ng' : 'ok' }, v.lost ? `切断中(${hhmm(new Date(v.since * 1000))} から)` : '受信中'),
+        v.paused ? '・休止中' : '',
+        v.transition ? '・転換中' : '',
         ' ',
       ]) : ['channels.lua からの状態を待っています'])),
     );
@@ -177,16 +168,17 @@
     if (ng) {
       const on = ng.start <= t;
       $('ng').replaceChildren(el('h2', {}, on ? `配信休止の時間: ${ng.title}` : `次の配信休止: ${ng.title}`),
-        el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。開始時にホットキー「第一体育館 休止: 出す」(${key('第一体育館 休止: 出す')})、終了時に「第一体育館 休止: 消す」(${key('第一体育館 休止: 消す')})を押す。`));
+        el('p', {}, `${hhmm(ng.start)} ごろ〜${hhmm(ng.end)} ごろ。開始時にホットキー「第一体育館 休止: 出す」(${key('pause.ch1.on')})、終了時に「第一体育館 休止: 消す」(${key('pause.ch1.off')})を押す。`));
     }
+  }
 
-    // 表のボタンを毎秒作り直すと、押している間にボタンが置き換わり、クリックにならない。
-    // 表は、状態・時刻(分)・表の位置のどれかが変わった時だけ作り直す。
-    const list = Overlay.notices(s);
-    noticesTop = Math.max(0, Math.min(noticesTop, list.length - NOTICE_ROWS));
-    const shown = JSON.stringify([s, hhmm(t), actsTop, noticesTop]);
-    if (shown === listsShown) return;
-    listsShown = shown;
+  // ボタンを含む表。描き直すと押している間にボタンが置き換わり、クリックにならないため、
+  // 状態が変わった時・分が変わった時・表を送った時だけ描き直す。
+  function drawLists() {
+    const t = Overlay.now();
+    const items = Overlay.schedule('ch1', t, s);
+    const plan = Overlay.schedule('ch1', t, {});
+    const cur = Overlay.current('ch1', t, s);
 
     const top = Math.max(0, Math.min(actsTop ?? autoTop(), items.length - ACT_ROWS));
     $('acts').replaceChildren(...items.map((it, i) => [it, i]).slice(top, top + ACT_ROWS).map(([it, i]) => el('tr', { className: it.at === cur?.at ? 'now' : it.end <= t ? 'past' : '' },
@@ -196,6 +188,8 @@
       el('td', {}, button('開始', () => started(it))),
     )));
 
+    const list = Overlay.notices(s);
+    noticesTop = Math.max(0, Math.min(noticesTop, list.length - NOTICE_ROWS));
     $('notices').replaceChildren(...list.map((n, i) => [n, i]).slice(noticesTop, noticesTop + NOTICE_ROWS).map(([n, i]) => el('tr', {},
       el('td', {}, el('label', {}, el('input', { type: 'checkbox', checked: n.loop, onchange: (e) => setNotices(list.map((m, j) => (j === i ? { ...m, loop: e.target.checked } : m))) }), ' ループ')),
       el('td', {}, n.text),
@@ -209,8 +203,15 @@
       button(`${title}(${where})`, () => place(title, where), s.ch2Place?.title === title && s.ch2Place?.place === where)));
   }
 
-  Overlay.onState((next) => { s = next; draw(); });
-  Overlay.every(1000, draw);
+  // 分の区切り(?now= の時計に合わせる)ごとに表を描き直す。
+  function everyMinute() {
+    drawLists();
+    setTimeout(everyMinute, 60000 - (Overlay.now().getTime() % 60000));
+  }
+
+  Overlay.onState((next) => { s = next; drawStatus(); drawLists(); });
+  Overlay.every(1000, drawStatus);
+  everyMinute();
 </script>
 </body>
 </html>
