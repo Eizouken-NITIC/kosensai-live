@@ -8,7 +8,7 @@ local CHANNEL = 20
 -- トラック 1 のビット。OBS の Lua は LuaJIT(Lua 5.1)で、ビット演算子が無いため bit ライブラリを使用する。
 local TRACK1 = 1
 
--- scenes.json の venues。{ { id = ..., name = ..., video = ..., audio = ... }, ... }
+-- scenes.json の venues。{ { id = ..., name = ..., source = 映像と音声のソース }, ... }
 local venues = {}
 local venue_by_id = {}
 -- scenes.json の audio。ch3 は会場の一覧(優先する順)。
@@ -98,8 +98,7 @@ local function load_config()
     local venue = {
       id = obslua.obs_data_get_string(item, "id"),
       name = obslua.obs_data_get_string(item, "name"),
-      video = obslua.obs_data_get_string(item, "video"),
-      audio = obslua.obs_data_get_string(item, "audio"),
+      source = obslua.obs_data_get_string(item, "source"),
     }
     table.insert(venues, venue)
     venue_by_id[venue.id] = venue
@@ -239,12 +238,12 @@ local function update_track1()
 
   local chosen = nil
   for _, venue in ipairs(ch3) do
-    if chosen == nil and found[venue.video] and not paused(venue) then
+    if chosen == nil and found[venue.source] and not paused(venue) then
       chosen = venue
     end
   end
   for _, venue in ipairs(ch3) do
-    set_track1(venue.audio, venue == chosen)
+    set_track1(venue.source, venue == chosen)
   end
 end
 
@@ -278,7 +277,7 @@ local function width_zero(name)
 end
 
 local function is_lost(venue)
-  local state = lost[venue.video]
+  local state = lost[venue.source]
   return state ~= nil and state.lost
 end
 
@@ -286,13 +285,13 @@ end
 local function update_lost()
   local changed = false
   for _, venue in ipairs(venues) do
-    local now = width_zero(venue.video)
-    local state = lost[venue.video]
+    local now = width_zero(venue.source)
+    local state = lost[venue.source]
     if state == nil or state.lost ~= now then
       if state ~= nil then
-        obslua.script_log(obslua.LOG_INFO, venue.video .. (now and " の映像が消えた" or " の映像が戻った"))
+        obslua.script_log(obslua.LOG_INFO, venue.source .. (now and " の映像が消えた" or " の映像が戻った"))
       end
-      lost[venue.video] = { lost = now, since = os.time() }
+      lost[venue.source] = { lost = now, since = os.time() }
       changed = true
     end
   end
@@ -333,7 +332,7 @@ end
 local function apply_pause()
   apply_visibility()
   for _, p in ipairs(pauses) do
-    local audio = obslua.obs_get_source_by_name(p.venue.audio)
+    local audio = obslua.obs_get_source_by_name(p.venue.source)
     if audio ~= nil then
       obslua.obs_source_set_muted(audio, p.on)
       obslua.obs_source_release(audio)
@@ -429,7 +428,7 @@ local function send_status()
   local list = obslua.obs_data_array_create()
   for _, venue in ipairs(venues) do
     push_object(list, function(item)
-      local state = lost[venue.video]
+      local state = lost[venue.source]
       obslua.obs_data_set_string(item, "id", venue.id)
       obslua.obs_data_set_string(item, "name", venue.name)
       obslua.obs_data_set_bool(item, "lost", state.lost)

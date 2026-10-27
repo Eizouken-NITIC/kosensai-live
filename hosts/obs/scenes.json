@@ -12,8 +12,7 @@
     "monitor-right": {"x": 980, "y": 140, "w": 900, "h": 506}
   },
   "inputs": {
-    "Ch1 ATEM": {"type": "srt", "channel": "ch1", "tracks": []},
-    "Ch1 音声 (USB)": {"type": "audio", "device": "USB AUDIO  CODEC", "tracks": [2], "sync_offset_ms": 3550},
+    "Ch1 ATEM": {"type": "srt", "channel": "ch1", "tracks": [2]},
     "Ch2 iPhone": {"type": "srt", "channel": "ch2", "tracks": [3]},
     "テロップ 第一体育館": {"type": "page", "page": "lower-third.html"},
     "テロップ 遊撃": {"type": "page", "page": "lower-third.html", "query": "ch=ch2"},
@@ -37,7 +36,7 @@
   },
   "scenes": {
     "[音声] 常時": [
-      {"source": "Ch1 音声 (USB)"},
+      {"source": "Ch1 ATEM", "place": "offscreen"},
       {"source": "Ch2 iPhone", "place": "offscreen"},
       {"source": "操作パネル", "place": "offscreen"}
     ],
@@ -60,10 +59,6 @@
       {"source": "テロップ 遊撃", "place": "full"},
       {"source": "お知らせ", "place": "full"},
       {"source": "ウォーターマーク", "place": "full"}
-    ],
-    "[録画] Ch1 第一体育館": [
-      {"source": "Ch1 ATEM", "place": "full"},
-      {"source": "配信休止", "place": "full", "hidden": true}
     ],
     "[録画] Ch2 遊撃": [
       {"source": "Ch2 iPhone", "place": "full"}
@@ -142,14 +137,13 @@
     "program_encoder": {"win32": "nvenc", "darwin": "x264", "linux": "x264"},
     "program_nvenc_preset": "p2",
     "scenes": [
-      {"scene": "[録画] Ch1 第一体育館", "track": 2, "name": "Ch1"},
       {"scene": "[録画] Ch2 遊撃", "track": 3, "name": "Ch2"}
     ]
   },
   "cm": {"folder": "cm/out", "slide_sec": 6},
   "venues": [
-    {"id": "ch1", "name": "第一体育館", "video": "Ch1 ATEM", "audio": "Ch1 音声 (USB)"},
-    {"id": "ch2", "name": "遊撃", "video": "Ch2 iPhone", "audio": "Ch2 iPhone"}
+    {"id": "ch1", "name": "第一体育館", "source": "Ch1 ATEM"},
+    {"id": "ch2", "name": "遊撃", "source": "Ch2 iPhone"}
   ],
   "cm_corner": {"scene": "Ch3 遊撃", "source": "CM 小窓", "full_source": "CM 自動", "lost_venue": "ch2", "every_min": 5, "show_sec": 30},
   "signal_lost": [

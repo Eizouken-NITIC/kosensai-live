@@ -2,7 +2,6 @@
 
   uv run kosensai-live check               .env と config.json を検証する
   uv run kosensai-live obs build           OBS のシーン・プロファイル・obs-multi-rtmp の出力を設定する
-  uv run kosensai-live obs devices         音声入力のデバイスの名前を表示する
   uv run kosensai-live atem apply|check|get|start|stop|watch
                                            ATEM の映像の形式と配信を設定・確認する
   uv run kosensai-live relay [--ffmpeg]    ATEM・スマートフォンの SRT を受け、OBS へ TCP で渡す(本部 PC で常駐させる)
@@ -38,7 +37,7 @@ def main():
     sub.add_parser("check", parents=[env], help=".env と config.json を検証する")
 
     p = sub.add_parser("obs", parents=[env], help="本部 OBS")
-    p.add_argument("action", choices=["build", "devices"])
+    p.add_argument("action", choices=["build"])
     p.add_argument("--assets", type=Path, default=ASSETS_DIR,
                    help=f"build: kosensai-live-assets の場所(既定: 環境変数 KOSENSAI_LIVE_ASSETS、無ければ {ASSETS_DIR})")
 
@@ -67,10 +66,7 @@ def main():
         config.cmd_check(argparse.Namespace(env=args.env, server=False, certs=None, write_site_env=None))
     elif args.cmd == "obs":
         from . import obs
-        if args.action == "build":
-            obs.build(args.env, args.assets)
-        else:
-            obs.devices()
+        obs.build(args.env, args.assets)
     elif args.cmd == "atem":
         from . import atem
         ch = args.arg if args.action in ("apply", "check") and args.arg else "ch1"

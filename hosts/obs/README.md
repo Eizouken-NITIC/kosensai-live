@@ -22,7 +22,7 @@
 | OBS Studio | 32.1.2 で確認 | <https://obsproject.com/>。SRT の送出は OBS に含まれる FFmpeg（libsrt）で行うため、SRT のプラグインは不要です |
 | ffmpeg | 9.0.2（gyan.dev の essentials）で確認 | <https://www.gyan.dev/ffmpeg/builds/>。SRT に対応したビルド。ATEM・スマートフォンの SRT を受ける中継（[3-9.](#3-9-中継relay)）が使用します。Windows は zip を展開し、`ffmpeg.exe` の場所を中継に渡します |
 | obs-multi-rtmp | 0.7.4 | <https://github.com/sorayuki/obs-multi-rtmp/releases/tag/0.7.4>。Ch ごとの送出。`kosensai-live obs build` は、このバージョンの設定ファイルを書き出します |
-| Source Record | 0.4.8 | <https://github.com/exeldro/obs-source-record/releases/tag/0.4.8>。Ch ごとのクリーンフィードの録画。無い場合、`obs build` はエラーで止まります |
+| Source Record | 0.4.8 | <https://github.com/exeldro/obs-source-record/releases/tag/0.4.8>。遊撃のクリーンフィードの録画。無い場合、`obs build` はエラーで止まります |
 | uv、Git | ― | <https://docs.astral.sh/uv/>。`kosensai-live` を実行します。Python 3.12 は uv が用意します（`.python-version`） |
 
 プラグインは、OBS を終了した状態で各リリースのインストーラー（Windows は `.exe`、macOS は `.pkg`）を実行して入れます。
@@ -77,7 +77,7 @@ uv run kosensai-live obs build
 | 録画 | `[録画] …` のシーンの Source Record のフィルター（[3-4.](#3-4-録画)） |
 | obs-multi-rtmp の出力 | Ch1・Ch2・Ch3 の 3 つ（[3-3.](#3-3-出力obs-multi-rtmp)）。送出先の URL とパスフレーズは `.env` から作ります |
 
-obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch1・Ch2 の録画のフィルターが変わる場合と、グローバル音声デバイスがある場合、`channels.lua` が未追加の場合、OBS の設定が `obs_settings` と違う場合、`obs build` は「OBS を終了してください」と表示して OBS の終了を待ち、終了した後に設定を書き込みます。書き込んだら OBS を起動し直します。
+obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch2 の録画のフィルターが変わる場合と、グローバル音声デバイスがある場合、`channels.lua` が未追加の場合、OBS の設定が `obs_settings` と違う場合、`obs build` は「OBS を終了してください」と表示して OBS の終了を待ち、終了した後に設定を書き込みます。書き込んだら OBS を起動し直します。
 
 ホットキーは、`channels.lua` が `scenes.json` の `hotkeys` のキーを割り当てます。操作パネル（[3-8.](#3-8-操作パネル)）と受信の確認（[3-10.](#3-10-受信の確認)）にも一覧が出ます。
 
@@ -97,13 +97,9 @@ obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch1�
 
 kosensai-live-assets の `program.json` や `cm/out/` を変更した場合は、本部 PC で `git pull` した後に `uv run kosensai-live obs build` を実行し直します。`obs build` は全てのブラウザソースを読み込み直します。
 
-### 2-2. 音声のデバイスを指定する
+### 2-2. 会場の音声を ATEM に入れる
 
-```bash
-uv run kosensai-live obs devices
-```
-
-`Ch1 音声 (USB)` に選べるデバイスの名前を表示します。配信用ミキサーの名前（の一部）を `scenes.json` の `Ch1 音声 (USB)` の `device` に書き、`uv run kosensai-live obs build` をもう一度実行します。`device` が無い場合、`obs build` は WARN を表示し、OS の既定の入力を使用します。
+第一体育館の音声は、配信用ミキサーの出力を ATEM のマイク入力（3.5 mm）に入れ、ATEM が映像と一緒に送ります。映像と音声は ATEM の中で揃うため、OBS では同期オフセットを設定しません。ATEM Software Control の音声のミキサーで、マイク入力を ON にし、カメラの入力（カメラの内蔵マイク）を OFF にします。設定は ATEM 本体に保存されます。
 
 ### 2-3. ATEM を設定する
 
@@ -147,7 +143,7 @@ uv run kosensai-live urls
 | `[確認] 受信` | 第一体育館と遊撃の受信の映像（[3-10.](#3-10-受信の確認)）。ウィンドウ プロジェクターで表示し、プログラムには出しません |
 | `[出力] Ch1 第一体育館` | obs-multi-rtmp の Ch1 の出力 |
 | `[出力] Ch2 遊撃` | obs-multi-rtmp の Ch2 の出力 |
-| `[録画] Ch1 第一体育館`・`[録画] Ch2 遊撃` | Ch ごとのクリーンフィード（テロップの無い映像）の録画 |
+| `[録画] Ch2 遊撃` | 遊撃のクリーンフィード（テロップの無い映像）の録画。第一体育館のクリーンフィードは ATEM が収録します（[3-4.](#3-4-録画)） |
 | `Ch3 …` | Ch3（プログラム）で切り替えるシーン。待機・第一体育館・遊撃・2 画面・UP NEXT・タイムテーブル・CM |
 
 Ch3 はシーンをクリックした時点で切り替わります。スタジオモードは使用しません。待機画面などのページは本番に出た時に読み込み直すため、プレビューと本番が分かれるスタジオモードでは意図した表示になりません。`obs build` はスタジオモードを無効にします。
@@ -158,14 +154,12 @@ obs-multi-rtmp でプログラム以外のシーンを送出しても、その�
 
 | ソース | トラック | 本部のモニター |
 | --- | --- | --- |
-| `Ch1 音声 (USB)` | 2（Ch1）。Ch3 で第一体育館を映している間は 1 も | Ch3 で第一体育館を映している間 |
+| `Ch1 ATEM` | 2（Ch1）。Ch3 で第一体育館を映している間は 1 も | Ch3 で第一体育館を映している間 |
 | `Ch2 iPhone` | 3（Ch2）。Ch3 で遊撃を映している間は 1 も | Ch3 で遊撃を映している間 |
-| `Ch1 ATEM` | なし（ATEM の埋め込み音声は使用しません） | なし |
 | `BGM` | 1（待機・UP NEXT・タイムテーブルのシーンを出している間だけ鳴ります） | 常に |
 
-`channels.lua` は、プログラムのシーンに `Ch1 ATEM` が映っていれば `Ch1 音声 (USB)` を、`Ch2 iPhone` が映っていれば `Ch2 iPhone` をトラック 1 に入れ、本部のモニターにも出します。本部では Ch3 の視聴者と同じ音を聞きます。両方が映る 2 画面では Ch1 の音声を使用します。会場の音声は `scenes.json` の入力だけから入れます。「設定 → 音声」のグローバル音声デバイスは全てのトラックに入るため、`obs build` が削除します。待機画面などの全画面のシーンでは、Ch3 に会場の音声は入りません。CM はスライドショー（画像）のため、音声はありません。`BGM` にはファイルを指定していないため、既定では無音です。音楽を流す場合は、OBS で `BGM` に音楽のファイルを指定します（ループして再生し、待機・UP NEXT・タイムテーブルの間で切り替えても続きから再生します）。
+`channels.lua` は、プログラムのシーンに `Ch1 ATEM` が映っていれば `Ch1 ATEM` の音声を、`Ch2 iPhone` が映っていれば `Ch2 iPhone` の音声をトラック 1 に入れ、本部のモニターにも出します。本部では Ch3 の視聴者と同じ音を聞きます。両方が映る 2 画面では Ch1 の音声を使用します。会場の音声は `scenes.json` の入力だけから入れます。「設定 → 音声」のグローバル音声デバイスは全てのトラックに入るため、`obs build` が削除します。待機画面などの全画面のシーンでは、Ch3 に会場の音声は入りません。CM はスライドショー（画像）のため、音声はありません。`BGM` にはファイルを指定していないため、既定では無音です。音楽を流す場合は、OBS で `BGM` に音楽のファイルを指定します（ループして再生し、待機・UP NEXT・タイムテーブルの間で切り替えても続きから再生します）。
 
-`Ch1 音声 (USB)` は、`scenes.json` の `sync_offset_ms`（3550 ms）だけ遅らせます。USB の音声は配信用ミキサーから直接届き、ATEM の映像は ATEM から OBS までの経路の分だけ遅れて届くためです。値は、ATEM の音声ミキサーでカメラの入力を 1 つだけ ON にし、`Ch1 ATEM` を `[音声] 常時` に置いてトラック 2 の左、`Ch1 音声 (USB)` を右に寄せて Ch1 の録画に記録し、両方の音の立ち上がりの時刻の差から求めます。演奏の音は拍の間隔でも一致するため、±8 秒の範囲で、30 秒の記録の前半と後半で同じ値になることを確かめます。カメラは内蔵マイクで会場の音を拾うため、測った値は大きめに出ます。視聴ページで口の動きと声が合うように、50 ms 刻みで調整します。OBS の音声のモニターは、映像を持たないソースに同期オフセットを適用しないため、本部のヘッドホンでは USB の音声が遅れずに聞こえます。ずれは視聴ページか録画で確認します。
 
 ### 3-3. 出力（obs-multi-rtmp）
 
@@ -179,15 +173,13 @@ obs-multi-rtmp でプログラム以外のシーンを送出しても、その�
 
 ### 3-4. 録画
 
-OBS の「録画開始」で、次の 3 つが同時に始まります。保存先は OBS の録画の設定のパスです。
+| 録画 | 行うもの | 内容 |
+| --- | --- | --- |
+| 第一体育館のクリーンフィード | ATEM（USB ディスクへの収録） | プログラムとカメラごとの映像、ATEM の音声。OBS と配信休止によらず続く |
+| `<日時> Ch2.mkv` | OBS（Source Record のフィルター） | `[録画] Ch2 遊撃`（スマートフォンの映像だけ）と、トラック 3（遊撃の音声） |
+| `<日時>.mkv` | OBS（通常の録画） | プログラム（Ch3）。テロップを含みます |
 
-| ファイル | 内容 |
-| --- | --- |
-| `<日時> Ch1.mkv` | `[録画] Ch1 第一体育館`（ATEM の映像だけ）と、トラック 2（第一体育館の音声） |
-| `<日時> Ch2.mkv` | `[録画] Ch2 遊撃`（スマートフォンの映像だけ）と、トラック 3（遊撃の音声） |
-| `<日時>.mkv` | プログラム（Ch3）。OBS の通常の録画で、テロップを含みます |
-
-3 つとも `scenes.json` の `recordings` の設定（CBR 12 Mbps、音声 320 kbps、mkv）で録画します。Ch1・Ch2 は Source Record のフィルターが、Ch3 は OBS の出力の「シンプル」の設定（`obs build` がプロファイルに書く）が録画します。エンコーダーは、Ch1・Ch2 が `recordings.encoder`（Windows は x264 の veryfast）、Ch3 が `recordings.program_encoder`（Windows は NVENC の `program_nvenc_preset`）です。配信休止の間は、録画も休止の画面になり、音声はミュートされます。
+OBS の 2 つは、OBS の「録画開始」で同時に始まります。保存先は OBS の録画の設定のパスで、`scenes.json` の `recordings` の設定（CBR 12 Mbps、音声 320 kbps、mkv）で録画します。Ch3 は OBS の出力の「シンプル」の設定（`obs build` がプロファイルに書く）が録画します。エンコーダーは、Ch2 が `recordings.encoder`（Windows は x264 の veryfast）、Ch3 が `recordings.program_encoder`（Windows は NVENC の `program_nvenc_preset`）です。遊撃の配信休止の間は、Ch2 の録画は黒になり、音声はミュートされます。
 
 ### 3-5. 配信休止
 
@@ -195,7 +187,7 @@ OBS の「録画開始」で、次の 3 つが同時に始まります。保存�
 
 | 会場 | 「休止: 出す」で行うこと（「休止: 消す」で戻す） |
 | --- | --- |
-| 第一体育館（F9 / F10） | `[出力] Ch1 第一体育館`・`[録画] Ch1 第一体育館`・`Ch3 第一体育館`・`Ch3 2 画面` の `配信休止`（`overlays/pause.html`）を表示して映像を隠し、`Ch1 音声 (USB)` をミュートする |
+| 第一体育館（F9 / F10） | `[出力] Ch1 第一体育館`・`Ch3 第一体育館`・`Ch3 2 画面` の `配信休止`（`overlays/pause.html`）を表示して映像を隠し、`Ch1 ATEM` の音声をミュートする。ATEM の収録は続く |
 | 遊撃（F7 / F8） | 全シーンの `Ch2 iPhone` の映像と `テロップ 遊撃` を隠し、映像の下の `遊撃 休止`（「配信休止中 \| 遊撃」）を見せる。`Ch2 iPhone` の音声をミュートする。`[録画] Ch2 遊撃` は休止の画面が無いため黒になる |
 
 ミュートはトラックの割り当てを変えません。遊撃の SRT が切れた時に自動で隠すテロップ（3-7.）は、休止と SRT の切断のどちらか一方でも隠す理由があれば隠します。
@@ -262,7 +254,6 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 
 - 音声はミュートしません。
 - テロップ・お知らせ・時計の上に重なり、ウォーターマークと配信休止の画面はその上に出ます。
-- `[録画] Ch1 第一体育館` には出しません。
 - 「NEXT」には、今の時刻より後に始まる最初の出演（遅延を反映した時刻）を出します。
 - 状態はスクリプトの設定に保存され、OBS を再起動しても残ります。
 
@@ -310,13 +301,13 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 | `profile` | プロファイルの名前。映像の形式と obs-multi-rtmp の出力を設定する |
 | `program_scene` | 作成後にプログラムに出すシーン |
 | `places` | 配置の名前 → `{x, y, w, h}`。`pane-left`・`pane-right` は `overlays/split.html` の映像の枠、`monitor-left`・`monitor-right` は `overlays/monitor.html` のラベルの位置と一致させる |
-| `inputs` | 入力の名前 → 種類と設定。`type` は `srt`（`channel` の中継の TCP。中継の SRT のポートとパスフレーズは `config.json` と `.env`）、`audio`（音声入力のデバイス）、`page`（`overlays/` の `page`、`query` で引数、`replay` で表示のたびに読み込み直す、`width`・`height` でページの大きさ。既定は 1920x1080）、`slides`（`cm` のフォルダの画像のスライドショー。`behavior` は隠している間の動作で、`always_play` は進み、`pause_unpause` は止まる）、`media`（動画・音楽のファイル。OBS で指定する。`restart` が false なら同じ入力を持つシーンの間で切り替えても続きから再生し、`loop` が false なら 1 回だけ再生する）。`tracks` は音声のトラックの番号。`audio` の `device` はデバイスの名前の一部（`kosensai-live obs devices` で確認する）。`sync_offset_ms` は同期オフセット（ms、既定は 0）。`monitor` が true の入力は常に本部のモニターに出す |
+| `inputs` | 入力の名前 → 種類と設定。`type` は `srt`（`channel` の中継の TCP。中継の SRT のポートとパスフレーズは `config.json` と `.env`）、`page`（`overlays/` の `page`、`query` で引数、`replay` で表示のたびに読み込み直す、`width`・`height` でページの大きさ。既定は 1920x1080）、`slides`（`cm` のフォルダの画像のスライドショー。`behavior` は隠している間の動作で、`always_play` は進み、`pause_unpause` は止まる）、`media`（動画・音楽のファイル。OBS で指定する。`restart` が false なら同じ入力を持つシーンの間で切り替えても続きから再生し、`loop` が false なら 1 回だけ再生する）。`tracks` は音声のトラックの番号。`monitor` が true の入力は常に本部のモニターに出す |
 | `scenes` | シーンの名前 → 下から順の `{source, place, hidden}`。`hidden` の項目は `channels.lua` が必要な時だけ表示する |
 | `obs_settings` | OBS 全体の設定のファイル（`user.ini`・`global.ini`）→ セクション → キー → 値。OBS の「設定 → 一般」等の値で、OBS の終了後に書き込む |
 | `video_encoder` | OS（`win32`・`darwin`・`linux`）ごとの映像のエンコーダーの ID。出力と録画に使用する |
 | `outputs` | obs-multi-rtmp の出力。`video_param` はエンコーダーの設定、`audio_bitrate` は音声のビットレート（kbps）、`channels` は Ch ごとの映像のシーン（無ければプログラム）と音声のトラック。映像のビットレートは `config.json` の `bitrateKbps` |
 | `recordings` | 録画。`video_param` はエンコーダーの設定（ビットレートを含む）、`audio_bitrate`、`format` はファイルの形式、`scenes` は Source Record で録画するシーン・音声のトラック・ファイル名に付ける名前、`encoder` は Source Record の OS ごとのエンコーダー、`program_encoder` は Ch3（OBS の通常の録画）の OS ごとのエンコーダー（出力の「シンプル」の名前）、`program_nvenc_preset` はその NVENC のプリセット |
-| `venues` | 会場 `{id, name, video, audio}`。`id` は Ch の id、`name` は操作パネル等とホットキーに出す名前、`video`・`audio` は会場の映像と音声の入力。`audio`・`transition`・`signal_lost`・`cm_corner` は会場を `id` で指定する。`overlays/monitor.html` は、この順に左（`monitor-left`）・右（`monitor-right`）の映像に会場の状態を出す |
+| `venues` | 会場 `{id, name, source}`。`id` は Ch の id、`name` は操作パネル等とホットキーに出す名前、`source` は会場の映像と音声の入力。`audio`・`transition`・`signal_lost`・`cm_corner` は会場を `id` で指定する。`overlays/monitor.html` は、この順に左（`monitor-left`）・右（`monitor-right`）の映像に会場の状態を出す |
 | `audio.always` | 音声のソースを置き、常にミキサーに入れるシーン |
 | `audio.ch3` | Ch3（トラック 1）の音声の候補の会場 `{venue}`。プログラムに会場の映像が映っていると、その会場の音声をトラック 1 に入れる（先の項目を優先し、休止中の会場は除く） |
 | `audio.pause` | 会場ごとの配信休止 `{venue, show, hide}`。ホットキーの「<会場> 休止: 出す」で、`show` のソースを表示し、`hide` のソースを隠し、会場の音声をミュートする |
@@ -328,7 +319,6 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 | `cm_corner` | `scene` に、毎時 `every_min` 分ごとに CM を `show_sec` 秒表示する。普段は `source`（右下）を、`lost_venue` の会場の映像が消えているか休止している間は `full_source`（全画面）を出す |
 | `signal_lost` | 映像が消えた時に隠すソース `{venue, hide}`。会場の映像の幅が 0 の間（SRT が切れている間）、`hide` のソースを全シーンで隠す |
 
-- `Ch1 音声 (USB)` の `device` は、Windows の表示名 `ライン (2- USB AUDIO  CODEC)` から、USB ポートで変わる番号（`2-`）を除いたものです（空白は 2 つ）。
 - macOS の Ch3 の録画は x264 にしています。Ch3 の録画に VideoToolbox を使うと、Source Record の VideoToolbox のエンコーダーが「Unsupported color format」で動かず、Ch1・Ch2 のファイルが作られませんでした（OBS 32.1.2、Source Record 0.4.8）。
 
 ## 6. program.json

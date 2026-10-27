@@ -3,11 +3,10 @@ obs-websocket で設定する。
 
     uv run kosensai-live obs build      # シーンコレクション・プロファイル・obs-multi-rtmp の出力を設定する
     uv run kosensai-live obs build --assets <kosensai-live-assets の場所>
-    uv run kosensai-live obs devices    # 音声入力のデバイスの名前を表示する(scenes.json の device に書く)
 
 起動中の OBS に接続する。scenes.json のシーンは項目(ソース)の有無・並び・配置を scenes.json に合わせる。
 項目の表示・非表示は channels.lua が切り替えるため、新しく作る項目にだけ設定する。
-scenes.json に無いシーンには手を加えない。ソースの設定(中継の TCP の URL、ページのファイルの場所、音声のデバイス)、音声のトラック、
+scenes.json に無いシーンには手を加えない。ソースの設定(中継の TCP の URL、ページのファイルの場所)、音声のトラック、
 映像の形式、obs-multi-rtmp の出力は毎回上書きする。
 obs-websocket のパスワードは同じ PC の OBS の設定ファイルから読む。
 """
@@ -69,11 +68,6 @@ def platform_value(spec: dict, what: str):
     return spec[sys.platform]
 
 
-def audio_input_kind() -> str:
-    return platform_value({"win32": "wasapi_input_capture", "darwin": "coreaudio_input_capture",
-                           "linux": "pulse_input_capture"}, "音声入力の種類")
-
-
 def absolute_path(path: Path) -> str:
     """OBS がローカルファイルに使用する http://absolute/<パス> の、<パス> の部分(先頭に / を付ける)。"""
     return "/" + path.as_posix().lstrip("/")
@@ -94,19 +88,6 @@ def browser(page: str, replay: bool, assets: Path, query: str = "", width: int =
         "shutdown": replay,
         "restart_when_active": replay,
     }
-
-
-def audio_device_id(cl: obs.ReqClient, input_name: str, device: str | None) -> str | None:
-    """scenes.json の device(デバイスの名前の一部)に一致するデバイスの ID。device が無ければ None。"""
-    if device is None:
-        print(f"WARN  {input_name} の device が scenes.json にありません。OS の既定の入力を使用します")
-        return None
-    items = cl.get_input_properties_list_property_items(input_name, "device_id").property_items
-    found = [i for i in items if device in i["itemName"]]
-    if len(found) != 1:
-        names = "\n  ".join(i["itemName"] for i in items)
-        sys.exit(f"{input_name} の device {device!r} に一致するデバイスが {len(found)} 件あります。候補:\n  {names}")
-    return found[0]["itemValue"]
 
 
 def profile_dir(name: str) -> Path:
@@ -281,7 +262,7 @@ def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, f
     add_script = not any(Path(x.get("path", "")).resolve() == SCRIPT.resolve() for x in scripts)
     settings = obs_settings_changes(scenes)
     reasons = (["obs-multi-rtmp の出力"] if rtmp_changed else []) + (["Ch3 の録画の設定"] if params else []) \
-        + (["Ch1・Ch2 の録画のフィルター"] if filters_changed else []) \
+        + (["Ch2 の録画のフィルター"] if filters_changed else []) \
         + ([f"グローバル音声デバイス({'・'.join(global_audio)})の削除"] if global_audio else []) \
         + (["channels.lua の追加"] if add_script else []) \
         + ([f"OBS の設定({'・'.join(k for _, values in settings.items() for _, k, _ in values)})"] if settings else [])
@@ -402,9 +383,6 @@ def build(env_path, assets: Path) -> None:
                     "reconnect_delay_sec": 1,
                     "buffering_mb": 1,
                 }
-            case "audio":
-                # デバイスは作成後に OBS が返すデバイスの一覧から選ぶ(audio_device_id)。
-                return audio_input_kind(), {}
             case "page":
                 return "browser_source", browser(spec["page"], spec.get("replay", False), assets, spec.get("query", ""),
                                                  spec.get("width", 1920), spec.get("height", 1080))
@@ -473,10 +451,6 @@ def build(env_path, assets: Path) -> None:
     # 設定は今の値に重ねて書く(overlay)ので、OBS で指定した BGM の音楽のファイルは消えない。
     for name, spec in scenes["inputs"].items():
         _, settings = inputs[name]
-        if spec["type"] == "audio":
-            device_id = audio_device_id(cl, name, spec.get("device"))
-            if device_id is not None:
-                settings = {"device_id": device_id}
         if settings:
             cl.set_input_settings(name, settings, True)
         # URL が変わらない場合、ブラウザソースは読み込み直さない。program.json の変更を反映するため読み込み直す。
@@ -486,7 +460,6 @@ def build(env_path, assets: Path) -> None:
         if spec["type"] != "slides":
             tracks = spec.get("tracks", [])
             cl.set_input_audio_tracks(name, {str(t): t in tracks for t in range(1, 7)})
-            cl.set_input_audio_sync_offset(name, spec.get("sync_offset_ms", 0))
         # 会場の音声のモニターは channels.lua が Ch3 に合わせて切り替える。ここでは固定のものだけを設定する。
         if spec.get("monitor"):
             cl.set_input_audio_monitor_type(name, "OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT")
@@ -506,13 +479,3 @@ def build(env_path, assets: Path) -> None:
     write_while_closed(cl, conf, env, scenes, filters_changed)
     print("完了")
 
-
-def devices() -> None:
-    scenes = json.loads(SCENES_JSON.read_text(encoding="utf-8"))
-    cl = connect()
-    for name, spec in scenes["inputs"].items():
-        if spec["type"] != "audio":
-            continue
-        print(f"{name}(scenes.json の device: {spec.get('device')!r})")
-        for i in cl.get_input_properties_list_property_items(name, "device_id").property_items:
-            print(f"  {i['itemName']}")

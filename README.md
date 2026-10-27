@@ -2,7 +2,7 @@
 
 映像研究部が、高専祭のライブ配信のために作った配信システムです！
 
-実運用では、メイン会場にカメラ、スイッチャー、本部 PC（OBS）を配置します。スイッチングした映像を SRT で、音響の音声を USB オーディオで本部 PC へ入力し、移動中継のスマートフォンの映像も SRT で本部 PC へ集約します。本部 PC でテロップ等を合成し、配信サーバー（MediaMTX + Caddy）へ送出します。本部 PC では各チャンネルの録画も行います。
+実運用では、メイン会場にカメラ、スイッチャー、本部 PC（OBS）を配置します。音響の音声をスイッチャーに入れ、スイッチングした映像と一緒に SRT で本部 PC へ入力し、移動中継のスマートフォンの映像も SRT で本部 PC へ集約します。本部 PC でテロップ等を合成し、配信サーバー（MediaMTX + Caddy）へ送出します。本部 PC では各チャンネルの録画も行います。
 その後 MediaMTX で HLS に remux し、視聴ページに配信します。
 
 外部サービスには映像を送出せず、イベント会場内で配信が完結しているのが大きな特徴です。
@@ -11,7 +11,7 @@
 | 領域 | 技術 |
 | --- | --- |
 | 映像伝送 | SRT |
-| 本部 PC | OBS Studio + obs-multi-rtmp（チャンネルごとの送出）+ Source Record（録画） |
+| 本部 PC | OBS Studio + obs-multi-rtmp（チャンネルごとの送出）+ Source Record（遊撃のクリーンフィードの録画） |
 | 本部 PC の設定 | `kosensai-live`（Python、uv で Windows・macOS・Linux 共通） |
 | 配信 | HLS（MediaMTX が SRT → HLS に remux） |
 | Web サーバー / TLS 終端 | Caddy |
@@ -30,12 +30,12 @@
 メイン会場のカメラ
    │  HDMI等
    ▼
-スイッチャー (ATEM) / 移動中継のスマートフォン     音響（配信用ミキサー）
-   │  SRT Caller（会場の LAN / Wi-Fi）              │  USB オーディオ
-   ▼                                                ▼
+スイッチャー (ATEM、音響の音声をマイク入力で受ける) / 移動中継のスマートフォン
+   │  SRT Caller（会場の LAN / Wi-Fi）
+   ▼
 本部の PC (OBS)  ← hosts/obs/
    │  チャンネルごとにエンコードし、SRT Caller で送信
-   │  （Ch1・Ch2 はテロップの無い映像、Ch3 はプログラムを録画）
+   │  （Ch2 はテロップの無い映像、Ch3 はプログラムを録画。Ch1 は ATEM が収録）
    │  streamid=publish:chN
    ▼
 配信サーバー (MediaMTX + Caddy)             ← hosts/server/
@@ -126,7 +126,7 @@ kosensai-live/
 | コマンド | 内容 |
 | --- | --- |
 | `uv run kosensai-live check` | `.env` と `config.json` を検証する |
-| `uv run kosensai-live obs build` / `obs devices` | 本部 OBS のプロファイル・シーン・出力を設定する / 音声のデバイスを表示する |
+| `uv run kosensai-live obs build` | 本部 OBS のプロファイル・シーン・出力を設定する |
 | `uv run kosensai-live atem apply` / `check` / `get` / `start` / `stop` / `watch` | ATEM の映像の形式と配信を設定・確認する |
 | `uv run kosensai-live urls` | SRT の URL と視聴の URL を表示する |
 | `uv run kosensai-live qr` | 視聴ページの QR コードを生成する |
