@@ -32,7 +32,11 @@
   // URL の引数(?assets=、確認用の ?now=)は中の画面にもそのまま渡す。
   for (const [name, frame] of Object.entries(frames)) frame.src = `${name}.html${location.search}`;
 
-  let shown = null;
+  // 最初は待機画面を、読み込みが終わった時点で表示する。
+  let shown = 'standby';
+  let next = ORDER[1];
+  frames.standby.addEventListener('load', () => frames.standby.classList.add('on'), { once: true });
+
   function show(name) {
     if (name === shown) return;
     shown = name;
@@ -50,16 +54,12 @@
     return upcoming && upcoming.start - t < HOLD_MINUTES * 60000;
   }
 
-  let next = 'standby';
   function cycle() {
     const name = holdStandby() ? 'standby' : next;
     show(name);
     next = ORDER[(ORDER.indexOf(name) + 1) % ORDER.length];
     setTimeout(cycle, SECONDS[name] * 1000);
   }
-  frames.standby.addEventListener('load', () => frames.standby.classList.add('on'), { once: true });
-  shown = 'standby';
-  next = ORDER[1];
   setTimeout(cycle, SECONDS.standby * 1000);
 </script>
 </body>

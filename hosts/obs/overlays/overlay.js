@@ -93,7 +93,7 @@
   }
 
   // ---- 操作パネルとの状態の受け渡し ----
-  // ローカルファイルのブラウザソースとドックは同じ origin(http://absolute)になるため、
+  // ローカルファイルのブラウザソースは全て同じ origin(http://absolute)になるため、
   // localStorage に状態を保存し、変更を BroadcastChannel で通知する。
   const KEY = 'kosensai-live';
   const bus = new BroadcastChannel(KEY);

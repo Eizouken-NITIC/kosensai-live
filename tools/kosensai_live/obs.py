@@ -362,7 +362,7 @@ def build(env_path, assets: Path) -> None:
         match spec["type"]:
             case "srt":
                 # SRT は中継(relay)が受け、OBS は relay の TCP に接続する。送信元が切断すると TCP が切れ、
-                # 映像が消える(幅が 0 になり、channels.lua が休止の画面を出す)。
+                # 映像が消える(幅が 0 になり、映像の下の休止の画面が見える)。
                 return "ffmpeg_source", {
                     "is_local_file": False,
                     "input": urls.relay_url(conf, spec["channel"]),

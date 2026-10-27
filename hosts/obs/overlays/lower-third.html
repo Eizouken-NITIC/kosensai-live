@@ -58,20 +58,17 @@
   const BIG_MS = 20000;
   const BIG_EVERY_MS = 3 * 60000;
   let shownAt = 0;
-  let bigKey = null;
   const $ = (id) => document.getElementById(id);
   const lt = $('lt');
   $('seg').replaceChildren(...Array.from({ length: SEGMENTS }, () => document.createElement('i')));
   let shown = null;
+  let act = null;
   let s = Overlay.state();
-  Overlay.onState((next) => {
-    s = next;
-    shown = null;
-  });
+  Overlay.onState((next) => { s = next; });
 
   Overlay.every(250, () => {
     const t = Overlay.now();
-    const cur = ch === 'ch1' ? Overlay.current('ch1', t) : Overlay.ch2Now(s, t);
+    const cur = ch === 'ch1' ? Overlay.current('ch1', t, s) : Overlay.ch2Now(s, t);
     const nextShown = ch === 'ch1' ? Overlay.nextShown(t, s) : null;
     lt.classList.toggle('lifted', Overlay.noticeText(s, t) != null && nextShown == null);
     const compact = (Date.now() - shownAt) % BIG_EVERY_MS >= BIG_MS;
@@ -87,15 +84,16 @@
       const p = Overlay.progress(cur, t);
       [...$('seg').children].forEach((i, n) => i.classList.toggle('on', n < Math.ceil(p * SEGMENTS)));
     }
-    const key = visible ? `${cur.title} ${cur.label} ${cur.start}` : null;
-    if (key === shown) return;
-    shown = key;
-    // 操作パネルの状態が変わった時(shown が null に戻る)は、演目が同じなら小さいままにする。
-    if (key !== bigKey) {
-      bigKey = key;
+    // 大きく出し直すのは演目が変わった時だけにする(遅延で時刻や「つぎ」が変わった時は出し直さない)。
+    const nowAct = visible ? `${cur.title} ${cur.label}` : null;
+    if (nowAct !== act) {
+      act = nowAct;
       shownAt = Date.now();
       $('main').classList.remove('compact');
     }
+    const key = visible ? [nowAct, cur.start, cur.end, nextShown?.title, nextShown?.start].join(' ') : null;
+    if (key === shown) return;
+    shown = key;
     if (!visible) {
       lt.classList.replace('in', 'out');
       return;
