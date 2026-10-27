@@ -73,10 +73,11 @@ uv run kosensai-live obs build
 | ソース | 中継（[3-9.](#3-9-中継relay)）の TCP の URL、ページのファイルの場所（URL の `?assets=` に kosensai-live-assets の場所を付けます）、CM のスライドの一覧、音声のデバイス・トラック・同期オフセット。毎回上書きします |
 | グローバル音声デバイス | 「設定 → 音声」のデスクトップ音声・マイク音声を削除します（[3-2.](#3-2-音声)） |
 | スクリプト | 「ツール → スクリプト」に `hosts/obs/channels.lua` を追加します |
+| OBS の設定 | `scenes.json` の `obs_settings` の値にします。終了時にプロジェクター（受信の確認のウィンドウ）を保存し、録画を停止する時に確認のダイアログを出し、OBS が前面に無くてもホットキーを効かせ、起動時に更新を確認しません |
 | 録画 | `[録画] …` のシーンの Source Record のフィルター（[3-4.](#3-4-録画)） |
 | obs-multi-rtmp の出力 | Ch1・Ch2・Ch3 の 3 つ（[3-3.](#3-3-出力obs-multi-rtmp)）。送出先の URL とパスフレーズは `.env` から作ります |
 
-obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch1・Ch2 の録画のフィルターが変わる場合と、グローバル音声デバイスがある場合、`channels.lua` が未追加の場合、`obs build` は「OBS を終了してください」と表示して OBS の終了を待ち、終了した後に設定を書き込みます。書き込んだら OBS を起動し直します。
+obs-multi-rtmp の出力、Ch3 の録画の設定（プロファイル）、Ch1・Ch2 の録画のフィルターが変わる場合と、グローバル音声デバイスがある場合、`channels.lua` が未追加の場合、OBS の設定が `obs_settings` と違う場合、`obs build` は「OBS を終了してください」と表示して OBS の終了を待ち、終了した後に設定を書き込みます。書き込んだら OBS を起動し直します。
 
 ホットキーは、`channels.lua` が `scenes.json` の `hotkeys` のキーを割り当てます。操作パネル（[3-8.](#3-8-操作パネル)）と受信の確認（[3-10.](#3-10-受信の確認)）にも一覧が出ます。
 
@@ -311,6 +312,7 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 | `places` | 配置の名前 → `{x, y, w, h}`。`pane-left`・`pane-right` は `overlays/split.html` の映像の枠、`monitor-left`・`monitor-right` は `overlays/monitor.html` のラベルの位置と一致させる |
 | `inputs` | 入力の名前 → 種類と設定。`type` は `srt`（`channel` の中継の TCP。中継の SRT のポートとパスフレーズは `config.json` と `.env`）、`audio`（音声入力のデバイス）、`page`（`overlays/` の `page`、`query` で引数、`replay` で表示のたびに読み込み直す、`width`・`height` でページの大きさ。既定は 1920x1080）、`slides`（`cm` のフォルダの画像のスライドショー。`behavior` は隠している間の動作で、`always_play` は進み、`pause_unpause` は止まる）、`media`（動画・音楽のファイル。OBS で指定する。`restart` が false なら同じ入力を持つシーンの間で切り替えても続きから再生し、`loop` が false なら 1 回だけ再生する）。`tracks` は音声のトラックの番号。`audio` の `device` はデバイスの名前の一部（`kosensai-live obs devices` で確認する）。`sync_offset_ms` は同期オフセット（ms、既定は 0）。`monitor` が true の入力は常に本部のモニターに出す |
 | `scenes` | シーンの名前 → 下から順の `{source, place, hidden}`。`hidden` の項目は `channels.lua` が必要な時だけ表示する |
+| `obs_settings` | OBS 全体の設定のファイル（`user.ini`・`global.ini`）→ セクション → キー → 値。OBS の「設定 → 一般」等の値で、OBS の終了後に書き込む |
 | `video_encoder` | OS（`win32`・`darwin`・`linux`）ごとの映像のエンコーダーの ID。出力と録画に使用する |
 | `outputs` | obs-multi-rtmp の出力。`video_param` はエンコーダーの設定、`audio_bitrate` は音声のビットレート（kbps）、`channels` は Ch ごとの映像のシーン（無ければプログラム）と音声のトラック。映像のビットレートは `config.json` の `bitrateKbps` |
 | `recordings` | 録画。`video_param` はエンコーダーの設定（ビットレートを含む）、`audio_bitrate`、`format` はファイルの形式、`scenes` は Source Record で録画するシーン・音声のトラック・ファイル名に付ける名前、`encoder` は Source Record の OS ごとのエンコーダー、`program_encoder` は Ch3（OBS の通常の録画）の OS ごとのエンコーダー（出力の「シンプル」の名前）、`program_nvenc_preset` はその NVENC のプリセット |

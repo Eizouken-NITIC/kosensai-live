@@ -212,6 +212,29 @@ def profile_parameters(scenes: dict) -> list[tuple[str, str, str]]:
     return params
 
 
+def ini_value(path: Path, section: str, key: str) -> str | None:
+    """INI ファイルの section の key の値。無ければ None。"""
+    current = None
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        if line.startswith("["):
+            current = line.strip("[]")
+        elif current == section and line.startswith(f"{key}="):
+            return line[len(key) + 1:]
+    return None
+
+
+def obs_settings_changes(scenes: dict) -> dict[Path, list[tuple[str, str, str]]]:
+    """scenes.json の obs_settings のうち、今の値と違うもの。OBS の設定のファイル → (セクション, キー, 値)。"""
+    changes = {}
+    for name, sections in scenes["obs_settings"].items():
+        path = obs_config_dir() / name
+        values = [(sec, key, value) for sec, keys in sections.items() for key, value in keys.items()
+                  if ini_value(path, sec, key) != value]
+        if values:
+            changes[path] = values
+    return changes
+
+
 def set_ini(path: Path, values: list[tuple[str, str, str]]) -> None:
     """INI ファイルの値を、他の行の並びと書式を変えずに書き換える。"""
     lines = path.read_text(encoding="utf-8-sig").splitlines()
@@ -239,6 +262,7 @@ def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, f
     録画のフィルターの設定を変えた場合も、起動中に録画を始めると OBS が落ちたため、起動し直す。
     グローバル音声デバイス(設定 → 音声)は、全トラックに入り、同期オフセットも scenes.json の入力と別になる。
     OBS は出力のチャンネルからシーンコレクションに保存し直すため、終了後にファイルから削除する。
+    OBS 全体の設定(user.ini・global.ini)は、OBS が終了時に書き戻すため、終了後に書き込む。
     channels.lua(「ツール → スクリプト」)は、シーンコレクションのスクリプトの一覧に無ければ、終了後に追加する。
     obs-websocket にスクリプトを読み込む要求が無いため。読み込み済みの channels.lua の変更は、
     「ツール → スクリプト」の「再読み込み」で反映する。
@@ -255,10 +279,12 @@ def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, f
     script = SCRIPT.resolve().as_posix()
     scripts = json.loads(collection.read_text(encoding="utf-8-sig")).get("modules", {}).get("scripts-tool", [])
     add_script = not any(Path(x.get("path", "")).resolve() == SCRIPT.resolve() for x in scripts)
+    settings = obs_settings_changes(scenes)
     reasons = (["obs-multi-rtmp の出力"] if rtmp_changed else []) + (["Ch3 の録画の設定"] if params else []) \
         + (["Ch1・Ch2 の録画のフィルター"] if filters_changed else []) \
         + ([f"グローバル音声デバイス({'・'.join(global_audio)})の削除"] if global_audio else []) \
-        + (["channels.lua の追加"] if add_script else [])
+        + (["channels.lua の追加"] if add_script else []) \
+        + ([f"OBS の設定({'・'.join(k for _, values in settings.items() for _, k, _ in values)})"] if settings else [])
     if not reasons:
         print("OBS の再起動: 不要")
         return
@@ -276,6 +302,8 @@ def write_while_closed(cl: obs.ReqClient, conf: dict, env: dict, scenes: dict, f
         rtmp_path.write_text(rtmp, encoding="utf-8")
     if params:
         set_ini(profile / "basic.ini", params)
+    for path, values in settings.items():
+        set_ini(path, values)
     if global_audio or add_script:
         data = json.loads(collection.read_text(encoding="utf-8-sig"))
         for key in GLOBAL_AUDIO_KEYS:

@@ -111,6 +111,15 @@
       {"source": "CM", "place": "full"}
     ]
   },
+  "obs_settings": {
+    "user.ini": {
+      "BasicWindow": {"SaveProjectors": "true", "WarnBeforeStoppingRecord": "true"},
+      "General": {"HotkeyFocusType": "NeverDisableHotkeys"}
+    },
+    "global.ini": {
+      "General": {"EnableAutoUpdates": "false"}
+    }
+  },
   "video_encoder": {
     "win32": "obs_nvenc_h264_tex",
     "darwin": "com.apple.videotoolbox.videoencoder.ave.avc",
