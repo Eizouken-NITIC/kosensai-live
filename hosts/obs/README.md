@@ -1,6 +1,6 @@
 # hosts/obs — 本部 PC（OBS）
 
-本部 PC は、ATEM とスマートフォンから SRT で受信した映像にテロップを合成し、チャンネルごとに配信サーバー（MediaMTX）へ送出します。
+本部 PC は、ATEM と遊撃の iPhone から SRT で受信した映像にテロップを合成し、チャンネルごとに配信サーバー（MediaMTX）へ送出します。
 
 | パス | 内容 |
 | --- | --- |
@@ -69,7 +69,7 @@ uv run kosensai-live obs build
 
 | 設定するもの | 内容 |
 | --- | --- |
-| プロファイル | `KOSENSAI-LIVE`。映像の形式は `config.json` の `video.mode`（1080p29.97）。Ch3 の録画の設定 |
+| プロファイル | `KOSENSAI-LIVE`。映像の形式は `config.json` の `video.mode`（1080p29.97）。総合の録画の設定 |
 | 録画の保存先 | `.env` の `OBS_RECORD_DIR` |
 | スタジオモード | 無効 |
 | シーンコレクション | `KOSENSAI-LIVE`。`scenes.json` のシーンの項目の有無・並び・配置を `scenes.json` に合わせます。項目の表示・非表示は変えません。`scenes.json` に無いシーンには手を加えません |
@@ -78,9 +78,9 @@ uv run kosensai-live obs build
 | スクリプト | 「ツール → スクリプト」に `channels.lua` を追加します |
 | OBS 全体の設定 | `scenes.json` の `obs_settings`。終了時にプロジェクターを保存する、録画の停止の時に確認する、OBS が前面に無くてもホットキーを有効にする、起動時に更新を確認しない |
 | 録画 | `[録画] Ch2 遊撃` の Source Record のフィルター（[3-4.](#3-4-録画)） |
-| obs-multi-rtmp の出力 | Ch1・Ch2・Ch3 の 3 つ（[3-3.](#3-3-出力obs-multi-rtmp)）。送出先の URL とパスフレーズは `.env` から作ります |
+| obs-multi-rtmp の出力 | 第一体育館・遊撃・総合の 3 つ（[3-3.](#3-3-出力obs-multi-rtmp)）。送出先の URL とパスフレーズは `.env` から作ります |
 
-obs-multi-rtmp の出力、Ch3 の録画の設定、録画のフィルター、グローバル音声デバイス、`channels.lua` の追加、OBS 全体の設定のいずれかを変える場合、`obs build` は「OBS を終了してください」と表示して OBS の終了を待ち、終了した後に書き込みます。書き込んだら OBS を起動し直します。
+obs-multi-rtmp の出力、総合の録画の設定、録画のフィルター、グローバル音声デバイス、`channels.lua` の追加、OBS 全体の設定のいずれかを変える場合、`obs build` は「OBS を終了してください」と表示して OBS の終了を待ち、終了した後に書き込みます。書き込んだら OBS を起動し直します。
 
 ホットキーは、`channels.lua` が `scenes.json` の `hotkeys` のキーを割り当てます。操作パネル（[3-8.](#3-8-操作パネル)）と受信の確認（[3-10.](#3-10-受信の確認)）にも一覧が出ます。
 
@@ -111,7 +111,7 @@ uv run kosensai-live atem check      # 確認だけを行う
 | 設定するもの | 値 |
 | --- | --- |
 | 映像の形式 | `config.json` の `video.mode` |
-| 配信 | サービス `Custom URL H.264`、送信先は本部 PC の中継（Ch1 の SRT Listener）、キーは空、パスフレーズは `.env` の `OBS_CH1_LISTEN_PASSPHRASE` |
+| 配信 | サービス `Custom URL H.264`、送信先は本部 PC の中継（第一体育館の SRT Listener）、キーは空、パスフレーズは `.env` の `OBS_CH1_LISTEN_PASSPHRASE` |
 | 品質 | `atem.json` の `bitrate`（HyperDeck Low。配信と USB ディスクへの収録に適用される） |
 | 音声のミキサー | `atem.json` の `audio`。MIC 1 を ON、カメラの入力と MIC 2 を OFF。MIC 1 のレベルは `gain_db` で合わせる（`atem apply` のたびにこの値になる） |
 
@@ -123,7 +123,7 @@ ISO 収録（カメラごとの収録）は、ATEM Software Control で有効に
 | `atem start` / `atem stop` | 配信を開始・停止する |
 | `atem watch [秒]` | 配信の状態とビットレートを 1 秒ごとに表示する（既定は 10 秒） |
 
-### 2-4. スマートフォン（Ch2）を設定する
+### 2-4. 遊撃の iPhone を設定する
 
 ```bash
 uv run kosensai-live urls
@@ -134,7 +134,7 @@ uv run kosensai-live urls
 ### 2-5. 配信を開始する
 
 1. ATEM の配信を開始する（`uv run kosensai-live atem start`）。ATEM の収録を開始する。
-2. スマートフォンの配信を開始する。
+2. 遊撃の iPhone の配信を開始する。
 3. obs-multi-rtmp のドックで「すべて開始」を押す。
 4. OBS の「録画開始」を押す（[3-4.](#3-4-録画)）。
 
@@ -148,22 +148,22 @@ uv run kosensai-live urls
 | --- | --- |
 | `[音声] 常時` | `Ch1 ATEM`・`Ch2 iPhone` と `操作パネル` を画面の外に置くシーン。`channels.lua` が出力チャンネルにつなぎ、常に有効にします |
 | `[確認] 受信` | 第一体育館と遊撃の受信の映像（[3-10.](#3-10-受信の確認)）。プログラムには出しません |
-| `[出力] Ch1 第一体育館` | obs-multi-rtmp の Ch1 の出力 |
-| `[出力] Ch2 遊撃` | obs-multi-rtmp の Ch2 の出力 |
+| `[出力] Ch1 第一体育館` | obs-multi-rtmp の第一体育館の出力 |
+| `[出力] Ch2 遊撃` | obs-multi-rtmp の遊撃の出力 |
 | `[録画] Ch2 遊撃` | 遊撃のクリーンフィード（テロップの無い映像）の録画 |
-| `Ch3 …` | Ch3（プログラム）で切り替えるシーン。待機・第一体育館・遊撃・2 画面・UP NEXT・タイムテーブル・CM |
+| `Ch3 …` | 総合（プログラム）で切り替えるシーン。待機・第一体育館・遊撃・2 画面・UP NEXT・タイムテーブル・CM |
 
-Ch3 はシーンをクリックした時点で切り替わります（スタジオモードは使用しません）。
+総合はシーンをクリックした時点で切り替わります（スタジオモードは使用しません）。
 
 ### 3-2. 音声
 
 | ソース | トラック | 本部のモニター |
 | --- | --- | --- |
-| `Ch1 ATEM` | 2（Ch1）。Ch3 で第一体育館を映している間は 1 も | Ch3 で第一体育館を映している間 |
-| `Ch2 iPhone` | 3（Ch2）。Ch3 で遊撃を映している間は 1 も | Ch3 で遊撃を映している間 |
+| `Ch1 ATEM` | 2（第一体育館）。総合で第一体育館を映している間は 1 も | 総合で第一体育館を映している間 |
+| `Ch2 iPhone` | 3（遊撃）。総合で遊撃を映している間は 1 も | 総合で遊撃を映している間 |
 | `BGM` | 1（待機・UP NEXT・タイムテーブルのシーンを出している間だけ鳴ります） | 常に |
 
-- `channels.lua` は、プログラムのシーンに映っている会場の音声をトラック 1（Ch3）と本部のモニターに出します。両方が映る 2 画面では第一体育館の音声を使用します。待機画面などの全画面のシーンでは、Ch3 に会場の音声は入りません。
+- `channels.lua` は、プログラムのシーンに映っている会場の音声をトラック 1（総合）と本部のモニターに出します。両方が映る 2 画面では第一体育館の音声を使用します。待機画面などの全画面のシーンでは、総合に会場の音声は入りません。
 - CM には音声がありません。
 - `BGM` は既定では無音です。音楽を流す場合は、OBS で `BGM` に音楽のファイルを指定します（ループして再生し、待機・UP NEXT・タイムテーブルの間で切り替えても続きから再生します）。
 
@@ -171,9 +171,9 @@ Ch3 はシーンをクリックした時点で切り替わります（スタジ�
 
 | 出力 | 映像のシーン | 音声のトラック | ビットレート |
 | --- | --- | --- | --- |
-| Ch1 | `[出力] Ch1 第一体育館` | 2 | `config.json` の `bitrateKbps` |
-| Ch2 | `[出力] Ch2 遊撃` | 3 | 同上 |
-| Ch3 | プログラム | 1 | 同上 |
+| 第一体育館 | `[出力] Ch1 第一体育館` | 2 | `config.json` の `bitrateKbps` |
+| 遊撃 | `[出力] Ch2 遊撃` | 3 | 同上 |
+| 総合 | プログラム | 1 | 同上 |
 
 エンコーダーは `scenes.json` の `video_encoder`（Windows は NVENC のプリセット p2・1 パス、macOS は VideoToolbox、Linux は x264）で、CBR、キーフレーム間隔 2 秒です。
 
@@ -183,9 +183,9 @@ Ch3 はシーンをクリックした時点で切り替わります（スタジ�
 | --- | --- | --- |
 | 第一体育館のクリーンフィード | ATEM（USB ディスクへの収録） | プログラムとカメラごとの映像、ATEM の音声。OBS と配信休止によらず続く |
 | `<日時> Ch2.mkv` | OBS（Source Record） | `[録画] Ch2 遊撃` と、トラック 3（遊撃の音声）。遊撃の配信休止の間は黒になり、音声はミュートされる |
-| `<日時>.mkv` | OBS（通常の録画） | プログラム（Ch3）。テロップを含む |
+| `<日時>.mkv` | OBS（通常の録画） | プログラム（総合）。テロップを含む |
 
-OBS の 2 つは、OBS の「録画開始」で同時に始まり、`OBS_RECORD_DIR` に `scenes.json` の `recordings` の設定（CBR 12 Mbps、音声 320 kbps、mkv）で保存します。エンコーダーは、Ch2 が `recordings.encoder`（Windows は x264 の veryfast）、Ch3 が `recordings.program_encoder`（Windows は NVENC）です。
+OBS の 2 つは、OBS の「録画開始」で同時に始まり、`OBS_RECORD_DIR` に `scenes.json` の `recordings` の設定（CBR 12 Mbps、音声 320 kbps、mkv）で保存します。エンコーダーは、遊撃が `recordings.encoder`（Windows は x264 の veryfast）、総合が `recordings.program_encoder`（Windows は NVENC）です。
 
 ### 3-5. 配信休止
 
@@ -215,7 +215,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 
 ### 3-7. 遊撃の映像が切れた時
 
-`Ch2 iPhone` の下に `遊撃 休止`（`overlays/pause.html?ch=ch2`）を置いています。スマートフォンからの SRT が切れて映像が消えると「配信休止中 | 遊撃」の画面が見え、`channels.lua` が遊撃のテロップを隠します（`scenes.json` の `signal_lost`）。数秒の途切れでは画面は変わらず、直前の映像が止まって見えます。送信元がつなぎ直すと、映像は自動で戻ります。
+`Ch2 iPhone` の下に `遊撃 休止`（`overlays/pause.html?ch=ch2`）を置いています。遊撃の iPhone からの SRT が切れて映像が消えると「配信休止中 | 遊撃」の画面が見え、`channels.lua` が遊撃のテロップを隠します（`scenes.json` の `signal_lost`）。数秒の途切れでは画面は変わらず、直前の映像が止まって見えます。送信元がつなぎ直すと、映像は自動で戻ります。
 
 ### 3-8. 操作パネル
 
@@ -234,7 +234,7 @@ CM は、kosensai-live-assets の `cm/out/` の画像（1920x1080）を、ファ
 
 ### 3-9. 中継（relay）
 
-ATEM とスマートフォンの SRT は、本部 PC の中継（`uv run kosensai-live relay`、`tools/kosensai_live/relay.py`）が受けます。
+ATEM と遊撃の iPhone の SRT は、本部 PC の中継（`uv run kosensai-live relay`、`tools/kosensai_live/relay.py`）が受けます。
 
 ```
 ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP──▶ OBS の Ch1 ATEM・Ch2 iPhone（127.0.0.1:relayPort に接続）
@@ -304,10 +304,10 @@ ATEM・iPhone ──SRT──▶ 中継（ffmpeg、:obsListenPort）──TCP─
 | `obs_settings` | OBS 全体の設定のファイル（`user.ini`・`global.ini`）→ セクション → キー → 値 |
 | `video_encoder` | OS（`win32`・`darwin`・`linux`）ごとの映像のエンコーダーの ID。出力と録画に使用する |
 | `outputs` | obs-multi-rtmp の出力。`video_param` はエンコーダーの設定、`audio_bitrate` は音声のビットレート（kbps）、`channels` は Ch ごとの映像のシーン（無ければプログラム）と音声のトラック |
-| `recordings` | 録画。`video_param` はエンコーダーの設定、`audio_bitrate`、`format` はファイルの形式、`scenes` は Source Record で録画するシーン・音声のトラック・ファイル名に付ける名前、`encoder` は Source Record の OS ごとのエンコーダー、`program_encoder` は Ch3 の OS ごとのエンコーダー（出力の「シンプル」の名前）、`program_nvenc_preset` はその NVENC のプリセット |
+| `recordings` | 録画。`video_param` はエンコーダーの設定、`audio_bitrate`、`format` はファイルの形式、`scenes` は Source Record で録画するシーン・音声のトラック・ファイル名に付ける名前、`encoder` は Source Record の OS ごとのエンコーダー、`program_encoder` は総合の OS ごとのエンコーダー（出力の「シンプル」の名前）、`program_nvenc_preset` はその NVENC のプリセット |
 | `venues` | 会場 `{id, name, source}`。`id` は Ch の id、`name` は操作パネル等とホットキーに出す名前、`source` は会場の映像と音声の入力。`audio`・`transition`・`signal_lost`・`cm_corner` は会場を `id` で指定する。`overlays/monitor.html` は、この順に左（`monitor-left`）・右（`monitor-right`）の映像に会場の状態を出す |
 | `audio.always` | 会場の入力と操作パネルを置き、常に有効にするシーン |
-| `audio.ch3` | Ch3（トラック 1）の音声の候補の会場 `{venue}`。プログラムに会場の映像が映っていると、その会場の音声をトラック 1 に入れる（先の項目を優先し、休止中の会場は除く） |
+| `audio.ch3` | 総合（トラック 1）の音声の候補の会場 `{venue}`。プログラムに会場の映像が映っていると、その会場の音声をトラック 1 に入れる（先の項目を優先し、休止中の会場は除く） |
 | `audio.pause` | 会場ごとの配信休止 `{venue, show, hide}`。「<会場> 休止: 出す」で `show` のソースを表示し、`hide` のソースを隠し、会場の音声をミュートする |
 | `transition` | 会場ごとの転換の画面 `{venue, show}`。「<会場> 転換: 出す」で `show` のソースを表示し、「<会場> 転換: 消す」で隠す |
 | `monitor` | 受信の確認。`scene` はウィンドウ プロジェクターで開くシーン（配信休止では隠さない）、`pages` は会場ごとの状態とホットキーの一覧を送るブラウザソース `{source}` |

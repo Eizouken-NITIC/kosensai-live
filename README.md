@@ -2,7 +2,7 @@
 
 映像研究部が高専祭のライブ配信に使用する配信システムです。
 
-第一体育館のカメラの映像を ATEM でスイッチングし、配信用ミキサーの音声と一緒に SRT で本部 PC へ送ります。遊撃のスマートフォンの映像も SRT で本部 PC へ送ります。本部 PC の OBS がテロップ等を合成し、チャンネルごとに配信サーバー（MediaMTX + Caddy）へ送出します。MediaMTX が HLS に remux し、視聴ページとサイネージに配信します。
+第一体育館のカメラの映像を ATEM でスイッチングし、配信用ミキサーの音声と一緒に SRT で本部 PC へ送ります。遊撃の iPhone の映像も SRT で本部 PC へ送ります。本部 PC の OBS がテロップ等を合成し、チャンネルごとに配信サーバー（MediaMTX + Caddy）へ送出します。MediaMTX が HLS に remux し、視聴ページとサイネージに配信します。
 
 映像は外部のサービスへ送出せず、会場内のネットワークで配信します。視聴者は会場の Wi-Fi に接続して視聴します。
 
@@ -26,7 +26,7 @@
 第一体育館のカメラ
    │  HDMI 等
    ▼
-ATEM（配信用ミキサーの出力を MIC 1 に入れる） / 遊撃のスマートフォン
+ATEM（配信用ミキサーの出力を MIC 1 に入れる） / 遊撃の iPhone
    │  SRT Caller（会場の LAN / Wi-Fi）
    ▼
 本部 PC（OBS）  ← hosts/obs/
@@ -41,9 +41,9 @@ ATEM（配信用ミキサーの出力を MIC 1 に入れる） / 遊撃のスマ
 
 | 録画 | 行うもの |
 | --- | --- |
-| Ch1（第一体育館のクリーンフィード） | ATEM（USB ディスクへの収録） |
-| Ch2（遊撃のクリーンフィード） | 本部 PC の OBS（Source Record） |
-| Ch3（プログラム） | 本部 PC の OBS（通常の録画） |
+| 第一体育館のクリーンフィード | ATEM（USB ディスクへの収録） |
+| 遊撃のクリーンフィード | 本部 PC の OBS（Source Record） |
+| 総合（プログラム） | 本部 PC の OBS（通常の録画） |
 
 配信サーバーでは、MediaMTX が SRT のストリームを受信し、トランスコードと ABR を行わずに HLS へ remux します。Caddy が TLS 終端・リバースプロキシ・静的配信を行い、視聴ページとサイネージのページも同じサーバーから配信します。
 
@@ -130,7 +130,7 @@ kosensai-live/
 | `uv run kosensai-live check` | `.env` と `config.json` を検証する |
 | `uv run kosensai-live obs build` | 本部 PC の OBS のプロファイル・シーン・出力・録画を設定する |
 | `uv run kosensai-live atem apply` / `check` / `get` / `start` / `stop` / `watch` | ATEM の映像の形式・配信・品質（ビットレート）・音声のミキサーを設定・確認する |
-| `uv run kosensai-live relay` | ATEM とスマートフォンの SRT を受け、OBS へ TCP で渡す |
+| `uv run kosensai-live relay` | ATEM と遊撃の iPhone の SRT を受け、OBS へ TCP で渡す |
 | `uv run kosensai-live urls` | SRT の URL と視聴の URL を表示する |
 | `uv run kosensai-live qr` | 視聴ページの QR コードを生成する |
 | `uv run kosensai-live render gauge` / `clock` | 計器と時計の画像を Blender で描画する |

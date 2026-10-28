@@ -68,14 +68,14 @@ docker compose up -d
 
 | 変数 | 用途 |
 | --- | --- |
-| `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` | 本部 PC → 配信サーバーの送出のパスフレーズ。`config.json` の `channels[].id` ごとに設定します。ATEM とスマートフォンには設定しません。10〜79 文字 |
-| `OBS_<Ch>_LISTEN_PASSPHRASE` | ATEM・スマートフォン → 本部 PC の中継（SRT Listener、`kosensai-live relay`）のパスフレーズ。ATEM とスマートフォンにはこの値を設定します。`obsListenPort` を持つ Ch にだけ設定します。10〜63 文字 |
-| `HQ_IP` | 本部 PC の IPv4 アドレス。配信サーバーはこの IP とサーバー自身からの送出だけを受け付けます。ATEM とスマートフォンの送信先もこの IP です |
+| `MTX_PATHS_<Ch>_SRTPUBLISHPASSPHRASE` | 本部 PC → 配信サーバーの送出のパスフレーズ。`config.json` の `channels[].id` ごとに設定します。ATEM と遊撃の iPhone には設定しません。10〜79 文字 |
+| `OBS_<Ch>_LISTEN_PASSPHRASE` | ATEM・遊撃の iPhone → 本部 PC の中継（SRT Listener、`kosensai-live relay`）のパスフレーズ。ATEM と遊撃の iPhone にはこの値を設定します。`obsListenPort` を持つ Ch にだけ設定します。10〜63 文字 |
+| `HQ_IP` | 本部 PC の IPv4 アドレス。配信サーバーはこの IP とサーバー自身からの送出だけを受け付けます。ATEM と遊撃の iPhone の送信先もこの IP です |
 | `SERVER_IP` | 本部 PC から見た配信サーバーの IPv4 アドレス。`kosensai-live obs build` が obs-multi-rtmp の送出先の URL に使用します |
 | `ATEM_IP` | ATEM の IPv4 アドレス。`kosensai-live atem` が使用します |
 | `OBS_RECORD_DIR` | 本部 PC の OBS の録画の保存先。`kosensai-live obs build` が設定します。配信サーバーは使用しません |
 
-パスフレーズは送信側（本部 PC の obs-multi-rtmp、ATEM、スマートフォン）の設定値と一致させます。
+パスフレーズは送信側（本部 PC の obs-multi-rtmp、ATEM、遊撃の iPhone）の設定値と一致させます。
 
 次の場合、検証は NG になります。
 
